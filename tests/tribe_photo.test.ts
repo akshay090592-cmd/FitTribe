@@ -57,7 +57,8 @@ describe('Tribe Photo Storage', () => {
         const mockProfile: UserProfile = {
             id: 'user-123',
             displayName: 'TestUser',
-            email: 'test@example.com'
+            email: 'test@example.com',
+            tribeId: 'tribe-123'
         };
         const mockImage = 'data:image/jpeg;base64,test-image-data';
 
@@ -90,7 +91,7 @@ describe('Tribe Photo Storage', () => {
             user_id: mockProfile.id,
             user_name: mockProfile.displayName,
             image_data: mockImage,
-            tribe_id: undefined
+            tribe_id: 'tribe-123'
         });
     });
 
@@ -102,12 +103,14 @@ describe('Tribe Photo Storage', () => {
             user_id: 'user-123',
             user_name: 'TestUser',
             image_data: 'data:image/jpeg;base64,fetched-data',
-            created_at: '2025-01-01T12:00:00Z'
+            created_at: '2025-01-01T12:00:00Z',
+            tribe_id: 'tribe-123'
         };
 
         const limitMock = vi.fn().mockResolvedValue({ data: [mockPhotoData], error: null });
         const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-        const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+        const eqMock = vi.fn().mockReturnValue({ order: orderMock });
+        const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
 
         (supabase.from as any).mockImplementation((table: string) => {
             if (table === 'tribe_photo') {
@@ -118,12 +121,12 @@ describe('Tribe Photo Storage', () => {
             return {};
         });
 
-        const photo = await getLatestTribePhoto();
+        const photo = await getLatestTribePhoto('tribe-123');
 
         expect(photo).not.toBeNull();
         expect(photo?.id).toBe("101");
         expect(photo?.imageData).toBe(mockPhotoData.image_data);
-        expect(selectMock).toHaveBeenCalled();
+        expect(eqMock).toHaveBeenCalledWith('tribe_id', 'tribe-123');
     });
 
     it('should return null if no photo found', async () => {
@@ -131,13 +134,19 @@ describe('Tribe Photo Storage', () => {
 
         const limitMock = vi.fn().mockResolvedValue({ data: [], error: null });
         const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-        const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+        const eqMock = vi.fn().mockReturnValue({ order: orderMock });
+        const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
 
-        (supabase.from as any).mockReturnValue({
-            select: selectMock
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'tribe_photo') {
+                return {
+                    select: selectMock
+                };
+            }
+            return {};
         });
 
-        const photo = await getLatestTribePhoto();
+        const photo = await getLatestTribePhoto('tribe-123');
         expect(photo).toBeNull();
     });
 });

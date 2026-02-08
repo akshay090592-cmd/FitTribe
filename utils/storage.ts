@@ -1133,19 +1133,20 @@ export const saveWorkoutFeedback = async (feedback: import('../types').WorkoutFe
 // --- TRIBE PHOTO ---
 
 export const getLatestTribePhoto = async (tribeId?: string): Promise<TribePhoto | null> => {
-  const cacheKey = tribeId ? `tribe_photo_latest_${tribeId}` : 'tribe_photo_latest_global';
+  if (!tribeId) return null;
+
+  const cacheKey = `tribe_photo_latest_${tribeId}`;
   const cached = getFromCache<TribePhoto>(cacheKey);
   if (cached) return cached;
 
   if (!navigator.onLine) return null;
 
-  let query = supabase.from('tribe_photo').select('*').order('created_at', { ascending: false }).limit(1);
-
-  if (tribeId) {
-    query = query.eq('tribe_id', tribeId);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await supabase
+    .from('tribe_photo')
+    .select('*')
+    .eq('tribe_id', tribeId)
+    .order('created_at', { ascending: false })
+    .limit(1);
 
   if (error || !data || data.length === 0) {
     return null;

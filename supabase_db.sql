@@ -94,8 +94,9 @@ CREATE TABLE public.tribe_photo (
   user_name text,
   image_data text,
   created_at timestamp with time zone DEFAULT now(),
-  tribe_id text,
-  CONSTRAINT tribe_photo_pkey PRIMARY KEY (id)
+  tribe_id uuid,
+  CONSTRAINT tribe_photo_pkey PRIMARY KEY (id),
+  CONSTRAINT tribe_photo_tribe_id_fkey FOREIGN KEY (tribe_id) REFERENCES public.tribes(id)
 );
 CREATE TABLE public.tribes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -136,3 +137,155 @@ CREATE TABLE public.xp_logs (
   CONSTRAINT xp_logs_pkey PRIMARY KEY (id),
   CONSTRAINT xp_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
+
+-- ROW LEVEL SECURITY POLICIES
+
+-- Helper function to get current user's tribe_id without recursion
+CREATE OR REPLACE FUNCTION public.get_my_tribe_id()
+RETURNS uuid AS $$
+  SELECT tribe_id FROM public.profiles WHERE id = auth.uid();
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
+
+-- Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tribe_photo ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gamification_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tribes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gift_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.point_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.xp_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_feedback ENABLE ROW LEVEL SECURITY;
+
+-- Tribes: Everyone can see tribes (to join them), but only authenticated
+CREATE POLICY "Authenticated users can view tribes"
+ON public.tribes FOR SELECT TO authenticated USING (true);
+
+-- Profiles: Users can see profiles of their tribe members
+CREATE POLICY "Users can view profiles in their tribe"
+ON public.profiles FOR SELECT TO authenticated
+USING (
+  tribe_id = get_my_tribe_id()
+  OR id = auth.uid()
+);
+
+-- Workout Logs: Only tribe members can view logs
+CREATE POLICY "Users can view workout logs of their tribe"
+ON public.workout_logs FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE profiles.id = workout_logs.user_id
+    AND (profiles.tribe_id = get_my_tribe_id() OR profiles.id = auth.uid())
+  )
+);
+
+-- Tribe Photos: Only tribe members can view their tribe's latest victory photo
+CREATE POLICY "Users can view tribe photos of their tribe"
+ON public.tribe_photo FOR SELECT TO authenticated
+USING (
+  tribe_id = get_my_tribe_id()
+);
+
+-- Notifications: Only the user can see their own notifications
+CREATE POLICY "Users can view their own notifications"
+ON public.notifications FOR SELECT TO authenticated
+USING (user_id = auth.uid());
+
+-- Comments: Accessible if the user can see the workout log
+CREATE POLICY "Users can view comments on accessible logs"
+ON public.comments FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.workout_logs
+    WHERE workout_logs.id = comments.log_id
+  )
+);
+
+-- Reactions: Accessible if the user can see the workout log
+CREATE POLICY "Users can view reactions on accessible logs"
+ON public.reactions FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.workout_logs
+    WHERE workout_logs.id = reactions.log_id
+  )
+);
+
+-- Gamification State: Users can view state of their tribe members
+CREATE POLICY "Users can view gamification state of their tribe"
+ON public.gamification_state FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE profiles.id = gamification_state.user_id
+    AND (profiles.tribe_id = get_my_tribe_id() OR profiles.id = auth.uid())
+  )
+);
+
+-- Gift Transactions: Users can view gifts sent within their tribe
+CREATE POLICY "Users can view tribe gifts"
+ON public.gift_transactions FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE profiles.id = gift_transactions.from_user_id
+    AND profiles.tribe_id = get_my_tribe_id()
+  )
+);
+
+-- Point and XP Logs: Private to user
+CREATE POLICY "Users can view their own point logs" ON public.point_logs FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can view their own xp logs" ON public.xp_logs FOR SELECT TO authenticated USING (user_id = auth.uid());
+
+-- Workout Feedback: Private to user
+CREATE POLICY "Users can view their own workout feedback" ON public.workout_feedback FOR SELECT TO authenticated USING (user_id = auth.uid());
+
+-- INSERT/UPDATE/DELETE policies
+
+-- Profiles
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid());
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK (id = auth.uid());
+
+-- Workout Logs
+CREATE POLICY "Users can insert their own logs" ON public.workout_logs FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can update their own logs" ON public.workout_logs FOR UPDATE TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can delete their own logs" ON public.workout_logs FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+-- Tribe Photos
+CREATE POLICY "Users can insert tribe photos into their own tribe"
+ON public.tribe_photo FOR INSERT TO authenticated
+WITH CHECK (
+  user_id = auth.uid() AND
+  tribe_id = get_my_tribe_id()
+);
+CREATE POLICY "Users can delete their own tribe photos" ON public.tribe_photo FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+-- Comments
+CREATE POLICY "Users can insert their own comments" ON public.comments FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete their own comments" ON public.comments FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+-- Reactions
+CREATE POLICY "Users can insert their own reactions" ON public.reactions FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete their own reactions" ON public.reactions FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+-- Gamification State
+CREATE POLICY "Users can update their own gamification state" ON public.gamification_state FOR UPDATE TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert their own gamification state" ON public.gamification_state FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+-- Gift Transactions
+CREATE POLICY "Users can insert their own gift transactions" ON public.gift_transactions FOR INSERT TO authenticated WITH CHECK (from_user_id = auth.uid());
+
+-- Notifications (System usually inserts, but if app does it:)
+CREATE POLICY "Users can insert notifications" ON public.notifications FOR INSERT TO authenticated WITH CHECK (true); -- Usually restricted to service role in practice
+CREATE POLICY "Users can update their own notifications" ON public.notifications FOR UPDATE TO authenticated USING (user_id = auth.uid());
+
+-- Point and XP Logs
+CREATE POLICY "Users can insert their own point logs" ON public.point_logs FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can insert their own xp logs" ON public.xp_logs FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+-- Workout Feedback
+CREATE POLICY "Users can insert their own workout feedback" ON public.workout_feedback FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());

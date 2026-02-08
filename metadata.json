@@ -1,0 +1,5 @@
+{
+  "name": "FitTribe Tracker",
+  "description": "A specialized workout tracking and analytics app featuring progressive overload tracking, timers, and visual analytics.",
+  "requestFramePermissions": []
+}

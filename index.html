@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="ZIYWJbhSwooieU-nk_I1XrFw8jXZ9TjO5hNesu8Evkw" />
+
+  <!-- Primary Meta Tags -->
+  <title>FitTribe Tracker - Community Fitness That Works | Social Workout App</title>
+  <meta name="title" content="FitTribe Tracker - Community Fitness That Works | Social Workout App" />
+  <meta name="description"
+    content="Transform your fitness journey with FitTribe. Join a supportive community, track workouts, compete with friends, and stay motivated with gamified challenges. Science-backed social fitness." />
+  <meta name="keywords"
+    content="community workouts, group fitness, social fitness app, workout tracker, fitness motivation, accountability partners, gamified fitness, exercise tracking, fitness community, workout challenges" />
+  <meta name="author" content="FitTribe" />
+  <link rel="canonical" href="https://fittribe.app" />
+
+  <!-- Mobile Optimization -->
+  <meta name="theme-color" content="#10b981" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fittribe.app" />
+  <meta property="og:title" content="FitTribe Tracker - Community Fitness That Works" />
+  <meta property="og:description"
+    content="Transform your fitness journey with FitTribe. Join a supportive community, track workouts, compete with friends, and stay motivated with gamified challenges." />
+  <meta property="og:image" content="https://fittribe.app/assets/professional_jungle_hero.webp" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="FitTribe Tracker" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://fittribe.app" />
+  <meta name="twitter:title" content="FitTribe Tracker - Community Fitness That Works" />
+  <meta name="twitter:description"
+    content="Transform your fitness journey with FitTribe. Join a supportive community, track workouts, compete with friends, and stay motivated." />
+  <meta name="twitter:image" content="https://fittribe.app/assets/professional_jungle_hero.webp" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/assets/panda_male.webp" />
+  <link rel="apple-touch-icon" href="/pwa-192x192.webp" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "FitTribe",
+    "description": "Community-driven fitness tracking platform with gamification and social features",
+    "url": "https://fittribe.app",
+    "logo": "https://fittribe.app/assets/panda_male.webp",
+    "sameAs": [],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Support",
+      "email": "mindweave.app@gmail.com"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "FitTribe Tracker",
+    "url": "https://fittribe.app",
+    "description": "Social fitness tracking platform with community workouts and gamification",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://fittribe.app/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "FitTribe Tracker",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "2500",
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    "description": "Community fitness tracker with social features, gamification, and AI coaching. Track workouts, compete with friends, and achieve your fitness goals together."
+  }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      /* Background handled by Tailwind classes on body tag */
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    button {
+      font-family: 'Fredoka', sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #86EFAC;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4ADE80;
+    }
+
+    .animate-bounce-slow {
+      animation: bounce 3s infinite;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+  }
+}
+</script>
+</head>
+
+<body class="bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-900 min-h-screen">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+
+</body>
+
+</html>

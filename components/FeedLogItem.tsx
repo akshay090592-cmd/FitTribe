@@ -3,6 +3,7 @@ import { User, WorkoutLog, UserProfile } from '../types';
 import { Flame, MessageCircle, Trash2, TrendingUp, Heart } from 'lucide-react';
 import { CommentSection } from './CommentSection';
 import { getAvatarPath } from '../utils/avatar';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 interface Props {
     log: WorkoutLog;
@@ -18,19 +19,6 @@ interface Props {
     onDelete: (logId: string) => void;
     avatarId?: string;
 }
-
-const formatTimeAgo = (dateStr: string) => {
-    const diff = new Date().getTime() - new Date(dateStr).getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-
-    if (days === 0) {
-        if (hours === 0) return 'Just now';
-        return `${hours}h ago`;
-    }
-    if (days === 1) return 'Yesterday';
-    return `${days}d ago`;
-};
 
 const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda';

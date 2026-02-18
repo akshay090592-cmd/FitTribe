@@ -1,23 +1,11 @@
 import React from 'react';
 import { GiftTransaction } from '../types';
 import { GIFT_ITEMS } from '../utils/gamification';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 interface Props {
     gift: GiftTransaction;
 }
-
-const formatTimeAgo = (dateStr: string) => {
-    const diff = new Date().getTime() - new Date(dateStr).getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-
-    if (days === 0) {
-        if (hours === 0) return 'Just now';
-        return `${hours}h ago`;
-    }
-    if (days === 1) return 'Yesterday';
-    return `${days}d ago`;
-};
 
 export const FeedGiftItem: React.FC<Props> = React.memo(({ gift }) => {
     const giftImg = GIFT_ITEMS.find(g => g.id === gift.giftId)?.image;

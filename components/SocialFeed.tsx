@@ -264,7 +264,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
     if (loading) return <div className="p-10 text-center text-emerald-500 font-bold animate-pulse">Loading Jungle News...</div>;
 
     return (
-        <div className="p-3 max-w-xl mx-auto md:max-w-none mx-0 pb-24 space-y-4 animate-fade-in">
+        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in">
             <div className="relative mb-4 text-center">
                 <h2 className="text-2xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle News</h2>
                 <p className="text-[#5D4037] font-bold text-[10px] uppercase tracking-widest mt-1">Tribe Activity</p>

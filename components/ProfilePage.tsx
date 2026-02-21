@@ -166,7 +166,7 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
         : { backgroundColor: '#10b981' };
 
     return (
-        <div className="p-6 max-w-lg mx-auto md:max-w-none mx-0 pb-24 animate-fade-in">
+        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in">
 
             {viewMode === 'passport' ? (
                 <>

@@ -153,7 +153,7 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
   if (loading || !teamStats) return <div className="p-10 text-center text-emerald-600 font-bold animate-pulse">Loading Treasures...</div>;
 
   return (
-    <div className="p-3 max-w-xl mx-auto md:max-w-none mx-0 pb-20 space-y-5 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in">
       <div className="relative mb-4 text-center">
         <h2 className="text-2xl font-bold text-emerald-900 font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
           Treasure Trove

@@ -435,7 +435,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
     };
 
     return (
-        <div className="pb-24 pt-4 px-4 max-w-lg mx-auto md:max-w-none mx-0 animate-fade-in relative z-10">
+        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in relative z-10">
 
             {/* Tabs */}
             <div className="flex bg-white/20 backdrop-blur-md p-1 rounded-2xl mb-6 shadow-lg border border-white/20">

@@ -237,7 +237,7 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
   if (loading && !hasLoaded) return <div className="p-10 text-center text-emerald-600 font-bold animate-pulse">Computing Jungle Stats...</div>;
 
   return (
-    <div className="p-3 max-w-lg mx-auto md:max-w-none mx-0 pb-24 animate-fade-in md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
+    <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in md:grid md:grid-cols-2 md:gap-6 space-y-5 md:space-y-0">
       <div className="relative mb-4 text-center md:col-span-2">
         <h2 className="text-2xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle Insights</h2>
         <p className="text-[#5D4037] font-bold text-[10px] uppercase tracking-widest mt-0.5">Track Your Journey</p>

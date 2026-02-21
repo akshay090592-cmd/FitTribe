@@ -1089,9 +1089,7 @@ export const processOfflineQueue = async () => {
       removeFromOfflineQueue(action.id);
     } catch (error) {
       console.error(`Error processing offline action ${action.type}`, error);
-      // Keep in queue to retry? Or remove to avoid block? 
-      // For now, remove to avoid blocking forever.
-      removeFromOfflineQueue(action.id);
+      // Keep in queue to retry on next connection event
     }
   }
 };

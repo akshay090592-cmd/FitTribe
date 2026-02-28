@@ -13,6 +13,14 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
                 title="Terms of Service - FitTribe Tracker"
                 description="Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."
                 url="https://fittribe.app/terms"
+                type="website"
+                schema={{
+                    "@context": "https://schema.org",
+                    "@type": "WebPage",
+                    "url": "https://fittribe.app/terms",
+                    "name": "FitTribe Terms of Service",
+                    "description": "Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."
+                }}
             />
             <section className="space-y-6">
                 <p>Last updated: {new Date().toLocaleDateString()}</p>

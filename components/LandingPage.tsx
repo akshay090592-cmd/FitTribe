@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Mail, Lock, AlertCircle, ArrowRight, Dumbbell, Users, Trophy, Sparkles, TrendingUp, Heart, Shield, Activity, Globe, Star, CheckCircle2, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowRight, Dumbbell, Users, Trophy, Sparkles, TrendingUp, Heart, Shield, Activity, Globe, Star, CheckCircle2, BarChart3, ChevronLeft, ChevronRight, Github } from 'lucide-react';
 import { NotificationPopup } from './NotificationPopup';
 import { BlogSection } from './BlogSection';
 import { SEO } from './SEO';
@@ -77,24 +77,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-200 selection:text-emerald-900">
       <SEO
-        title="FitTribe Tracker - Community Fitness That Works | Social Workout App"
-        description="Transform your fitness journey with FitTribe. Join a supportive community, track workouts, compete with friends, and stay motivated with gamified challenges."
+        title="FitTribe Tracker - Free Community Workout & Fitness Tracking App"
+        description="Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated with gamified challenges."
         schema={{
           "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "FitTribe Tracker",
-          "applicationCategory": "HealthApplication",
-          "operatingSystem": "Web, iOS, Android",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "ratingCount": "2500"
-          }
+          "@graph": [
+            {
+              "@type": "SoftwareApplication",
+              "name": "FitTribe Tracker",
+              "applicationCategory": "HealthApplication",
+              "operatingSystem": "Web, iOS, Android",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "ratingCount": "2500"
+              }
+            },
+            {
+              "@type": "WebPage",
+              "name": "FitTribe - Free Community Fitness & Workout Tracker",
+              "description": "Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated."
+            },
+            {
+              "@type": "Organization",
+              "name": "FitTribe",
+              "url": "https://fittribe.app",
+              "logo": "https://fittribe.app/assets/panda_male.webp"
+            }
+          ]
         }}
       />
 
@@ -140,7 +155,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="text-white space-y-8 animate-fade-in pt-20 lg:pt-0">
             <div className="inline-flex items-center space-x-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-full px-4 py-1.5 text-emerald-100 text-sm font-bold uppercase tracking-wider mb-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>The Social Fitness Revolution</span>
+              <span>The Free Social Fitness Tracker</span>
             </div>
 
             <h1 className="text-5xl lg:text-7xl font-bold font-['Fredoka'] leading-[1.1] drop-shadow-xl tracking-tight">
@@ -151,7 +166,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </h1>
 
             <p className="text-xl text-emerald-50/90 max-w-lg leading-relaxed font-light">
-              Transform your fitness journey into a shared adventure. Connect with your tribe, compete for glory, and unleash your inner beast (or panda).
+              Transform your fitness tracking into a shared adventure. Connect with your free workout community, hold each other accountable, and unleash your inner beast (or panda).
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
@@ -281,6 +296,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 citation="Yorks et al., 2017; JAOA"
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Open Source Section */}
+      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/assets/jungle_night_bg.webp')] opacity-20 mix-blend-overlay object-cover"></div>
+        <div className="container mx-auto px-6 relative z-10 text-center">
+          <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-wide mb-6">
+            <Github size={14} className="mr-1" />
+            <span>100% Open Source</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold font-['Fredoka'] mb-6">
+            Built by the Community, <span className="text-emerald-400">For the Community</span>
+          </h2>
+          <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed">
+            FitTribe is proudly open-source. We believe fitness tracking should be free, transparent, and collaborative. Join our mission, suggest features, or contribute code on GitHub!
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <a
+              href="https://github.com/akshay090592-cmd/FitTribe/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-slate-900 hover:bg-slate-100 font-bold py-4 px-8 rounded-full flex items-center shadow-lg transition-transform hover:-translate-y-1 text-lg"
+            >
+              <Github className="mr-2" size={20} />
+              Star on GitHub
+            </a>
+            <a
+              href="https://github.com/akshay090592-cmd/FitTribe/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-transparent border-2 border-slate-600 hover:border-slate-500 text-white font-bold py-4 px-8 rounded-full flex items-center transition-colors text-lg"
+            >
+              Suggest a Feature
+            </a>
           </div>
         </div>
       </section>

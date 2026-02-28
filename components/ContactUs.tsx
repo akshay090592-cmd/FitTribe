@@ -14,6 +14,19 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
                 title="Contact FitTribe - We're Here to Help"
                 description="Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive."
                 url="https://fittribe.app/contact"
+                type="website"
+                schema={{
+                    "@context": "https://schema.org",
+                    "@type": "ContactPage",
+                    "url": "https://fittribe.app/contact",
+                    "name": "Contact FitTribe",
+                    "description": "Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive.",
+                    "contactPoint": {
+                        "@type": "ContactPoint",
+                        "email": "mindweave.app@gmail.com",
+                        "contactType": "customer support"
+                    }
+                }}
             />
             <section className="space-y-8">
                 <p className="text-xl text-slate-700 text-center">

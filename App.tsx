@@ -47,6 +47,12 @@ import { Blog7 } from './components/blogs/Blog7';
 import { Blog8 } from './components/blogs/Blog8';
 import { Blog9 } from './components/blogs/Blog9';
 import { Blog10 } from './components/blogs/Blog10';
+import { Blog11 } from './components/blogs/Blog11';
+import { Blog12 } from './components/blogs/Blog12';
+import { Blog13 } from './components/blogs/Blog13';
+import { Blog14 } from './components/blogs/Blog14';
+import { Blog15 } from './components/blogs/Blog15';
+import { Blog16 } from './components/blogs/Blog16';
 
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
@@ -76,6 +82,12 @@ const VIEW_PATHS: Record<string, string> = {
   blog8: '/blog/social-fitness-success-secret',
   blog9: '/blog/gamified-fitness-motivation-hack',
   blog10: '/blog/personal-ai-fitness-coach-guide',
+  blog11: '/blog/free-workout-community-vs-gym',
+  blog12: '/blog/virtual-workout-buddy-social-fitness',
+  blog13: '/blog/fitness-tracking-accountability',
+  blog14: '/blog/weight-lifting-tracker-friends',
+  blog15: '/blog/community-fitness-tracker-vs-solo',
+  blog16: '/blog/open-source-fitness-tracker',
 };
 
 const PATH_TO_VIEW: Record<string, string> = {
@@ -94,9 +106,15 @@ const PATH_TO_VIEW: Record<string, string> = {
   '/blog/social-fitness-success-secret': 'blog8',
   '/blog/gamified-fitness-motivation-hack': 'blog9',
   '/blog/personal-ai-fitness-coach-guide': 'blog10',
+  '/blog/free-workout-community-vs-gym': 'blog11',
+  '/blog/virtual-workout-buddy-social-fitness': 'blog12',
+  '/blog/fitness-tracking-accountability': 'blog13',
+  '/blog/weight-lifting-tracker-friends': 'blog14',
+  '/blog/community-fitness-tracker-vs-solo': 'blog15',
+  '/blog/open-source-fitness-tracker': 'blog16',
 };
 
-type AppView = 'dashboard' | 'workout' | 'analytics' | 'social' | 'rewards' | 'profile' | 'coach' | 'about' | 'privacy' | 'terms' | 'contact' | 'landing' | 'blog1' | 'blog2' | 'blog3' | 'blog4' | 'blog5' | 'blog6' | 'blog7' | 'blog8' | 'blog9' | 'blog10';
+type AppView = 'dashboard' | 'workout' | 'analytics' | 'social' | 'rewards' | 'profile' | 'coach' | 'about' | 'privacy' | 'terms' | 'contact' | 'landing' | 'blog1' | 'blog2' | 'blog3' | 'blog4' | 'blog5' | 'blog6' | 'blog7' | 'blog8' | 'blog9' | 'blog10' | 'blog11' | 'blog12' | 'blog13' | 'blog14' | 'blog15' | 'blog16';
 
 const QUOTES = [
   "The only bad workout is the one that didn't happen.",
@@ -908,6 +926,12 @@ const App: React.FC = () => {
   if (view === 'blog8') return <Blog8 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
   if (view === 'blog9') return <Blog9 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
   if (view === 'blog10') return <Blog10 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog11') return <Blog11 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog12') return <Blog12 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog13') return <Blog13 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog14') return <Blog14 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog15') return <Blog15 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'blog16') return <Blog16 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
 
   // Landing Page (when user explicitly navigates to it or not logged in)
   if (view === 'landing' || (!session && !userProfile)) {

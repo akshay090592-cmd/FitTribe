@@ -30,6 +30,12 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ onNavigate }) => {
         blog8: '/blog/social-fitness-success-secret',
         blog9: '/blog/gamified-fitness-motivation-hack',
         blog10: '/blog/personal-ai-fitness-coach-guide',
+        blog11: '/blog/free-workout-community-vs-gym',
+        blog12: '/blog/virtual-workout-buddy-social-fitness',
+        blog13: '/blog/fitness-tracking-accountability',
+        blog14: '/blog/weight-lifting-tracker-friends',
+        blog15: '/blog/community-fitness-tracker-vs-solo',
+        blog16: '/blog/open-source-fitness-tracker',
     };
 
     const blogPosts: BlogPost[] = [
@@ -122,6 +128,60 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ onNavigate }) => {
             category: 'AI Coaching',
             gradient: 'from-slate-800 to-emerald-900',
             icon: '⚡'
+        },
+        {
+            id: 'blog11',
+            title: 'Why a Free Workout Community App Beats Expensive Gym Memberships',
+            excerpt: 'Discover why you ditch the contract and get better results from peer motivation than financial guilt.',
+            readTime: '5 min',
+            category: 'Fitness Economics',
+            gradient: 'from-green-600 to-emerald-700',
+            icon: '🤝'
+        },
+        {
+            id: 'blog12',
+            title: 'Finding Your Virtual Workout Buddy: Social Fitness Accountability',
+            excerpt: 'Learn the ultimate benefits of having a virtual workout buddy acting as your permanent accountability partner.',
+            readTime: '6 min',
+            category: 'Accountability Partners',
+            gradient: 'from-blue-600 to-indigo-700',
+            icon: '👯'
+        },
+        {
+            id: 'blog13',
+            title: 'Fitness Tracking for Accountability: Beyond Just Counting Steps',
+            excerpt: 'Why treating your workout tracker as a social contract guarantees better consistency and results.',
+            readTime: '5 min',
+            category: 'Accountability Tech',
+            gradient: 'from-purple-600 to-indigo-800',
+            icon: '🎯'
+        },
+        {
+            id: 'blog14',
+            title: 'How a Free Weight Lifting Tracker with Friends Boosts Your Gains',
+            excerpt: 'Harness the competitive nature of a fitness tracker with friends to push harder, lift heavier, and stay consistent.',
+            readTime: '5 min',
+            category: 'Strength & Community',
+            gradient: 'from-orange-600 to-red-700',
+            icon: '🏋️'
+        },
+        {
+            id: 'blog15',
+            title: 'Community Fitness Tracker vs Solo Gym Sessions: What Works?',
+            excerpt: 'Compare the long-term adherence rates of solo gym sessions versus using a community fitness tracker.',
+            readTime: '7 min',
+            category: 'Compare & Contrast',
+            gradient: 'from-teal-600 to-emerald-700',
+            icon: '📊'
+        },
+        {
+            id: 'blog16',
+            title: 'Building a Free Workout Community App Together',
+            excerpt: 'FitTribe is 100% open-source. Join our mission to build the best free community fitness tracker.',
+            readTime: '4 min',
+            category: 'Open Source',
+            gradient: 'from-slate-800 to-slate-900',
+            icon: '💻'
         }
     ];
 
@@ -253,8 +313,8 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ onNavigate }) => {
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index
-                                        ? 'w-8 bg-emerald-600'
-                                        : 'w-2 bg-slate-200 hover:bg-slate-300'
+                                    ? 'w-8 bg-emerald-600'
+                                    : 'w-2 bg-slate-200 hover:bg-slate-300'
                                     }`}
                                 aria-label={`Go to slide ${index + 1}`}
                             />

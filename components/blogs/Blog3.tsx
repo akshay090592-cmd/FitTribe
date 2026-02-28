@@ -41,26 +41,26 @@ export const Blog3: React.FC<Blog3Props> = ({ onNavigate, onScrollToAuth }) => {
                             "mainEntity": [
                                 {
                                     "@type": "Question",
-                                    "name": "What is social accountability in fitness?",
+                                    "name": "What is social accountability in a fitness tracking app?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Social accountability refers to modifying behavior because you know others are observing. In fitness, sharing progress with a tribe or partner creates a psychological contract that boosts consistency."
+                                        "text": "Social accountability refers to modifying behavior because you know others are observing. In a social fitness app, sharing progress with a tribe or partner creates a psychological contract that boosts consistency."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "Does public commitment actually work for fitness goals?",
+                                    "name": "Does public commitment actually work for fitness tracking goals?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Yes. Research shows that individuals who make public commitments have adherence rates as high as 86%, compared to only 31% for those who keep their goals private."
+                                        "text": "Yes. Research shows that individuals who make public commitments in a free workout tracker have adherence rates as high as 86%, compared to only 31% for those who keep their goals private."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "How do fitness streaks improve accountability?",
+                                    "name": "How do fitness streaks in an accountability app improve results?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Streaks leverage 'loss aversion.' Once you build a visible streak, the psychological cost of breaking it becomes high, motivating you to show up even on low-motivation days."
+                                        "text": "Fitness streaks leverage 'loss aversion.' Once you build a visible streak in a workout tracking app, the psychological cost of breaking it becomes high, motivating you to show up even on low-motivation days."
                                     }
                                 }
                             ]
@@ -314,16 +314,16 @@ export const Blog3: React.FC<Blog3Props> = ({ onNavigate, onScrollToAuth }) => {
                         </div>
                         <div className="space-y-6">
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">What is social accountability in fitness?</h3>
-                                <p className="text-slate-700">Social accountability refers to modifying behavior because you know others are observing. In fitness, sharing progress with a tribe or partner creates a psychological contract that boosts consistency.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">What is social accountability in a fitness tracking app?</h3>
+                                <p className="text-slate-700">Social accountability refers to modifying behavior because you know others are observing. In a social fitness app, sharing progress with a tribe or partner creates a psychological contract that boosts consistency.</p>
                             </div>
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">Does public commitment actually work for fitness goals?</h3>
-                                <p className="text-slate-700">Yes. Research shows that individuals who make public commitments have adherence rates as high as 86%, compared to only 31% for those who keep their goals private.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">Does public commitment actually work for fitness tracking goals?</h3>
+                                <p className="text-slate-700">Yes. Research shows that individuals who make public commitments in a free workout tracker have adherence rates as high as 86%, compared to only 31% for those who keep their goals private.</p>
                             </div>
                             <div className="pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">How do fitness streaks improve accountability?</h3>
-                                <p className="text-slate-700">Streaks leverage 'loss aversion.' Once you build a visible streak, the psychological cost of breaking it becomes high, motivating you to show up even on low-motivation days.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">How do fitness streaks in an accountability app improve results?</h3>
+                                <p className="text-slate-700">Fitness streaks leverage 'loss aversion.' Once you build a visible streak in a workout tracking app, the psychological cost of breaking it becomes high, motivating you to show up even on low-motivation days.</p>
                             </div>
                         </div>
                     </div>

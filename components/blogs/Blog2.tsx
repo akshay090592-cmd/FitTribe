@@ -41,26 +41,26 @@ export const Blog2: React.FC<Blog2Props> = ({ onNavigate, onScrollToAuth }) => {
                             "mainEntity": [
                                 {
                                     "@type": "Question",
-                                    "name": "How does group exercise affect the brain differently?",
+                                    "name": "How does group exercise in a social fitness app affect the brain differently?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Group exercise activates neural pathways for social bonding and reward. It triggers endorphin release at levels up to 2x higher than solo exercise, creating 'collective effervescence'."
+                                        "text": "Group exercise tracked in a community fitness app activates neural pathways for social bonding and reward. It triggers endorphin release at levels up to 2x higher than solo exercise, creating 'collective effervescence'."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "What role do mirror neurons play in fitness?",
+                                    "name": "What role do mirror neurons play in fitness tracking applications?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Mirror neurons fire when you observe others moving. In a group setting, this creates a feedback loop that enhances performance as you subconsciously mimic the effort of those around you."
+                                        "text": "Mirror neurons fire when you observe others moving or see their activity in a workout tracker. In a group setting, this creates a feedback loop that enhances performance as you subconsciously mimic the effort of those around you."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "Is group fitness better for mental health?",
+                                    "name": "Is a group fitness social network better for mental health?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Yes. The combination of physical activity and social connection releases oxytocin and reduces cortisol, leading to significantly lower stress levels compared to solo training."
+                                        "text": "Yes. The combination of physical activity and social connection in a free workout community releases oxytocin and reduces cortisol, leading to significantly lower stress levels compared to solo training."
                                     }
                                 }
                             ]
@@ -284,16 +284,16 @@ export const Blog2: React.FC<Blog2Props> = ({ onNavigate, onScrollToAuth }) => {
                         </div>
                         <div className="space-y-6">
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">How does group exercise affect the brain differently?</h3>
-                                <p className="text-slate-700">Group exercise activates neural pathways for social bonding and reward. It triggers endorphin release at levels up to 2x higher than solo exercise, creating 'collective effervescence'.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">How does group exercise in a social fitness app affect the brain differently?</h3>
+                                <p className="text-slate-700">Group exercise tracked in a community fitness app activates neural pathways for social bonding and reward. It triggers endorphin release at levels up to 2x higher than solo exercise, creating 'collective effervescence'.</p>
                             </div>
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">What role do mirror neurons play in fitness?</h3>
-                                <p className="text-slate-700">Mirror neurons fire when you observe others moving. In a group setting, this creates a feedback loop that enhances performance as you subconsciously mimic the effort of those around you.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">What role do mirror neurons play in fitness tracking applications?</h3>
+                                <p className="text-slate-700">Mirror neurons fire when you observe others moving or see their activity in a workout tracker. In a group setting, this creates a feedback loop that enhances performance as you subconsciously mimic the effort of those around you.</p>
                             </div>
                             <div className="pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">Is group fitness better for mental health?</h3>
-                                <p className="text-slate-700">Yes. The combination of physical activity and social connection releases oxytocin and reduces cortisol, leading to significantly lower stress levels compared to solo training.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">Is a group fitness social network better for mental health?</h3>
+                                <p className="text-slate-700">Yes. The combination of physical activity and social connection in a free workout community releases oxytocin and reduces cortisol, leading to significantly lower stress levels compared to solo training.</p>
                             </div>
                         </div>
                     </div>

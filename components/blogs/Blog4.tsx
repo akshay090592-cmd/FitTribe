@@ -41,26 +41,26 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                             "mainEntity": [
                                 {
                                     "@type": "Question",
-                                    "name": "How do community workouts improve consistency?",
+                                    "name": "How do social fitness tracking communities improve consistency?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Community workouts improve consistency through scheduled accountability, social connection, and a built-in support system. People with fitness communities are 4x more likely to restart after a break."
+                                        "text": "Free workout community apps improve consistency through scheduled accountability, social connection, and a built-in support system. People using social fitness apps are 4x more likely to restart after a break."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "Why are workout streaks effective?",
+                                    "name": "Why are workout tracker streaks effective?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Workout streaks use the 'consistency principle' and loss aversion. Publicly tracking streaks makes you 74% more likely to maintain a habit over the long term."
+                                        "text": "Workout tracker streaks use the 'consistency principle' and loss aversion. Publicly tracking your fitness streaks inside a community app makes you 74% more likely to maintain a habit."
                                     }
                                 },
                                 {
                                     "@type": "Question",
-                                    "name": "Can friendly competition help with motivation?",
+                                    "name": "Can a gamified fitness tracker with competition help motivation?",
                                     "acceptedAnswer": {
                                         "@type": "Answer",
-                                        "text": "Yes. Leaderboards and tribe challenges increase weekly workout frequency by up to 3.2x by tapping into the natural human urge for achievement and social proof."
+                                        "text": "Yes. Free fitness trackers with leaderboards and tribe challenges increase weekly workout frequency by up to 3.2x by tapping into the natural human urge for achievement and social proof."
                                     }
                                 }
                             ]
@@ -334,16 +334,16 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                         </div>
                         <div className="space-y-6">
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">How do community workouts improve consistency?</h3>
-                                <p className="text-slate-700">Community workouts improve consistency through scheduled accountability, social connection, and a built-in support system. People with fitness communities are 4x more likely to restart after a break.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">How do social fitness tracking communities improve consistency?</h3>
+                                <p className="text-slate-700">Free workout community apps improve consistency through scheduled accountability, social connection, and a built-in support system. People using social fitness apps are 4x more likely to restart after a break.</p>
                             </div>
                             <div className="border-b border-slate-200 pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">Why are workout streaks effective?</h3>
-                                <p className="text-slate-700">Workout streaks use the 'consistency principle' and loss aversion. Publicly tracking streaks makes you 74% more likely to maintain a habit over the long term.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">Why are workout tracker streaks effective?</h3>
+                                <p className="text-slate-700">Workout tracker streaks use the 'consistency principle' and loss aversion. Publicly tracking your fitness streaks inside a community app makes you 74% more likely to maintain a habit.</p>
                             </div>
                             <div className="pb-6">
-                                <h3 className="font-bold text-lg text-slate-900 mb-2">Can friendly competition help with motivation?</h3>
-                                <p className="text-slate-700">Yes. Leaderboards and tribe challenges increase weekly workout frequency by up to 3.2x by tapping into the natural human urge for achievement and social proof.</p>
+                                <h3 className="font-bold text-lg text-slate-900 mb-2">Can a gamified fitness tracker with competition help motivation?</h3>
+                                <p className="text-slate-700">Yes. Free fitness trackers with leaderboards and tribe challenges increase weekly workout frequency by up to 3.2x by tapping into the natural human urge for achievement and social proof.</p>
                             </div>
                         </div>
                     </div>

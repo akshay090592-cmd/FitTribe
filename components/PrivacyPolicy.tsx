@@ -13,6 +13,14 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 title="Privacy Policy - FitTribe Tracker"
                 description="Read our Privacy Policy to understand how FitTribe collects, uses, and protects your personal and fitness data."
                 url="https://fittribe.app/privacy"
+                type="website"
+                schema={{
+                    "@context": "https://schema.org",
+                    "@type": "WebPage",
+                    "url": "https://fittribe.app/privacy",
+                    "name": "FitTribe Privacy Policy",
+                    "description": "Read our Privacy Policy to understand how FitTribe collects, uses, and protects your personal and fitness data."
+                }}
             />
             <section className="space-y-6">
                 <p>Last updated: {new Date().toLocaleDateString()}</p>

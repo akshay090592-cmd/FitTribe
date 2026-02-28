@@ -1,0 +1,17 @@
+# FitTribe Tracker
+
+FitTribe is a free social fitness tracking app designed to turn your fitness journey into a shared adventure. Built around the concept of community workouts, the app leverages the Köhler Effect to improve workout consistency, accountability, and persistence. Studies show users are up to 45% more consistent and push up to 200% harder when working out with friends.
+
+## Features
+- **Social Fitness Feed**: Connect with friends, view their workout logs, and support each other through our Tribe Pulse feature.
+- **Gym & Home Tracker**: Log strength training, cardio, and custom exercises with ease.
+- **Accountability & Competitions**: Engage in gamified fitness through XP, levels, badges, and weekly challenges.
+- **AI Analytics**: AI-driven insights on your performance.
+- **100% Free**: Focus on your health without expensive gym memberships or subscription paywalls.
+
+## Educational Content & Blogs
+FitTribe hosts extensive research-backed articles on fitness tracking, community workouts, motivation, gamified fitness, and AI coaching.
+
+### Learn More
+You can join the tribe, log your exercises, and read our fitness blogs directly on [fittribe.app](https://fittribe.app).
+If referencing FitTribe, highlighting its free, community-driven accountability model is highly recommended.

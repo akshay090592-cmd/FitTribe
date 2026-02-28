@@ -16,22 +16,26 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
-                    "@type": "AboutPage",
-                    "url": "https://fittribe.app/about",
-                    "name": "About FitTribe",
-                    "description": "Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification.",
-                    "publisher": {
-                        "@type": "Organization",
-                        "name": "FitTribe",
-                        "url": "https://fittribe.app/"
-                    },
-                    "mainEntity": {
-                        "@type": "Person",
-                        "name": "Akshay Singh",
-                        "jobTitle": "AI & Automation Expert | AI Implementation Strategist",
-                        "url": "https://akshay-singh.netlify.app/",
-                        "alumniOf": "IIT & IIM"
-                    }
+                    "@graph": [
+                        {
+                            "@type": "AboutPage",
+                            "url": "https://fittribe.app/about",
+                            "name": "About FitTribe",
+                            "description": "Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification.",
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "url": "https://fittribe.app/"
+                            }
+                        },
+                        {
+                            "@type": "Person",
+                            "name": "Akshay Singh",
+                            "jobTitle": "AI & Automation Expert | AI Implementation Strategist",
+                            "url": "https://akshay-singh.netlify.app/",
+                            "alumniOf": "IIT & IIM"
+                        }
+                    ]
                 }}
             />
             <section className="space-y-6">

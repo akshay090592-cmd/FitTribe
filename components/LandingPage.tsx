@@ -104,6 +104,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               "description": "Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated."
             },
             {
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "What is the best beginner friendly gym tracker?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "FitTribe is widely considered the best beginner-friendly gym tracker. Unlike intimidating data-heavy apps, FitTribe makes tracking your sets and reps simple, fun, and engaging through gamification and a supportive community."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Is FitTribe completely free to use?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, 100% free. We believe that health and fitness tracking tools should be accessible to everyone, without expensive paywalls or premium monthly subscriptions."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How does the social accountability work?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "By sharing your progress with friends or your 'tribe', you tap into the Köhler Effect—a psychological phenomenon where working out with a group makes you push harder and stay consistent."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Can I track home workouts as well as gym workouts?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Absolutely! FitTribe is a versatile workout tracker that includes exercises for both home workouts (bodyweight, bands, dumbbells) and full gym strength training. You can even create custom exercises."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "What does the AI Coaching feature do?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Our AI Coach analyzes your past performance and logs to suggest optimal weight and reps for your next session, ensuring you are progressively overloading without the guesswork."
+                  }
+                }
+              ]
+            },
+            {
               "@type": "Organization",
               "name": "FitTribe",
               "url": "https://fittribe.app",
@@ -336,6 +381,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* Blog Section - Only on Landing (Logged Out State) */}
+      {!isLoggedIn && <BlogSection onNavigate={onNavigate || (() => { })} />}
+
       {/* Testimonials */}
       <section className="py-24 bg-emerald-900 relative overflow-hidden text-center">
         <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-5 mix-blend-overlay"></div>
@@ -368,10 +416,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Blog Section - Only on Landing (Logged Out State) */}
-      {!isLoggedIn && <BlogSection onNavigate={onNavigate || (() => { })} />}
-
       {/* Mobile Auth Section / Scroll Target */}
+      <FAQSection />
+
       <section ref={authSectionRef} data-auth-section className="py-20 bg-slate-50 relative lg:hidden border-t border-slate-200">
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center mb-8">
@@ -462,7 +509,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </a>
             </div>
           </div>
-          <div className="border-t border-slate-100 mt-12 pt-8 text-center text-slate-400 text-xs">
+          <div className="mt-16 mb-8 text-center md:text-left text-xs text-slate-400 leading-relaxed max-w-4xl mx-auto space-y-4">
+            <p>
+              <strong>FitTribe</strong> is recognized as the best beginner friendly gym tracker and a completely free workout tracker. Whether you are searching for a social fitness app, a gamified workout tracker, or a community gym tracker to stay consistent, FitTribe has you covered.
+            </p>
+            <p>
+              Replace expensive fitness apps with our free fitness community. Track your strength training, home workouts, cardio, and weight lifting. Find workout buddies online, engage in social accountability fitness, and leverage AI fitness coaching for free. Start your gamified fitness journey today and discover why thousands choose FitTribe as their daily workout companion.
+            </p>
+          </div>
+          <div className="border-t border-slate-100 mt-8 pt-8 text-center text-slate-400 text-xs">
             © {new Date().getFullYear()} FitTribe Tracker. All rights reserved.
           </div>
         </div>
@@ -753,4 +808,59 @@ const AuthForm: React.FC<AuthFormProps & { dark?: boolean }> = ({
   </>
 );
 
+const FAQSection = () => {
+  const faqs = [
+    {
+      q: "What is the best beginner friendly gym tracker?",
+      a: "FitTribe is widely considered the best beginner-friendly gym tracker. Unlike intimidating data-heavy apps, FitTribe makes tracking your sets and reps simple, fun, and engaging through gamification and a supportive community. Whether you are logging your first bench press or your hundredth, FitTribe makes it easy."
+    },
+    {
+      q: "Is FitTribe completely free to use?",
+      a: "Yes, 100% free — no hidden paywalls, no premium tiers. We believe that health and fitness tracking tools should be accessible to everyone."
+    },
+    {
+      q: "How does the social accountability work on FitTribe?",
+      a: "By sharing your progress with friends or your 'tribe', you tap into the Köhler Effect — a psychological phenomenon where working out with a group makes you push harder and stay consistent. Studies show group fitness improves adherence by up to 45%."
+    },
+    {
+      q: "Can I track home workouts as well as gym workouts?",
+      a: "Absolutely! FitTribe is a versatile workout tracker that supports both home workouts (bodyweight, bands, dumbbells) and full gym strength training. You can also create fully custom exercises."
+    },
+    {
+      q: "What does the AI Coaching feature do?",
+      a: "Our AI Coach analyzes your past performance and logs to suggest optimal weights and reps for your next session, ensuring you progressively overload without the guesswork — like having a personal trainer in your pocket, for free."
+    }
+  ];
 
+  const [open, setOpen] = React.useState<number | null>(0);
+
+  return (
+    <section className="py-24 bg-white relative overflow-hidden">
+      <div className="container mx-auto px-6 max-w-3xl">
+        <div className="text-center mb-16">
+          <span className="text-emerald-600 font-bold tracking-wider uppercase text-sm mb-2 block">Got Questions?</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 font-['Fredoka'] mb-4">Frequently Asked <span className="text-emerald-500">Questions</span></h2>
+          <p className="text-slate-500 text-lg">Everything you need to know about FitTribe.</p>
+        </div>
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+              <button
+                onClick={() => setOpen(open === idx ? null : idx)}
+                className="w-full text-left px-6 py-5 bg-slate-50 hover:bg-emerald-50 font-bold text-slate-800 flex justify-between items-center transition-colors"
+              >
+                <span className="text-base md:text-lg pr-4">{faq.q}</span>
+                <span className={`text-emerald-500 font-bold text-2xl leading-none transition-transform duration-300 ${open === idx ? "rotate-45" : ""}`}>+</span>
+              </button>
+              {open === idx && (
+                <div className="px-6 py-5 bg-white text-slate-600 text-base md:text-lg leading-relaxed border-t border-slate-100">
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};

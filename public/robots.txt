@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tribeworkout.netlify.app/sitemap.xml

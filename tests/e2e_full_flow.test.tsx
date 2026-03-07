@@ -82,6 +82,7 @@ vi.mock('../utils/storage', () => ({
     saveLog: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
     saveWorkoutFeedback: vi.fn(),
     getUserLogs: vi.fn().mockResolvedValue([]),
+    getUserLogsById: vi.fn().mockResolvedValue([]),
     getLogs: vi.fn().mockResolvedValue([]),
     checkAchievements: vi.fn().mockResolvedValue([]),
     getStreakRisk: vi.fn().mockResolvedValue(false),

@@ -157,7 +157,13 @@ export const AICoachService = {
         if (lastLogs && lastLogs.length > 0) {
             logsContext = `
 Last 5 Workouts:
-${lastLogs.map(l => `- ${l.date}: ${l.type} (${l.durationMinutes}m) - ${l.exercises.length} exercises`).join('\n')}
+${lastLogs.map(l => {
+                const exercisesStr = l.exercises.map(ex => {
+                    const completedSets = ex.sets.filter(s => s.completed);
+                    return `  * ${ex.name}: ${completedSets.length} sets (${completedSets.map(s => `${s.weight}kgx${s.reps}`).join(', ')})`;
+                }).join('\n');
+                return `- ${l.date}: ${l.type} (${l.durationMinutes}m)\n${exercisesStr}`;
+            }).join('\n')}
 `;
         }
 
@@ -168,6 +174,7 @@ ${lastLogs.map(l => `- ${l.date}: ${l.type} (${l.durationMinutes}m) - ${l.exerci
     1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "Full body"), generate it using references from Plan A/B effectively.
     2. **Create Diet Plan**: If user asks for a diet plan.
     3. **Create Schedule**: If user asks to plan their week.
+    4. **Analyze Workout Progress**: When a user queries their history or progress, use the detailed logs (which include exercises, sets, weights, and reps) to praise their progress, identify strengths, and suggest progression (e.g. progressive overload).
 
     INSTRUCTIONS:
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.

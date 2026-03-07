@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, WeeklyPlan, PlanStatus } from '../types';
 import { AICoachService } from '../services/aiCoach';
-import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, saveCustomWorkoutPlan } from '../utils/storage';
+import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
 import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info } from 'lucide-react';
 
 import { WorkoutLog } from '../types';
@@ -134,7 +134,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
             }
 
 
-            const logs = await getUserLogs(userProfile.displayName);
+            const logs = await getUserLogsById(userProfile.id, userProfile.displayName);
             setUserLogs(logs.slice(0, 5));
 
             setLoadingDiet(false);

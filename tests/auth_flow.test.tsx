@@ -44,6 +44,7 @@ vi.mock('../utils/supabaseClient', () => ({
 // Mock Storage
 vi.mock('../utils/storage', () => ({
     getUserLogs: vi.fn().mockResolvedValue([]),
+    getUserLogsById: vi.fn().mockResolvedValue([]),
     getCurrentProfile: vi.fn(),
     createProfile: vi.fn(),
     createTribe: vi.fn(),

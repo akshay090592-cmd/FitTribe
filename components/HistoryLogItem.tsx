@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { WorkoutLog, WorkoutType } from '../types';
 import { Trash2, Calendar, Clock, Flame, Dumbbell, AlertTriangle, ChevronDown, ChevronUp, Heart } from 'lucide-react';
+import { ImageModal } from './ImageModal';
 
 export interface ProcessedLog extends WorkoutLog {
   isFailedCommitment: boolean;
@@ -20,6 +21,8 @@ export const HistoryLogItem = React.memo(({
   onToggleExpand,
   onDelete
 }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   return (
     <div
       data-testid={`log-item-${log.id}`}
@@ -105,9 +108,15 @@ export const HistoryLogItem = React.memo(({
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-slate-100 animate-fade-in" data-testid={`log-details-${log.id}`}>
           {log.image_data && (
-            <div className="mb-4 rounded-xl overflow-hidden border border-emerald-100 shadow-sm max-w-sm mx-auto">
-              <img src={log.image_data} alt="Victory" className="w-full h-auto object-cover" />
-            </div>
+            <>
+              <div
+                className="mb-4 rounded-xl overflow-hidden border border-emerald-100 shadow-sm max-w-sm mx-auto cursor-pointer hover:opacity-95 transition-opacity"
+                onClick={() => setIsFullscreen(true)}
+              >
+                <img src={log.image_data} alt="Victory" className="w-full h-auto object-cover" />
+              </div>
+              <ImageModal isOpen={isFullscreen} onClose={() => setIsFullscreen(false)} imageUrl={log.image_data} altText="Victory" />
+            </>
           )}
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Workout Details</h4>
           {log.exercises && log.exercises.length > 0 ? (

@@ -28,7 +28,7 @@ window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
 // Mocks
 vi.mock('../utils/storage', () => ({
-    getUserLogs: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
+    getUserLogs: vi.fn(), getUserLogsById: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
     saveLog: vi.fn(),
     updateLog: vi.fn(),
     checkAchievements: vi.fn().mockResolvedValue([]),

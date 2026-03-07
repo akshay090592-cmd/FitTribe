@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, WorkoutLog, UserProfile } from '../types';
 import { Flame, MessageCircle, Trash2, TrendingUp, Heart } from 'lucide-react';
 import { CommentSection } from './CommentSection';
+import { ImageModal } from './ImageModal';
 import { getAvatarPath } from '../utils/avatar';
 import { formatTimeAgo } from '../utils/dateUtils';
 
@@ -29,6 +30,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
         log, currentUser, profile, reactions, commentsCount,
         isExpanded, isCommentsOpen, onReaction, onToggleExpansion, onToggleComments, onDelete
     } = props;
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
 
@@ -105,9 +107,15 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
 
                 <div className="space-y-2 relative z-10">
                     {log.image_data && (
-                        <div className="mb-3 rounded-xl overflow-hidden border border-emerald-100 shadow-sm">
-                            <img src={log.image_data} alt="Victory" className="w-full h-auto object-cover max-h-60" />
-                        </div>
+                        <>
+                            <div
+                                className="mb-3 rounded-xl overflow-hidden border border-emerald-100 shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
+                                onClick={() => setIsFullscreen(true)}
+                            >
+                                <img src={log.image_data} alt="Victory" className="w-full h-auto object-cover max-h-60" />
+                            </div>
+                            <ImageModal isOpen={isFullscreen} onClose={() => setIsFullscreen(false)} imageUrl={log.image_data} altText="Victory" />
+                        </>
                     )}
                     {log.type === 'Custom' ? (
                         <div className="flex items-center justify-center p-2 text-emerald-800 font-bold bg-emerald-50/50 rounded-xl">

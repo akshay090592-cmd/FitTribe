@@ -656,6 +656,41 @@ export const getUserLogs = async (user: User, tribeId?: string): Promise<Workout
   return logs;
 };
 
+export const getUserLogsById = async (userId: string, displayName?: string): Promise<WorkoutLog[]> => {
+  const cacheKey = `logs_userid_${userId}`;
+  const cached = getFromCache<WorkoutLog[]>(cacheKey);
+  if (cached) return [...cached];
+
+  // OPTIMIZATION: Check global cache first
+  const globalCached = getFromCache<WorkoutLog[]>('logs_global');
+  if (globalCached && displayName) {
+    // If the cache only has displayName, we can try to filter by user (display_name).
+    // Note: If display names aren't unique, this optimization could theoretically leak in cache, 
+    // but typically the current user's display name will match their logs here. However, to be strict,
+    // we bypass global cache for exact ID matching unless we enhance cache to store user_id. 
+    // For now, we'll fetch from DB if we want to be 100% strict by ID, but falling back to DB is safe.
+  }
+
+  let query = supabase
+    .from('workout_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error || !data) return [];
+
+  const logs = data.map((row: any) => ({
+    ...row.log_data,
+    id: String(row.id),
+    user: row.display_name
+  }));
+
+  setInCache(cacheKey, logs);
+  return logs;
+};
+
 
 
 export const calculateStats = async (user: User): Promise<PRStats> => {

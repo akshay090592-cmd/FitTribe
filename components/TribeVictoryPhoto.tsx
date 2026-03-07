@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TribePhoto } from '../types';
+import { ImageModal } from './ImageModal';
 import { getLatestTribePhoto } from '../utils/storage';
 import { Clock } from 'lucide-react';
 
@@ -9,6 +10,7 @@ interface Props {
 
 export const TribeVictoryPhoto: React.FC<Props> = ({ tribeId }) => {
     const [photo, setPhoto] = useState<TribePhoto | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     useEffect(() => {
         getLatestTribePhoto(tribeId).then(setPhoto);
@@ -31,10 +33,13 @@ export const TribeVictoryPhoto: React.FC<Props> = ({ tribeId }) => {
             <div className="relative bg-white p-3 rounded-[32px] shadow-xl border-4 border-emerald-50 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-lime-400 to-emerald-400 opacity-50"></div>
 
-                <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden bg-emerald-100 mb-3 group-hover:scale-[1.02] transition-transform duration-500">
+                <div
+                    className="relative aspect-[4/3] rounded-[24px] overflow-hidden bg-emerald-100 mb-3 group-hover:scale-[1.02] transition-transform duration-500 cursor-pointer"
+                    onClick={() => setIsFullscreen(true)}
+                >
                     <img src={photo.imageData} alt="Victory" className="w-full h-full object-cover" />
 
-                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 pt-10 flex items-end justify-between">
+                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 pt-10 flex items-end justify-between pointer-events-none">
                         <div>
                             <div className="text-white font-bold text-lg font-['Fredoka'] drop-shadow-md flex items-center">
                                 <span className="mr-2">🔥</span> {photo.userName}
@@ -49,6 +54,9 @@ export const TribeVictoryPhoto: React.FC<Props> = ({ tribeId }) => {
                     </div>
                 </div>
             </div>
+            {isFullscreen && (
+                <ImageModal isOpen={isFullscreen} onClose={() => setIsFullscreen(false)} imageUrl={photo.imageData} altText="Victory" />
+            )}
         </div>
     );
 };

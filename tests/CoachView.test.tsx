@@ -24,6 +24,7 @@ vi.mock('../utils/storage', () => ({
     saveUserPlan: vi.fn(),
     getUserPlans: vi.fn().mockResolvedValue(null),
     getUserLogs: vi.fn().mockResolvedValue([]),
+    getUserLogsById: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock supabaseClient

@@ -115,8 +115,8 @@ export const NotificationCenter: React.FC<Props> = ({
                                                 </button>
                                             </div>
                                             {notif.image_data && (
-                                                <div className="mt-2 mb-2 rounded-lg overflow-hidden border border-emerald-100 max-h-32 w-full">
-                                                    <img src={notif.image_data} alt="Attachment" className="w-full h-full object-cover" />
+                                                <div className="mt-2 mb-2 flex items-center justify-center rounded-lg overflow-hidden border border-emerald-100 h-32 w-full bg-black/5">
+                                                    <img src={notif.image_data} alt="Attachment" className="max-w-full max-h-full object-contain" />
                                                 </div>
                                             )}
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">

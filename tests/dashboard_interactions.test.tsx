@@ -50,6 +50,7 @@ vi.mock('../utils/gamification', () => ({
 
 vi.mock('../utils/storage', () => ({
     getUserLogs: vi.fn().mockResolvedValue([]),
+    getUserLogsById: vi.fn().mockResolvedValue([]),
     getCurrentProfile: vi.fn(),
     getGamificationState: vi.fn().mockResolvedValue({}),
     getDailyQuests: vi.fn().mockReturnValue([]),

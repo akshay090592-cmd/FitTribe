@@ -8,7 +8,7 @@ vi.mock('../utils/storage', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../utils/storage')>();
     return {
         ...actual,
-        getUserLogs: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
+        getUserLogs: vi.fn(), getUserLogsById: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
         getLogs: vi.fn(),
         getGamificationState: vi.fn(),
         saveGamificationState: vi.fn(),

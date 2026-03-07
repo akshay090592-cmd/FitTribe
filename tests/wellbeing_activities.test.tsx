@@ -8,6 +8,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 // Mock storage
 vi.mock('../utils/storage', () => ({
     getUserLogs: vi.fn().mockResolvedValue([]),
+    getUserLogsById: vi.fn().mockResolvedValue([]),
     saveTribePhoto: vi.fn().mockResolvedValue(true),
 }));
 

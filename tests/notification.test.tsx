@@ -36,6 +36,7 @@ vi.mock('react-helmet-async', () => ({
 // Mock dependencies
 vi.mock('../utils/storage', () => ({
   getUserLogs: vi.fn().mockResolvedValue([]),
+  getUserLogsById: vi.fn().mockResolvedValue([]),
   getCurrentProfile: vi.fn().mockResolvedValue({ displayName: 'TestUser' }),
   createProfile: vi.fn(),
   saveLog: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),

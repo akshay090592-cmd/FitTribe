@@ -13,7 +13,7 @@ vi.mock('../utils/supabaseClient', () => ({
 
 // Mock the storage module
 vi.mock('../utils/storage', () => ({
-    getUserLogs: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
+    getUserLogs: vi.fn(), getUserLogsById: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
     getLogs: vi.fn(),
     getGamificationState: vi.fn(),
     saveGamificationState: vi.fn(),

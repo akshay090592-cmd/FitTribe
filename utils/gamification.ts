@@ -91,7 +91,7 @@ export const calculateXP = (logs: WorkoutLog[]) => {
 
     // 1. Base XP Calculation
     let logXp = 0;
-    if (log.type === WorkoutType.CUSTOM) {
+    if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
       if (log.vibes) {
         logXp = Math.min(log.vibes, 60);
       } else if (log.durationMinutes < 30) {
@@ -105,7 +105,7 @@ export const calculateXP = (logs: WorkoutLog[]) => {
 
     // 2. Streak Calculation for Bonus
     // Rule: Workouts < 30 mins do not count towards streak
-    const isStreakEligible = !(log.type === WorkoutType.CUSTOM && log.durationMinutes < 30);
+    const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
       const logDate = new Date(log.date);
@@ -159,7 +159,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
 
     // 1. Base XP Calculation
     let logXp = 0;
-    if (log.type === WorkoutType.CUSTOM) {
+    if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
       if (log.vibes) {
         logXp = log.vibes;
       } else if (log.durationMinutes < 30) {
@@ -172,7 +172,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
     }
 
     // 2. Streak Calculation for Bonus
-    const isStreakEligible = !(log.type === WorkoutType.CUSTOM && log.durationMinutes < 30);
+    const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
       const logDate = new Date(log.date);
@@ -212,7 +212,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
 export const calculatePoints = (log: WorkoutLog): number => {
   if (log.type === WorkoutType.COMMITMENT) return 0;
 
-  if (log.type === WorkoutType.CUSTOM) {
+  if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
     if (log.durationMinutes < 30) return 0;
     // Duration capped at 60 for calculation, divided by 10
     return Math.floor(Math.min(log.durationMinutes, 60) / 10);
@@ -231,7 +231,7 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
   // Filter out commitments and short custom workouts
   const validLogs = logs.filter(l => {
     if (l.type === WorkoutType.COMMITMENT) return false;
-    if (l.type === WorkoutType.CUSTOM && l.durationMinutes < 30) return false;
+    if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) return false;
     return true;
   });
 
@@ -460,7 +460,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
   // Award points for the workout
   let pointsEarned = 0;
-  if (log.type === WorkoutType.CUSTOM) {
+  if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
     if (log.durationMinutes < 30) {
       pointsEarned = 0;
     } else {
@@ -474,7 +474,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
   // XP Calculation
   let xpEarned = 0;
-  if (log.type === WorkoutType.CUSTOM) {
+  if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
     if (log.vibes) {
       xpEarned = Math.min(log.vibes, 60);
     } else if (log.durationMinutes < 30) {
@@ -488,7 +488,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   }
 
   // Only add bonus if valid workout
-  if (!(log.type === WorkoutType.CUSTOM && log.durationMinutes < 30)) {
+  if (!((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30)) {
     const currentStreak = await getStreaks(log.user);
     const streakBonus = getStreakBonus(currentStreak);
     xpEarned += streakBonus;
@@ -544,7 +544,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   if ((await getStreaks(log.user)) >= 5) unlock('streak_5');
 
   // 5. Volume (Century Club) - ONLY for Gym Workouts
-  if (log.type !== WorkoutType.CUSTOM) {
+  if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE) {
     const volume = log.exercises.reduce((acc, ex) =>
       acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
       , 0);
@@ -575,7 +575,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   if ((await getStreaks(log.user)) >= 10) unlock('streak_10');
 
   // Heavy Lifter (Gym only)
-  if (log.type !== WorkoutType.CUSTOM) {
+  if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE) {
     const volume = log.exercises.reduce((acc, ex) =>
       acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
       , 0);
@@ -655,13 +655,13 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
 
     if (log.durationMinutes < 30) {
       x = log.durationMinutes;
-    } else if (log.type === WorkoutType.CUSTOM) {
+    } else if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
       x = Math.floor((log.calories || 0) / 10);
     } else {
       x = log.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;
     }
 
-    if (log.type === WorkoutType.CUSTOM) {
+    if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
       p = Math.floor((log.calories || 0) / 10);
     } else {
       p = 10;
@@ -699,7 +699,7 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
 
   // Century Club
   sortedLogs.forEach(log => {
-    if (log.type !== WorkoutType.CUSTOM) {
+    if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE) {
       const volume = log.exercises.reduce((acc, ex) =>
         acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
         , 0);
@@ -749,7 +749,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   if (log.type === WorkoutType.COMMITMENT) {
     pointsToLose = 0;
     xpToLose = 0;
-  } else if (log.type === WorkoutType.CUSTOM) {
+  } else if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
     if (log.vibes) {
       xpToLose = Math.min(log.vibes, 60);
     } else if (log.durationMinutes < 30) {

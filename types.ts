@@ -38,6 +38,7 @@ export interface WorkoutTemplate {
     name: string;
     sets: number;
     reps: string;
+    trackingType?: 'reps' | 'duration';
   }[];
 }
 
@@ -74,6 +75,7 @@ export enum WorkoutType {
 export interface ExerciseSet {
   reps: number;
   weight: number;
+  time?: number; // duration in seconds
   completed: boolean;
 }
 
@@ -92,6 +94,7 @@ export interface ExerciseRecord {
   isSuperset?: boolean;
   supersetGroup?: number;
   suggestion?: ProgressionSuggestion;
+  trackingType?: 'reps' | 'duration';
 }
 
 export interface WorkoutPlan {
@@ -103,6 +106,7 @@ export interface WorkoutPlan {
     name: string;
     defaultSets: number;
     defaultReps: string;
+    trackingType?: 'reps' | 'duration';
     notes: string;
     cues?: string[];
     image?: string;

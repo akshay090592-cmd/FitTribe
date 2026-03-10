@@ -184,11 +184,13 @@ const App: React.FC = () => {
       const sessionA = localStorage.getItem(`workout_session_${WorkoutType.A}`);
       const sessionB = localStorage.getItem(`workout_session_${WorkoutType.B}`);
       const sessionCustom = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM}`);
+      const sessionCustomTemplate = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM_TEMPLATE}`);
       const now = Date.now();
 
       if (sessionA && (now - JSON.parse(sessionA).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
       if (sessionB && (now - JSON.parse(sessionB).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
       if (sessionCustom && (now - JSON.parse(sessionCustom).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
+      if (sessionCustomTemplate && (now - JSON.parse(sessionCustomTemplate).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
     } catch (e) {
       console.error("Error checking sessions", e);
     }
@@ -218,23 +220,27 @@ const App: React.FC = () => {
       const sessionA = localStorage.getItem(`workout_session_${WorkoutType.A}`);
       const sessionB = localStorage.getItem(`workout_session_${WorkoutType.B}`);
       const sessionCustom = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM}`);
+      const sessionCustomTemplate = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM_TEMPLATE}`);
 
       let timestampA = 0;
       let timestampB = 0;
       let timestampCustom = 0;
+      let timestampCustomTemplate = 0;
 
       if (sessionA) timestampA = JSON.parse(sessionA).lastUpdated || 0;
       if (sessionB) timestampB = JSON.parse(sessionB).lastUpdated || 0;
       if (sessionCustom) timestampCustom = JSON.parse(sessionCustom).lastUpdated || 0;
+      if (sessionCustomTemplate) timestampCustomTemplate = JSON.parse(sessionCustomTemplate).lastUpdated || 0;
 
       // If we have recent sessions, prioritize them
       const now = Date.now();
 
-      // Find the most recent session among A, B, and Custom
+      // Find the most recent session among A, B, Custom, and Custom Template
       const timestamps = [
         { type: WorkoutType.A, ts: timestampA },
         { type: WorkoutType.B, ts: timestampB },
-        { type: WorkoutType.CUSTOM, ts: timestampCustom }
+        { type: WorkoutType.CUSTOM, ts: timestampCustom },
+        { type: WorkoutType.CUSTOM_TEMPLATE, ts: timestampCustomTemplate }
       ].filter(t => t.ts > 0 && (now - t.ts < SESSION_RESTORE_WINDOW))
         .sort((a, b) => b.ts - a.ts);
 
@@ -537,14 +543,14 @@ const App: React.FC = () => {
       // Cleanup expired sessions on mount
       const now = Date.now();
 
-      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM].forEach(type => {
+      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
         const key = `workout_session_${type}`;
         const saved = localStorage.getItem(key);
         if (saved) {
           const data = JSON.parse(saved);
           if (now - data.lastUpdated >= SESSION_RESTORE_WINDOW) {
             localStorage.removeItem(key);
-            if (type === WorkoutType.CUSTOM) {
+            if (type === WorkoutType.CUSTOM || type === WorkoutType.CUSTOM_TEMPLATE) {
               localStorage.removeItem('active_custom_plan');
             }
           }
@@ -1815,7 +1821,7 @@ const App: React.FC = () => {
         onUpdateProfile={setUserProfile}
         onStartTemplate={(template) => {
           const plan: WorkoutPlan = {
-            id: WorkoutType.CUSTOM,
+            id: WorkoutType.CUSTOM_TEMPLATE,
             title: template.name,
             focus: 'Custom Template',
             warmup: ['Arm Circles', 'Jumping Jacks', 'Torso Twists'],
@@ -1827,6 +1833,7 @@ const App: React.FC = () => {
               defaultSets: ex.sets,
               defaultReps: ex.reps,
               notes: '',
+              trackingType: ex.trackingType,
               isSuperset: false
             }))
           };

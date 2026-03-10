@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
           name: 'FitTribe Tracker',
           short_name: 'FitTribe',
           description: 'Track your workouts and compete with friends offline!',
-          theme_color: '#ffffff',
+          theme_color: '#F0FDF4',
           icons: [
             {
               src: 'pwa-192x192.webp',

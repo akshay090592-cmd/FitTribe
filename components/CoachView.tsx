@@ -85,7 +85,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
 
     // Chat State
     const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
-        { role: 'model', text: `Hello ${userProfile.displayName}! I am Sage Panda, your AI fitness coach. 🐼\n\nI can help you with:\n• **Custom Workouts** (e.g., "Create a leg day workout")\n• **Diet Plans** (personalized meal plans)\n• **Weekly Schedules** (plan your entire week)\n\nWhat would you like to work on today?` }
+        { role: 'model', text: `Hello ${userProfile.displayName}! I am Sage Panda, your AI fitness coach. 🐼\n\nI can help you with:\n• **Custom Workouts**\n• **Diet Plans**\n• **Weekly Schedules**\n\nWhat would you like to work on today?` }
     ]);
     const [input, setInput] = useState('');
     const [loadingChat, setLoadingChat] = useState(false);

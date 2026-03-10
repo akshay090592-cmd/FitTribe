@@ -17,6 +17,21 @@ const parseJSON = (text: string) => {
     }
 };
 
+// Helper for long date format (e.g., 10th March 2026)
+const getLongDate = (date: Date) => {
+    const day = date.getDate();
+    const month = date.toLocaleDateString(undefined, { month: 'long' });
+    const year = date.getFullYear();
+
+    const getOrdinal = (n: number) => {
+        const s = ["th", "st", "nd", "rd"],
+            v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+
+    return `${getOrdinal(day)} ${month} ${year}`;
+};
+
 export const AICoachService = {
     /**
      * Modifies the next workout plan based on user feedback and performance.
@@ -101,10 +116,10 @@ export const AICoachService = {
         // Very basic Mifflin-St Jeor
         let bmr = 10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161);
         const tdee = Math.round(bmr * 1.375); // Moderate activity assumption
-        const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+        const todayLong = getLongDate(new Date());
 
         const prompt = `
-      Create a 7-day Meal Plan starting TODAY (${today}) for:
+      Create a 7-day Meal Plan starting TODAY (${todayLong}) for:
       - Calories: ~${tdee} kcal/day
       - Goal: Maintenance/Muscle Gain
       - Preferences: ${preferences}
@@ -168,13 +183,29 @@ ${lastLogs.map(l => {
 `;
         }
 
+        const now = new Date();
+        const todayStr = getLongDate(now);
+        const todayWeekday = now.toLocaleDateString(undefined, { weekday: 'long' });
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = getLongDate(tomorrow);
+        const tomorrowWeekday = tomorrow.toLocaleDateString(undefined, { weekday: 'long' });
+
         const systemPrompt = `You are Sage Panda, a wise, friendly, and motivating fitness coach. 
     You help users with workouts, diet, and lifestyle.
     
+    Current Application State:
+    - Today is: ${todayWeekday}, ${todayStr}
+    - Tomorrow is: ${tomorrowWeekday}, ${tomorrowStr}
+
     CAPABILITIES (SKILLS):
     1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "Full body"), generate it using references from Plan A/B effectively.
     2. **Create Diet Plan**: If user asks for a diet plan.
     3. **Create Schedule**: If user asks to plan their week.
+       - The generated 7-day schedule MUST ALWAYS start from Monday and end on Sunday.
+       - By default, active planning should START FROM TOMORROW.
+       - IF the user explicitly requested to start today in the conversation, then start active scheduling from TODAY.
+       - Any days in the Monday-Sunday week that fall before the active start date should be marked as "REST".
     4. **Analyze Workout Progress**: When a user queries their history or progress, use the detailed logs (which include exercises, sets, weights, and reps) to praise their progress, identify strengths, and suggest progression (e.g. progressive overload).
 
     INSTRUCTIONS:
@@ -275,7 +306,7 @@ ${lastLogs.map(l => {
             role: 'model',
             text: `Happy ${new Date().toLocaleDateString(undefined, { weekday: 'long' })}! 🐼
             
-${lastGoal} ${lastWorkoutContext}${planContext} Let's plan your week starting today (${new Date().toLocaleDateString()}).
+${lastGoal} ${lastWorkoutContext}${planContext} Let's plan your week starting today (${getLongDate(new Date())}).
 First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed, exhausted, energized)${periodQuestion}`
         };
     },
@@ -325,7 +356,8 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
     generatePlanFromContext: async (
         userProfile: UserProfile,
         assessment: any,
-        previousPlan?: WeeklyPlan
+        previousPlan?: WeeklyPlan,
+        history?: { role: 'user' | 'model', text: string }[]
     ): Promise<WeeklyPlan | null> => {
         const apiKey = getApiKey();
         if (!apiKey) return null;
@@ -336,33 +368,43 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         const currentHour = now.getHours();
         const timeOfDay = currentHour < 12 ? 'morning' : currentHour < 17 ? 'afternoon' : 'evening';
 
-        // If it's past 12 PM (noon), start plan from tomorrow
-        const startDate = new Date(now);
-        if (currentHour >= 12) {
-            startDate.setDate(startDate.getDate() + 1);
-        }
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const startDayName = startDate.toLocaleDateString(undefined, { weekday: 'long' });
+        const todayStr = getLongDate(now);
+        const todayDayName = now.toLocaleDateString(undefined, { weekday: 'long' });
+
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = getLongDate(tomorrow);
+        const tomorrowDayName = tomorrow.toLocaleDateString(undefined, { weekday: 'long' });
+
+        const historyContext = history ? history.map(m => m.role + ': ' + m.text).join('\\n') : 'No history';
 
         const prompt = `
         Create a 7-Day Workout Schedule for this user.
         
-        IMPORTANT TIME CONTEXT:
+        IMPORTANT TIME & DATE CONTEXT:
         - Current time of day: ${timeOfDay} (${currentHour}:00)
-        - Plan should START from: ${startDayName}, ${startDateStr}
-        ${currentHour >= 12 ? '- Since it is past noon, the plan starts TOMORROW (not today).' : '- Since it is before noon, the plan starts TODAY.'}
+        - Today is: ${todayDayName}, ${todayStr}
+        - Tomorrow is: ${tomorrowDayName}, ${tomorrowStr}
+        
+        CRITICAL DATE RULES:
+        1. The generated 7-day schedule MUST ALWAYS represent exactly ONE week, starting from MONDAY and ending on SUNDAY.
+        2. By default, active planning should START FROM TOMORROW.
+        3. IF the user requested in the chat to start "today", then start FROM TODAY.
+        4. For any days in the Monday-Sunday week that fall before the start date, specify the activity as 'REST' or 'Past'. Do not skip days.
         
         User Context:
         - Goal: ${userProfile.goals?.primary_goal || 'General Fitness'}
         - Gender: ${userProfile.gender}
         - ASSESSMENT: ${JSON.stringify(assessment)}
         ${previousPlan ? `- PREVIOUS PLAN ADHERENCE: ${JSON.stringify(previousPlan.schedule.map(s => ({ activity: s.activity, status: s.status })))}` : ''}
+        - CHAT HISTORY (to check if user explicitly requested to start today):
+        ${historyContext}
         
         Rules:
         1. **Strict Types**: Use ONLY 'A' and 'B' for Strength Training. Do NOT invent new letters.
         2. **User Plans**: The user has existing 'Plan A' and 'Plan B'. Creating a "Plan C" is invalid.
         3. **Low Energy/Period**: If user is low energy/has period, recommend LIGHT Walking, Yoga, or Reduced Volume Plan A/B if they insist.
-        4. **Dates**: Use ISO date strings (YYYY-MM-DD) for the 'date' field, starting from ${startDateStr}.
+        4. **Dates**: Use ISO date strings (YYYY-MM-DD) for the 'date' field, starting from ${tomorrowStr}.
         5. **Optimization**: If previous plan had many 'not_done' or 'partial', suggest a more realistic or lighter schedule this week to improve adherence.
         6. **Tracking Type**: Always determine if an exercise is traditional (reps) or a static hold/yoga pose (duration). Output a \`trackingType\` field with value 'reps' or 'duration' for exercises inside plans. If 'duration', provide default time in \`defaultReps\` like '60s'.
         
@@ -370,8 +412,8 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         {
           "summary": "Brief explanation of strategy",
           "schedule": [
-            { "date": "${startDateStr}", "day": "${startDayName}", "activity": "Plan A", "type": "A", "notes": "Focus on Bench", "status": null },
-            { "date": "...", "day": "...", "activity": "Walking", "type": "CARDIO", "notes": "Light pace", "status": null },
+            { "date": "${tomorrowStr}", "day": "Monday", "activity": "Plan A", "type": "A", "notes": "Focus on Bench", "status": null },
+            { "date": "...", "day": "Tuesday", "activity": "Walking", "type": "CARDIO", "notes": "Light pace", "status": null },
             ...
           ]
         }

@@ -192,6 +192,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           return {
             reps: prevSet ? prevSet.reps : 0,
             weight: prevSet ? prevSet.weight : 0,
+            time: prevSet ? prevSet.time : undefined,
             completed: false
           };
         });
@@ -202,7 +203,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           sets: sets,
           isSuperset: ex.isSuperset,
           supersetGroup: ex.supersetGroup,
-          suggestion: suggestion || undefined
+          suggestion: suggestion || undefined,
+          trackingType: ex.trackingType
         };
       }));
       setRecords(initializedRecords);
@@ -603,6 +605,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                       suggestion={records[idx].suggestion}
                       image={plan.exercises[idx].image}
                       cues={plan.exercises[idx].cues}
+                      trackingType={records[idx].trackingType}
                     />
                   </div>
                 );
@@ -627,6 +630,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               suggestion={records[currentIndex].suggestion}
               image={plan.exercises[currentIndex].image}
               cues={plan.exercises[currentIndex].cues}
+              trackingType={records[currentIndex].trackingType}
             />
           </div>
         );

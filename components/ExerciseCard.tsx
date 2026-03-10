@@ -16,6 +16,7 @@ interface Props {
     suggestion?: ProgressionSuggestion;
     image?: string;
     cues?: string[];
+    trackingType?: 'reps' | 'duration';
 }
 
 // Internal component for handling swipe logic
@@ -114,7 +115,8 @@ export const ExerciseCard: React.FC<Props> = ({
     onSetComplete,
     suggestion,
     image,
-    cues
+    cues,
+    trackingType
 }) => {
     const [showInfo, setShowInfo] = useState(false);
 
@@ -135,17 +137,75 @@ export const ExerciseCard: React.FC<Props> = ({
             updateSet(index, field, 0);
             return;
         }
+
+        if (field === 'time') {
+            // Parse MM:SS or seconds
+            let seconds = 0;
+            if (value.includes(':')) {
+                const parts = value.split(':');
+                const m = parseInt(parts[0]) || 0;
+                const s = parseInt(parts[1]) || 0;
+                seconds = m * 60 + s;
+            } else {
+                seconds = parseInt(value) || 0;
+            }
+            updateSet(index, field, seconds);
+            return;
+        }
+
         const num = parseFloat(value);
         if (!isNaN(num)) {
             updateSet(index, field, num);
         }
     };
 
+    const formatTime = (seconds?: number) => {
+        if (!seconds) return '';
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        if (m > 0) {
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${s}`;
+    };
+
+    const [activeTimerIndex, setActiveTimerIndex] = useState<number | null>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const toggleTimer = (index: number) => {
+        if (activeTimerIndex === index) {
+            // Stop timer
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = null;
+            setActiveTimerIndex(null);
+        } else {
+            // Start timer
+            if (timerRef.current) clearInterval(timerRef.current);
+            setActiveTimerIndex(index);
+            timerRef.current = setInterval(() => {
+                onChange(sets.map((s, i) => {
+                    if (i === index) {
+                        return { ...s, time: (s.time || 0) + 1 };
+                    }
+                    return s;
+                }));
+            }, 1000);
+        }
+    };
+
+    // Cleanup timer on unmount
+    React.useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
     const handleAddSet = () => {
         const lastSet = sets[sets.length - 1];
         const newSet: ExerciseSet = {
             reps: lastSet ? lastSet.reps : 0,
             weight: lastSet ? lastSet.weight : 0,
+            time: lastSet ? lastSet.time : undefined,
             completed: false
         };
         onChange([...sets, newSet]);
@@ -314,8 +374,8 @@ export const ExerciseCard: React.FC<Props> = ({
                                         <span className="font-bold text-emerald-300/50 text-lg w-6 mr-2">#{idx + 1}</span>
 
                                         {/* Inputs */}
-                                        <div className="flex-grow grid grid-cols-2 gap-3">
-                                            <div className="flex items-center bg-emerald-50/50 rounded-xl px-3 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                        <div className={`flex-grow grid ${trackingType === 'duration' ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                                            <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
                                                 <input
                                                     type="number"
                                                     inputMode="decimal"
@@ -326,21 +386,45 @@ export const ExerciseCard: React.FC<Props> = ({
                                                     onFocus={(e) => e.target.select()}
                                                     aria-label={`Set ${idx + 1} Weight`}
                                                 />
-                                                <span className="text-[9px] font-bold text-emerald-400 absolute right-2 bottom-1">KG</span>
+                                                <span className="text-[9px] font-bold text-emerald-400 absolute right-1 bottom-1">KG</span>
                                             </div>
-                                            <div className="flex items-center bg-emerald-50/50 rounded-xl px-3 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
-                                                <input
-                                                    type="number"
-                                                    inputMode="decimal"
-                                                    className="w-full bg-transparent font-bold text-emerald-800 text-center text-xl outline-none font-['Fredoka']"
-                                                    value={set.reps || ''}
-                                                    placeholder="0"
-                                                    onChange={(e) => handleInputChange(idx, 'reps', e.target.value)}
-                                                    onFocus={(e) => e.target.select()}
-                                                    aria-label={`Set ${idx + 1} Reps`}
-                                                />
-                                                <span className="text-[9px] font-bold text-emerald-400 absolute right-2 bottom-1">REPS</span>
-                                            </div>
+
+                                            {trackingType === 'duration' ? (
+                                                <>
+                                                    <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                                        <input
+                                                            type="text"
+                                                            className="w-full bg-transparent font-bold text-emerald-800 text-center text-xl outline-none font-['Fredoka']"
+                                                            value={activeTimerIndex === idx && set.time ? formatTime(set.time) : (set.time ? formatTime(set.time) : '')}
+                                                            placeholder="0:00"
+                                                            onChange={(e) => handleInputChange(idx, 'time', e.target.value)}
+                                                            onFocus={(e) => e.target.select()}
+                                                            aria-label={`Set ${idx + 1} Time`}
+                                                        />
+                                                        <span className="text-[9px] font-bold text-emerald-400 absolute right-1 bottom-1">TIME</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => toggleTimer(idx)}
+                                                        className={`flex items-center justify-center rounded-xl font-bold transition-all active:scale-95 ${activeTimerIndex === idx ? 'bg-red-100 text-red-500 border border-red-200' : 'bg-emerald-100 text-emerald-600 border border-emerald-200'}`}
+                                                    >
+                                                        {activeTimerIndex === idx ? 'STOP' : 'PLAY'}
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                                    <input
+                                                        type="number"
+                                                        inputMode="decimal"
+                                                        className="w-full bg-transparent font-bold text-emerald-800 text-center text-xl outline-none font-['Fredoka']"
+                                                        value={set.reps || ''}
+                                                        placeholder="0"
+                                                        onChange={(e) => handleInputChange(idx, 'reps', e.target.value)}
+                                                        onFocus={(e) => e.target.select()}
+                                                        aria-label={`Set ${idx + 1} Reps`}
+                                                    />
+                                                    <span className="text-[9px] font-bold text-emerald-400 absolute right-1 bottom-1">REPS</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </SwipeableSetRow>

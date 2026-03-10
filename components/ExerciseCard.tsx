@@ -160,17 +160,16 @@ export const ExerciseCard: React.FC<Props> = ({
     };
 
     const formatTime = (seconds?: number) => {
-        if (!seconds) return '';
+        if (seconds === undefined || seconds === null) return '';
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
-        if (m > 0) {
-            return `${m}:${s.toString().padStart(2, '0')}`;
-        }
-        return `${s}`;
+        return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
     const [activeTimerIndex, setActiveTimerIndex] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const setsRef = useRef(sets);
+    setsRef.current = sets;
 
     const toggleTimer = (index: number) => {
         if (activeTimerIndex === index) {
@@ -183,7 +182,8 @@ export const ExerciseCard: React.FC<Props> = ({
             if (timerRef.current) clearInterval(timerRef.current);
             setActiveTimerIndex(index);
             timerRef.current = setInterval(() => {
-                onChange(sets.map((s, i) => {
+                const currentSets = setsRef.current;
+                onChange(currentSets.map((s, i) => {
                     if (i === index) {
                         return { ...s, time: (s.time || 0) + 1 };
                     }
@@ -395,7 +395,7 @@ export const ExerciseCard: React.FC<Props> = ({
                                                         <input
                                                             type="text"
                                                             className="w-full bg-transparent font-bold text-emerald-800 text-center text-xl outline-none font-['Fredoka']"
-                                                            value={activeTimerIndex === idx && set.time ? formatTime(set.time) : (set.time ? formatTime(set.time) : '')}
+                                                            value={activeTimerIndex === idx ? formatTime(set.time || 0) : (set.time ? formatTime(set.time) : '')}
                                                             placeholder="0:00"
                                                             onChange={(e) => handleInputChange(idx, 'time', e.target.value)}
                                                             onFocus={(e) => e.target.select()}

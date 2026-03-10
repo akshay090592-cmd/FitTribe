@@ -418,7 +418,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
 
     const generateWeeklyPlan = async () => {
         setIsGeneratingPlan(true);
-        const plan = await AICoachService.generatePlanFromContext(userProfile, checkinAssessment, weeklyPlan || undefined);
+        const plan = await AICoachService.generatePlanFromContext(userProfile, checkinAssessment, weeklyPlan || undefined, checkinMessages);
         if (plan) {
             setProposedPlan(plan);
         }

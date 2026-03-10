@@ -32,6 +32,11 @@ const getLongDate = (date: Date) => {
     return `${getOrdinal(day)} ${month} ${year}`;
 };
 
+// Helper for ISO date format (YYYY-MM-DD)
+const getISODate = (date: Date) => {
+    return date.toISOString().split('T')[0];
+};
+
 export const AICoachService = {
     /**
      * Modifies the next workout plan based on user feedback and performance.
@@ -202,18 +207,16 @@ ${lastLogs.map(l => {
     1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "Full body"), generate it using references from Plan A/B effectively.
     2. **Create Diet Plan**: If user asks for a diet plan.
     3. **Create Schedule**: If user asks to plan their week.
-       - The generated 7-day schedule MUST ALWAYS start from Monday and end on Sunday.
-       - By default, active planning should START FROM TOMORROW.
-       - IF the user explicitly requested to start today in the conversation, then start active scheduling from TODAY.
-       - Any days in the Monday-Sunday week that fall before the active start date should be marked as "REST".
+       - Generate a 7-day schedule starting from TODAY (${todayWeekday}, ${getISODate(now)}) or TOMORROW.
+       - ALWAYS include a "date" field (YYYY-MM-DD) for every item in the "schedule" array.
     4. **Analyze Workout Progress**: When a user queries their history or progress, use the detailed logs (which include exercises, sets, weights, and reps) to praise their progress, identify strengths, and suggest progression (e.g. progressive overload).
 
     INSTRUCTIONS:
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.
     - **Diet**: <ACTION_SAVE_DIET> { "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 300, "macros": "..." } ] } ] } </ACTION_SAVE_DIET>
-    - **Schedule**: <ACTION_SAVE_SCHEDULE> { "schedule": [ { "day": "Monday", "activity": "Plan A", "type": "A", "notes": "Focus..." } ] } </ACTION_SAVE_SCHEDULE>
+    - **Schedule**: <ACTION_SAVE_SCHEDULE> { "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus..." } ] } </ACTION_SAVE_SCHEDULE>
     - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "sets": 3, "reps": "10", "trackingType": "reps" }, { "name": "Plank", "sets": 3, "reps": "60s", "trackingType": "duration" } ] } </ACTION_SAVE_WORKOUT>
-    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above. Always define \`trackingType\` as 'reps' or 'duration' for exercises.
+    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above. Always define \`trackingType\` as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
 
     ${context ? `Context: ${context}` : ''}
     ${logsContext}`;
@@ -370,11 +373,24 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
 
         const todayStr = getLongDate(now);
         const todayDayName = now.toLocaleDateString(undefined, { weekday: 'long' });
+        const todayISO = getISODate(now);
 
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = getLongDate(tomorrow);
         const tomorrowDayName = tomorrow.toLocaleDateString(undefined, { weekday: 'long' });
+        const tomorrowISO = getISODate(tomorrow);
+
+        // Generate the 7 dates for the AI to use
+        const next7Days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(now);
+            d.setDate(d.getDate() + i);
+            return {
+                day: d.toLocaleDateString(undefined, { weekday: 'long' }),
+                date: getISODate(d)
+            };
+        });
+        const datesContext = next7Days.map(d => `${d.day}: ${d.date}`).join(', ');
 
         const historyContext = history ? history.map(m => m.role + ': ' + m.text).join('\\n') : 'No history';
 
@@ -387,10 +403,10 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         - Tomorrow is: ${tomorrowDayName}, ${tomorrowStr}
         
         CRITICAL DATE RULES:
-        1. The generated 7-day schedule MUST ALWAYS represent exactly ONE week, starting from MONDAY and ending on SUNDAY.
-        2. By default, active planning should START FROM TOMORROW.
-        3. IF the user requested in the chat to start "today", then start FROM TODAY.
-        4. For any days in the Monday-Sunday week that fall before the start date, specify the activity as 'REST' or 'Past'. Do not skip days.
+        1. The generated 7-day schedule MUST represent the next 7 days or a full week.
+        2. Relevant dates for you to use are: ${datesContext}
+        3. By default, active planning should START FROM TODAY (${todayISO}) or TOMORROW (${tomorrowISO}).
+        4. Use the correct 'date' (YYYY-MM-DD) for each corresponding 'day'.
         
         User Context:
         - Goal: ${userProfile.goals?.primary_goal || 'General Fitness'}
@@ -404,7 +420,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         1. **Strict Types**: Use ONLY 'A' and 'B' for Strength Training. Do NOT invent new letters.
         2. **User Plans**: The user has existing 'Plan A' and 'Plan B'. Creating a "Plan C" is invalid.
         3. **Low Energy/Period**: If user is low energy/has period, recommend LIGHT Walking, Yoga, or Reduced Volume Plan A/B if they insist.
-        4. **Dates**: Use ISO date strings (YYYY-MM-DD) for the 'date' field, starting from ${tomorrowStr}.
+        4. **Dates**: Use ISO date strings (YYYY-MM-DD) for the 'date' field. USE THE DATES PROVIDED ABOVE.
         5. **Optimization**: If previous plan had many 'not_done' or 'partial', suggest a more realistic or lighter schedule this week to improve adherence.
         6. **Tracking Type**: Always determine if an exercise is traditional (reps) or a static hold/yoga pose (duration). Output a \`trackingType\` field with value 'reps' or 'duration' for exercises inside plans. If 'duration', provide default time in \`defaultReps\` like '60s'.
         
@@ -412,8 +428,8 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         {
           "summary": "Brief explanation of strategy",
           "schedule": [
-            { "date": "${tomorrowStr}", "day": "Monday", "activity": "Plan A", "type": "A", "notes": "Focus on Bench", "status": null },
-            { "date": "...", "day": "Tuesday", "activity": "Walking", "type": "CARDIO", "notes": "Light pace", "status": null },
+            { "date": "${todayISO}", "day": "${todayDayName}", "activity": "Plan A", "type": "A", "notes": "Focus on Bench", "status": null },
+            { "date": "${tomorrowISO}", "day": "${tomorrowDayName}", "activity": "Walking", "type": "CARDIO", "notes": "Light pace", "status": null },
             ...
           ]
         }

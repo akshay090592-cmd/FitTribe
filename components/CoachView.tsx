@@ -233,7 +233,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
                     notes: item.notes || item.description || item.focus || item.duration || '',
                     type: (item.activity || '').toLowerCase().includes('rest') ? 'REST' :
                         (item.activity || '').toLowerCase().includes('cardio') ? 'CARDIO' : 'A', // Default type fallback
-                    date: new Date().toISOString(), // Fallback date
+                    date: item.date || new Date().toISOString(),
                     status: null
                 }));
                 normalizedAction.payload = { ...action.payload, schedule: mappedSchedule };

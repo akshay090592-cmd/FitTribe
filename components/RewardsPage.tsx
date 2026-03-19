@@ -304,7 +304,11 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
               const newState = { ...gameState };
               const currentUserState = newState[currentUser];
 
-              if (isUnlocked) {
+              if (isActive) {
+                // Unequip
+                currentUserState.activeTheme = 'default';
+                showToast(`Theme removed. Default header restored!`, 'success');
+              } else if (isUnlocked) {
                 // Equip
                 currentUserState.activeTheme = theme.id;
                 showToast(`Theme updated to ${theme.name}!`, 'success');
@@ -346,15 +350,15 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
                 </div>
                 <button
                   onClick={handlePurchaseOrEquip}
-                  disabled={!isUnlocked && !canAfford}
+                  disabled={!isActive && !isUnlocked && !canAfford}
                   className={`px-5 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-sm ${isActive
-                    ? 'bg-green-500 text-white cursor-default'
+                    ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                     : isUnlocked
                       ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       : 'bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
                     }`}
                 >
-                  {isActive ? 'Active' :
+                  {isActive ? 'Unequip' :
                     isUnlocked ? 'Equip' :
                       <span className="flex items-center">{theme.price} <Star size={12} className="ml-1 fill-current" /></span>}
                 </button>

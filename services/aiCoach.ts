@@ -80,7 +80,8 @@ export const AICoachService = {
       4. Suggest progression (Progressive Overload) for exercises they did well on.
       5. Maintain the same muscle coverage and split focus.
       6. For 'image' field: Keep existing URL if exercise is unchanged. If adding NEW exercise, set 'image' to null/empty.
-      7. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). Add a \`trackingType\` field with value 'reps' or 'duration'. If 'duration', provide default time in \`defaultReps\` like '60s'.
+      7. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). You MUST add a 'trackingType' field with value 'reps' or 'duration'.
+      8. For 'duration' exercises, provide default time in 'defaultReps' (e.g. '60s', '45s').
       
       OUTPUT:
       Return ONLY the valid JSON of the modified WorkoutPlan object. Do not explain.
@@ -215,8 +216,8 @@ ${lastLogs.map(l => {
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.
     - **Diet**: <ACTION_SAVE_DIET> { "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 300, "macros": "..." } ] } ] } </ACTION_SAVE_DIET>
     - **Schedule**: <ACTION_SAVE_SCHEDULE> { "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus..." } ] } </ACTION_SAVE_SCHEDULE>
-    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "sets": 3, "reps": "10", "trackingType": "reps" }, { "name": "Plank", "sets": 3, "reps": "60s", "trackingType": "duration" } ] } </ACTION_SAVE_WORKOUT>
-    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above. Always define \`trackingType\` as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
+    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "defaultSets": 3, "defaultReps": "10", "trackingType": "reps" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration" } ] } </ACTION_SAVE_WORKOUT>
+    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above ("defaultSets", "defaultReps", "trackingType"). Always define trackingType as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
 
     ${context ? `Context: ${context}` : ''}
     ${logsContext}`;
@@ -422,7 +423,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         3. **Low Energy/Period**: If user is low energy/has period, recommend LIGHT Walking, Yoga, or Reduced Volume Plan A/B if they insist.
         4. **Dates**: Use ISO date strings (YYYY-MM-DD) for the 'date' field. USE THE DATES PROVIDED ABOVE.
         5. **Optimization**: If previous plan had many 'not_done' or 'partial', suggest a more realistic or lighter schedule this week to improve adherence.
-        6. **Tracking Type**: Always determine if an exercise is traditional (reps) or a static hold/yoga pose (duration). Output a \`trackingType\` field with value 'reps' or 'duration' for exercises inside plans. If 'duration', provide default time in \`defaultReps\` like '60s'.
+        6. **Tracking Type**: Always determine if an exercise is traditional (reps) or a static hold/yoga pose (duration). Output a 'trackingType' field with value 'reps' or 'duration' for exercises inside plans. If 'duration', provide default time in 'defaultReps' like '60s'. Use property names 'defaultSets' and 'defaultReps'.
         
         Output JSON Format:
         {

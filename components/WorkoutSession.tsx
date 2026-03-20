@@ -8,7 +8,7 @@ import { STARTER_PLANS } from '../constants';
 import { AICoachService } from '../services/aiCoach';
 import { FeedbackModal } from './FeedbackModal';
 import { WorkoutFeedback } from '../types';
-import { getLastLogForExercise, getLastLogForExerciseByType } from '../utils/workoutUtils';
+import { getLastLogForExercise, getLastLogForExerciseByType, parseDurationToSeconds } from '../utils/workoutUtils';
 import { checkAchievements, getStreakRisk, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT } from '../utils/gamification';
 import { getProgressionSuggestion } from '../utils/progression';
 import { calculateCalories } from '../utils/calorieUtils';
@@ -192,7 +192,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           return {
             reps: prevSet ? prevSet.reps : 0,
             weight: prevSet ? prevSet.weight : 0,
-            time: prevSet ? prevSet.time : undefined,
+            time: prevSet ? prevSet.time : (ex.trackingType === 'duration' ? parseDurationToSeconds(ex.defaultReps) : undefined),
             completed: false
           };
         });

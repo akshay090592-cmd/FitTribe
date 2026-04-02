@@ -12,12 +12,12 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             <SEO
                 title="Terms of Service - FitTribe Tracker"
                 description="Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."
-                url="https://fittribe.app/terms"
+                url="https://tribeworkout.netlify.app/terms"
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
                     "@type": "WebPage",
-                    "url": "https://fittribe.app/terms",
+                    "url": "https://tribeworkout.netlify.app/terms",
                     "name": "FitTribe Terms of Service",
                     "description": "Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."
                 }}

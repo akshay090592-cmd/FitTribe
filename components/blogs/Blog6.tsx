@@ -1,4 +1,5 @@
 import React from 'react';
+import { BlogLayout } from '../BlogLayout';
 import { ArrowLeft, Sparkles, Brain, Zap, Target, CheckCircle, HelpCircle, BookOpen } from 'lucide-react';
 import { SEO } from '../SEO';
 
@@ -16,13 +17,13 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <BlogLayout onNavigate={onNavigate}>
             <SEO
                 title="AI Workout Planner: How Artificial Intelligence is Revolutionizing Fitness | FitTribe Blog"
                 description="Discover how an AI workout planner can supercharge your results with hyper-personalized programming, real-time adjustments, and data-driven insights."
                 type="article"
-                url="https://fittribe.app/blog/ai-workout-planner-revolution"
-                image="https://fittribe.app/assets/blog6_hero.webp"
+                url="https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution"
+                image="https://tribeworkout.netlify.app/assets/blog6_hero.webp"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -34,7 +35,7 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
                                 "@type": "Organization",
                                 "name": "FitTribe Team"
                             },
-                            "image": "https://fittribe.app/assets/blog6_hero.webp"
+                            "image": "https://tribeworkout.netlify.app/assets/blog6_hero.webp"
                         },
                         {
                             "@type": "FAQPage",
@@ -69,17 +70,7 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
                 }}
             />
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4">
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="flex items-center text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                    >
-                        <ArrowLeft className="mr-2" size={20} />
-                        Back to FitTribe
-                    </button>
-                </div>
-            </nav>
+            
 
             {/* Hero Section */}
             <section className="bg-gradient-to-br from-indigo-900 to-emerald-800 text-white py-20">
@@ -313,6 +304,6 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
                     </button>
                 </div>
             </section>
-        </div>
+        </BlogLayout>
     );
 };

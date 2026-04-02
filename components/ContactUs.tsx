@@ -13,12 +13,12 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
             <SEO
                 title="Contact FitTribe - We're Here to Help"
                 description="Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive."
-                url="https://fittribe.app/contact"
+                url="https://tribeworkout.netlify.app/contact"
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
                     "@type": "ContactPage",
-                    "url": "https://fittribe.app/contact",
+                    "url": "https://tribeworkout.netlify.app/contact",
                     "name": "Contact FitTribe",
                     "description": "Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive.",
                     "contactPoint": {

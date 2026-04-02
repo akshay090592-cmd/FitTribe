@@ -1,4 +1,5 @@
 import React from 'react';
+import { BlogLayout } from '../BlogLayout';
 import { ArrowLeft, Calendar, Users, Smile, Repeat, HeartHandshake, CheckCircle2, HelpCircle, BookOpen } from 'lucide-react';
 import { SEO } from '../SEO';
 
@@ -16,13 +17,13 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <BlogLayout onNavigate={onNavigate}>
             <SEO
                 title="5 Ways Community Workouts Keep You Consistent | FitTribe Blog"
                 description="From scheduled accountability to built-in support systems, discover the five mechanisms that make consistency effortless."
                 type="article"
-                url="https://fittribe.app/blog/consistency-mechanisms"
-                image="https://fittribe.app/assets/panda_gamified_rewards.webp"
+                url="https://tribeworkout.netlify.app/blog/consistency-mechanisms"
+                image="https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -34,7 +35,7 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                                 "@type": "Organization",
                                 "name": "FitTribe Team"
                             },
-                            "image": "https://fittribe.app/assets/panda_gamified_rewards.webp"
+                            "image": "https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
                         },
                         {
                             "@type": "FAQPage",
@@ -68,17 +69,7 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                     ]
                 }}
             />
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4">
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="flex items-center text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                    >
-                        <ArrowLeft className="mr-2" size={20} />
-                        Back to FitTribe
-                    </button>
-                </div>
-            </nav>
+            
 
             <section className="bg-gradient-to-br from-teal-900 to-teal-700 text-white py-20">
                 <div className="container mx-auto px-6 max-w-4xl relative">
@@ -382,6 +373,6 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                     </button>
                 </div>
             </section>
-        </div>
+        </BlogLayout>
     );
 };

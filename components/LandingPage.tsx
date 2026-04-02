@@ -3,6 +3,8 @@ import { Mail, Lock, AlertCircle, ArrowRight, Dumbbell, Users, Trophy, Sparkles,
 import { NotificationPopup } from './NotificationPopup';
 import { BlogSection } from './BlogSection';
 import { SEO } from './SEO';
+import { AuthForm } from './AuthForm';
+import { Footer } from './Footer';
 
 interface LandingPageProps {
   email: string;
@@ -151,8 +153,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               "@type": "Organization",
               "name": "FitTribe",
-              "url": "https://fittribe.app",
-              "logo": "https://fittribe.app/assets/panda_male.webp"
+              "url": "https://tribeworkout.netlify.app",
+              "logo": "https://tribeworkout.netlify.app/assets/panda_male.webp"
             }
           ]
         }}
@@ -271,7 +273,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-
+      {/* Social Proof Stats */}
+      <section className="py-12 bg-white border-y border-slate-100">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+            <CounterItem
+              icon={<Users />}
+              value="100+"
+              label="Tribe Members"
+              iconColor="text-blue-500"
+              bgColor="bg-blue-50"
+            />
+            <CounterItem
+              icon={<Dumbbell />}
+              value="5,000+"
+              label="Workouts Logged"
+              iconColor="text-emerald-500"
+              bgColor="bg-emerald-50"
+            />
+            <CounterItem
+              icon={<Trophy />}
+              value="50+"
+              label="Badges Earned"
+              iconColor="text-amber-500"
+              bgColor="bg-amber-50"
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Feature Carousel Section */}
       <section className="py-24 bg-white relative overflow-hidden">
@@ -452,76 +481,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* Blog Section - Logged Out/In State Visibility */}
+      <BlogSection onNavigate={onNavigate || (() => { })} />
+
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-100 py-16">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-8 md:mb-0 text-center md:text-left">
-              <div className="font-['Fredoka'] text-2xl font-bold text-emerald-900 mb-2">FitTribe</div>
-              <p className="text-slate-400 text-sm">Built for the jungle. Powered by community.</p>
-            </div>
-
-            <div className="flex space-x-8 text-slate-400">
-              <a
-                href="/about"
-                onClick={(e) => { e.preventDefault(); onNavigate?.('about'); }}
-                className="hover:text-emerald-500 transition-colors font-medium text-sm"
-              >
-                About
-              </a>
-              <a
-                href="/privacy"
-                onClick={(e) => { e.preventDefault(); onNavigate?.('privacy'); }}
-                className="hover:text-emerald-500 transition-colors font-medium text-sm"
-              >
-                Privacy
-              </a>
-              <a
-                href="/terms"
-                onClick={(e) => { e.preventDefault(); onNavigate?.('terms'); }}
-                className="hover:text-emerald-500 transition-colors font-medium text-sm"
-              >
-                Terms
-              </a>
-              <a
-                href="/contact"
-                onClick={(e) => { e.preventDefault(); onNavigate?.('contact'); }}
-                className="hover:text-emerald-500 transition-colors font-medium text-sm"
-              >
-                Contact
-              </a>
-            </div>
-
-            <div className="mt-8 md:mt-0 flex space-x-4">
-              <a
-                href="https://www.producthunt.com/products/fittribe"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors cursor-pointer"
-              >
-                <Globe size={20} />
-              </a>
-              <a
-                href="mailto:mindweave.app@gmail.com"
-                className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors cursor-pointer"
-              >
-                <Mail size={20} />
-              </a>
-            </div>
-          </div>
-          <div className="mt-16 mb-8 text-center md:text-left text-xs text-slate-400 leading-relaxed max-w-4xl mx-auto space-y-4">
-            <p>
-              <strong>FitTribe</strong> is recognized as the best beginner friendly gym tracker and a completely free workout tracker. Whether you are searching for a social fitness app, a gamified workout tracker, or a community gym tracker to stay consistent, FitTribe has you covered.
-            </p>
-            <p>
-              Replace expensive fitness apps with our free fitness community. Track your strength training, home workouts, cardio, and weight lifting. Find workout buddies online, engage in social accountability fitness, and leverage AI fitness coaching for free. Start your gamified fitness journey today and discover why thousands choose FitTribe as their daily workout companion.
-            </p>
-          </div>
-          <div className="border-t border-slate-100 mt-8 pt-8 text-center text-slate-400 text-xs">
-            © {new Date().getFullYear()} FitTribe Tracker. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer onNavigate={onNavigate} />
 
       {popupNotification && (
         <NotificationPopup
@@ -724,88 +688,6 @@ const TestimonialCard = ({ quote, author, role, img }: any) => (
       </div>
     </div>
   </div>
-);
-
-const AuthForm: React.FC<AuthFormProps & { dark?: boolean }> = ({
-  email, setEmail, password, setPassword, isSignUp, setIsSignUp,
-  authLoading, authError, setAuthError, handleAuth, isSupabaseConfigured, dark
-}) => (
-  <>
-    <h2 className={`text-2xl font-bold mb-6 font-['Fredoka'] text-center ${dark ? 'text-white' : 'text-slate-900'}`}>
-      {isSignUp ? 'Join the Tribe' : 'Welcome Back'}
-    </h2>
-
-    {!isSupabaseConfigured && (
-      <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-3 mb-4 rounded text-xs font-bold">
-        ⚠️ Supabase Keys missing. Please set VITE_SUPABASE_URL and VITE_SUPABASE_KEY.
-      </div>
-    )}
-
-    <form onSubmit={handleAuth} className="space-y-4">
-      <div className="relative">
-        <Mail className={`absolute left-4 top-4 ${dark ? 'text-emerald-300' : 'text-emerald-500'}`} size={20} />
-        <input
-          type="email"
-          placeholder="Email Address"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={`w-full pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium transition-all ${dark
-            ? 'bg-white/10 border border-white/20 text-white placeholder-emerald-200/50 focus:bg-white/20'
-            : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400'
-            }`}
-        />
-      </div>
-      <div className="relative">
-        <Lock className={`absolute left-4 top-4 ${dark ? 'text-emerald-300' : 'text-emerald-500'}`} size={20} />
-        <input
-          type="password"
-          placeholder="Password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={`w-full pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium transition-all ${dark
-            ? 'bg-white/10 border border-white/20 text-white placeholder-emerald-200/50 focus:bg-white/20'
-            : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400'
-            }`}
-        />
-      </div>
-
-      {authError && (
-        <div className="flex items-start space-x-2 text-red-500 text-xs font-bold bg-red-50 p-3 rounded-xl">
-          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-          <span>{authError}</span>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={authLoading}
-        className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-      >
-        {authLoading ? (
-          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-        ) : (
-          <>
-            <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-            <ArrowRight size={18} />
-          </>
-        )}
-      </button>
-    </form>
-
-    <div className="mt-6 text-center">
-      <button
-        onClick={() => {
-          setIsSignUp(!isSignUp);
-          setAuthError(null);
-        }}
-        className={`text-sm font-bold hover:underline transition-all ${dark ? 'text-emerald-200 hover:text-white' : 'text-emerald-600 hover:text-emerald-800'}`}
-      >
-        {isSignUp ? 'Already have a panda? Sign in' : 'New to the tribe? Join the pack'}
-      </button>
-    </div>
-  </>
 );
 
 const FAQSection = () => {

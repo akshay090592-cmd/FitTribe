@@ -1,4 +1,5 @@
 import React from 'react';
+import { BlogLayout } from '../BlogLayout';
 import { ArrowLeft, Users, MessageCircle, HeartHandshake, TrendingUp, CheckCircle, HelpCircle, BookOpen } from 'lucide-react';
 import { SEO } from '../SEO';
 
@@ -16,13 +17,13 @@ export const Blog12: React.FC<Blog12Props> = ({ onNavigate, onScrollToAuth }) =>
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <BlogLayout onNavigate={onNavigate}>
             <SEO
                 title="Finding Your Virtual Workout Buddy: How Social Fitness Apps Keep You Accountable | FitTribe Blog"
                 description="Learn the ultimate benefits of having a virtual workout buddy and how modern free workout tracker communities act as your permanent accountability partner."
                 type="article"
-                url="https://fittribe.app/blog/virtual-workout-buddy-social-fitness"
-                image="https://fittribe.app/assets/panda_science_together.webp"
+                url="https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness"
+                image="https://tribeworkout.netlify.app/assets/panda_science_together.webp"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -34,7 +35,7 @@ export const Blog12: React.FC<Blog12Props> = ({ onNavigate, onScrollToAuth }) =>
                                 "@type": "Organization",
                                 "name": "FitTribe Team"
                             },
-                            "image": "https://fittribe.app/assets/panda_science_together.webp"
+                            "image": "https://tribeworkout.netlify.app/assets/panda_science_together.webp"
                         },
                         {
                             "@type": "FAQPage",
@@ -68,17 +69,7 @@ export const Blog12: React.FC<Blog12Props> = ({ onNavigate, onScrollToAuth }) =>
                     ]
                 }}
             />
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4">
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="flex items-center text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                    >
-                        <ArrowLeft className="mr-2" size={20} />
-                        Back to FitTribe
-                    </button>
-                </div>
-            </nav>
+            
 
             <section className="bg-gradient-to-br from-blue-900 to-blue-700 text-white py-20">
                 <div className="container mx-auto px-6 max-w-4xl relative">
@@ -211,6 +202,6 @@ export const Blog12: React.FC<Blog12Props> = ({ onNavigate, onScrollToAuth }) =>
                     </button>
                 </div>
             </section>
-        </div>
+        </BlogLayout>
     );
 };

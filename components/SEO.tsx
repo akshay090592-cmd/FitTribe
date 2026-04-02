@@ -16,11 +16,11 @@ export const SEO: React.FC<SEOProps> = ({
     description,
     name = 'FitTribe Tracker',
     type = 'website',
-    image = 'https://fittribe.app/assets/professional_jungle_hero.webp',
+    image = 'https://tribeworkout.netlify.app/assets/professional_jungle_hero.webp',
     url,
     schema
 }) => {
-    const siteUrl = 'https://fittribe.app';
+    const siteUrl = 'https://tribeworkout.netlify.app';
     const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : siteUrl);
     const metaImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
 
@@ -29,6 +29,7 @@ export const SEO: React.FC<SEOProps> = ({
             {/* Standard Meta Tags */}
             <title>{title}</title>
             <meta name='description' content={description} />
+            <meta name="robots" content="index, follow" />
             <link rel="canonical" href={currentUrl} />
 
             {/* Open Graph */}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BlogLayout } from '../BlogLayout';
 import { ArrowLeft, Users, Heart, Share2, Shield, CheckCircle, HelpCircle, BookOpen } from 'lucide-react';
 import { SEO } from '../SEO';
 
@@ -16,13 +17,13 @@ export const Blog8: React.FC<Blog8Props> = ({ onNavigate, onScrollToAuth }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <BlogLayout onNavigate={onNavigate}>
             <SEO
                 title="Social Fitness: Why Your Tribe is the Secret to Long-Term Success | FitTribe Blog"
                 description="Explore the growing trend of social fitness. Learn why connecting with a community transforms your workout habits from a chore into a highlight of your day."
                 type="article"
-                url="https://fittribe.app/blog/social-fitness-success-secret"
-                image="https://fittribe.app/assets/blog8_hero.webp"
+                url="https://tribeworkout.netlify.app/blog/social-fitness-success-secret"
+                image="https://tribeworkout.netlify.app/assets/blog8_hero.webp"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -34,7 +35,7 @@ export const Blog8: React.FC<Blog8Props> = ({ onNavigate, onScrollToAuth }) => {
                                 "@type": "Organization",
                                 "name": "FitTribe Team"
                             },
-                            "image": "https://fittribe.app/assets/blog8_hero.webp"
+                            "image": "https://tribeworkout.netlify.app/assets/blog8_hero.webp"
                         },
                         {
                             "@type": "FAQPage",
@@ -69,17 +70,7 @@ export const Blog8: React.FC<Blog8Props> = ({ onNavigate, onScrollToAuth }) => {
                 }}
             />
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4">
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="flex items-center text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                    >
-                        <ArrowLeft className="mr-2" size={20} />
-                        Back to FitTribe
-                    </button>
-                </div>
-            </nav>
+            
 
             {/* Hero Section */}
             <section className="bg-gradient-to-br from-pink-900 to-rose-700 text-white py-20">
@@ -278,6 +269,6 @@ export const Blog8: React.FC<Blog8Props> = ({ onNavigate, onScrollToAuth }) => {
                     </button>
                 </div>
             </section>
-        </div>
+        </BlogLayout>
     );
 };

@@ -1754,7 +1754,7 @@ const App: React.FC = () => {
 
             {/* Desktop Copyright/Footer */}
             <div className="text-center text-emerald-900/40 text-xs font-bold font-['Fredoka'] mt-4">
-              FitTribe v1.0 • Built with ❤️
+              FitTribe v1.0
             </div>
           </div>
         </div>

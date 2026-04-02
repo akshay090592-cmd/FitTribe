@@ -12,20 +12,20 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
             <SEO
                 title="About FitTribe - The Social Fitness Revolution"
                 description="Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification."
-                url="https://fittribe.app/about"
+                url="https://tribeworkout.netlify.app/about"
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
                         {
                             "@type": "AboutPage",
-                            "url": "https://fittribe.app/about",
+                            "url": "https://tribeworkout.netlify.app/about",
                             "name": "About FitTribe",
                             "description": "Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification.",
                             "publisher": {
                                 "@type": "Organization",
                                 "name": "FitTribe",
-                                "url": "https://fittribe.app/"
+                                "url": "https://tribeworkout.netlify.app/"
                             }
                         },
                         {

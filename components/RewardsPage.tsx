@@ -10,6 +10,8 @@ import { StatsDetailPopup } from './StatsDetailPopup';
 import { getUserLogs } from '../utils/storage';
 import { updateQuestProgress } from '../utils/questUtils';
 import { TribeStatusCard } from './TribeStatusCard';
+import { getAvatarPath } from '../utils/avatar';
+
 
 interface Props {
   currentUser: User;
@@ -31,7 +33,7 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
-  const [tribeMembers, setTribeMembers] = useState<string[]>([]);
+  const [tribeMembers, setTribeMembers] = useState<UserProfile[]>([]);
   const [streaks, setStreaks] = useState<number>(0);
   const [giftModalItem, setGiftModalItem] = useState<GiftItem | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
@@ -57,7 +59,7 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
       const str = await getStreaks(currentUser);
       if (profile.tribeId) {
         const members = await getTribeMembers(profile.tribeId);
-        setTribeMembers(members.map(m => m.displayName));
+        setTribeMembers(members);
       }
 
       setGameState(state);
@@ -394,16 +396,16 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
               <p className="text-emerald-500 text-xs font-bold mb-8">Send a {giftModalItem.name} to a friend!</p>
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {tribeMembers.filter(u => u !== currentUser).map(u => (
+                {tribeMembers.filter(m => m.displayName !== currentUser).map(m => (
                   <button
-                    key={u}
-                    onClick={() => handleSendGift(u)}
+                    key={m.displayName}
+                    onClick={() => handleSendGift(m.displayName)}
                     className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
                   >
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 group-hover:border-emerald-300 transition-colors">
-                      <img src={`/assets/panda_${u.toLowerCase()}.webp`} onError={handleImgError} className="w-full h-full object-cover" />
+                      <img src={getAvatarPath(m.avatarId)} onError={handleImgError} className="w-full h-full object-cover" />
                     </div>
-                    <span className="font-bold text-slate-700 text-lg group-hover:text-emerald-800 text-left flex-1">{u}</span>
+                    <span className="font-bold text-slate-700 text-lg group-hover:text-emerald-800 text-left flex-1">{m.displayName}</span>
                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-300 group-hover:text-emerald-500 group-hover:bg-emerald-100 transition-all shadow-sm">
                       <Send size={18} />
                     </div>

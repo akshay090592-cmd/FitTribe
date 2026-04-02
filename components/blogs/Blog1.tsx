@@ -1,4 +1,5 @@
 import React from 'react';
+import { BlogLayout } from '../BlogLayout';
 import { ArrowLeft, Users, TrendingUp, Award, Heart, CheckCircle, HelpCircle, BookOpen } from 'lucide-react';
 import { SEO } from '../SEO';
 
@@ -18,13 +19,13 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
 
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <BlogLayout onNavigate={onNavigate}>
             <SEO
                 title="Why Community Workouts Are More Effective Than Solo Training | FitTribe Blog"
                 description="Discover the science behind the Köhler Effect and why working out with others leads to 58-200% longer persistence on physical tasks."
                 type="article"
-                url="https://fittribe.app/blog/community-workouts-effectiveness"
-                image="https://fittribe.app/assets/professional_jungle_hero.webp"
+                url="https://tribeworkout.netlify.app/blog/community-workouts-effectiveness"
+                image="https://tribeworkout.netlify.app/assets/professional_jungle_hero.webp"
                 schema={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -36,7 +37,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                                 "@type": "Organization",
                                 "name": "FitTribe Team"
                             },
-                            "image": "https://fittribe.app/assets/professional_jungle_hero.webp"
+                            "image": "https://tribeworkout.netlify.app/assets/professional_jungle_hero.webp"
                         },
                         {
                             "@type": "FAQPage",
@@ -71,17 +72,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                 }}
             />
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4">
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="flex items-center text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                    >
-                        <ArrowLeft className="mr-2" size={20} />
-                        Back to FitTribe
-                    </button>
-                </div>
-            </nav>
+            
 
             {/* Hero Section */}
             <section className="bg-gradient-to-br from-emerald-900 to-emerald-700 text-white py-20">
@@ -327,19 +318,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                 </div>
             </article>
 
-            {/* Footer CTA */}
-            <section className="bg-slate-900 text-white py-16">
-                <div className="container mx-auto px-6 text-center">
-                    <h3 className="text-2xl font-bold font-['Fredoka'] mb-4">Continue Reading</h3>
-                    <p className="text-slate-300 mb-8">Explore more insights on social fitness and community workouts</p>
-                    <button
-                        onClick={() => onNavigate('landing')}
-                        className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
-                    >
-                        ← Back to All Articles
-                    </button>
-                </div>
-            </section>
-        </div>
+            
+        </BlogLayout>
     );
 };

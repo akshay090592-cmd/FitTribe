@@ -4,11 +4,18 @@ import { SEO } from './SEO';
 
 interface TermsOfServiceProps {
     onBack: () => void;
+    onNavigate?: (view: string) => void;
+    onScrollToAuth?: () => void;
 }
 
-export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
+export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack, onNavigate, onScrollToAuth }) => {
     return (
-        <FooterPageLayout title="Terms of Service" onBack={onBack}>
+        <FooterPageLayout 
+            title="Terms of Service" 
+            onBack={onBack}
+            onNavigate={onNavigate}
+            onScrollToAuth={onScrollToAuth}
+        >
             <SEO
                 title="Terms of Service - FitTribe Tracker"
                 description="Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."

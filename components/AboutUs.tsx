@@ -4,11 +4,18 @@ import { SEO } from './SEO';
 
 interface AboutUsProps {
     onBack: () => void;
+    onNavigate?: (view: string) => void;
+    onScrollToAuth?: () => void;
 }
 
-export const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
+export const AboutUs: React.FC<AboutUsProps> = ({ onBack, onNavigate, onScrollToAuth }) => {
     return (
-        <FooterPageLayout title="About FitTribe" onBack={onBack}>
+        <FooterPageLayout 
+            title="About FitTribe" 
+            onBack={onBack}
+            onNavigate={onNavigate}
+            onScrollToAuth={onScrollToAuth}
+        >
             <SEO
                 title="About FitTribe - The Social Fitness Revolution"
                 description="Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification."

@@ -4,11 +4,18 @@ import { SEO } from './SEO';
 
 interface PrivacyPolicyProps {
     onBack: () => void;
+    onNavigate?: (view: string) => void;
+    onScrollToAuth?: () => void;
 }
 
-export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
+export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, onNavigate, onScrollToAuth }) => {
     return (
-        <FooterPageLayout title="Privacy Policy" onBack={onBack}>
+        <FooterPageLayout 
+            title="Privacy Policy" 
+            onBack={onBack}
+            onNavigate={onNavigate}
+            onScrollToAuth={onScrollToAuth}
+        >
             <SEO
                 title="Privacy Policy - FitTribe Tracker"
                 description="Read our Privacy Policy to understand how FitTribe collects, uses, and protects your personal and fitness data."

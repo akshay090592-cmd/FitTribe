@@ -28,14 +28,59 @@ export const Blog3: React.FC<Blog3Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/social-accountability-fitness/#article",
                             "headline": "How Social Accountability Transforms Your Fitness Journey",
+                            "description": "Learn why people with accountability partners are 65% more likely to achieve their goals and how public commitment changes everything.",
                             "datePublished": "2026-01-29",
+                            "dateModified": "2026-01-29",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_tribe_accountability.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_tribe_accountability.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/social-accountability-fitness/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/social-accountability-fitness/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/social-accountability-fitness",
+                                        "url": "https://tribeworkout.netlify.app/blog/social-accountability-fitness",
+                                        "name": "Social Accountability Fitness"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

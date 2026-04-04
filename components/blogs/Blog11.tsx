@@ -28,14 +28,59 @@ export const Blog11: React.FC<Blog11Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/free-workout-community-vs-gym/#article",
                             "headline": "Why a Free Workout Community App Beats Expensive Gym Memberships",
+                            "description": "Discover how a free workout community app and fitness tracker can provide more motivation, better results, and zero financial stress compared to a pricey gym contract.",
                             "datePublished": "2026-02-15",
+                            "dateModified": "2026-02-15",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_strength_training.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_strength_training.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/free-workout-community-vs-gym/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/free-workout-community-vs-gym/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/free-workout-community-vs-gym",
+                                        "url": "https://tribeworkout.netlify.app/blog/free-workout-community-vs-gym",
+                                        "name": "Free Workout Community vs Gym"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

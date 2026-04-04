@@ -16,10 +16,53 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
-                    "@type": "WebPage",
-                    "url": "https://tribeworkout.netlify.app/terms",
-                    "name": "FitTribe Terms of Service",
-                    "description": "Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform."
+                    "@graph": [
+                        {
+                            "@type": "WebPage",
+                            "@id": "https://tribeworkout.netlify.app/terms/#webpage",
+                            "url": "https://tribeworkout.netlify.app/terms",
+                            "name": "FitTribe Terms of Service",
+                            "description": "Our Terms of Service outline the agreement between you and FitTribe regarding the use of our fitness tracking platform.",
+                            "publisher": { "@id": "https://tribeworkout.netlify.app/#organization" },
+                            "breadcrumb": { "@id": "https://tribeworkout.netlify.app/terms/#breadcrumb" }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/terms/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/terms",
+                                        "url": "https://tribeworkout.netlify.app/terms",
+                                        "name": "Terms of Service"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "@type": "Organization",
+                            "@id": "https://tribeworkout.netlify.app/#organization",
+                            "name": "FitTribe",
+                            "url": "https://tribeworkout.netlify.app/",
+                            "logo": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                            }
+                        }
+                    ]
                 }}
             />
             <section className="space-y-6">

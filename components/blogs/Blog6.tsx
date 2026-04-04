@@ -28,14 +28,59 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution/#article",
                             "headline": "AI Workout Planner: How Artificial Intelligence is Revolutionizing Fitness",
+                            "description": "Discover how an AI workout planner can supercharge your results with hyper-personalized programming, real-time adjustments, and data-driven insights.",
                             "datePublished": "2026-01-30",
+                            "dateModified": "2026-01-30",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/blog6_hero.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/blog6_hero.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution",
+                                        "url": "https://tribeworkout.netlify.app/blog/ai-workout-planner-revolution",
+                                        "name": "AI Workout Planner Revolution"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

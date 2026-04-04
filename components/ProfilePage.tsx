@@ -10,6 +10,7 @@ import { BadgeModal } from './BadgeModal';
 import { StatsDetailPopup } from './StatsDetailPopup';
 import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank } from '../utils/gamification';
 import { getAvatarPath } from '../utils/avatar';
+import { SEO } from './SEO';
 
 interface Props {
     userProfile: UserProfile;
@@ -167,6 +168,23 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
 
     return (
         <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in">
+            <SEO
+                title={`${userProfile.displayName}'s Fitness Passport | FitTribe`}
+                description={`View ${userProfile.displayName}'s fitness journey, trophies, and stats on FitTribe.`}
+                type="profile"
+                schema={{
+                    "@context": "https://schema.org",
+                    "@type": "ProfilePage",
+                    "name": `${userProfile.displayName}'s Fitness Passport`,
+                    "description": `View ${userProfile.displayName}'s fitness journey, trophies, and stats on FitTribe.`,
+                    "mainEntity": {
+                        "@type": "Person",
+                        "name": userProfile.displayName,
+                        "image": getAvatarPath(userProfile.avatarId),
+                        "description": `Fitness enthusiast and member of FitTribe community.`
+                    }
+                }}
+            />
 
             {viewMode === 'passport' ? (
                 <>

@@ -28,14 +28,59 @@ export const Blog10: React.FC<Blog10Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/personal-ai-fitness-coach-guide/#article",
                             "headline": "Your Dedicated Personal AI Fitness Coach: 24/7 Support",
+                            "description": "Meet your new AI fitness coach. Experience 24/7 expert guidance, instant feedback, and personalized workout adjustments that fit your lifestyle.",
                             "datePublished": "2026-01-30",
+                            "dateModified": "2026-01-30",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/blog10_hero.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/blog10_hero.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/personal-ai-fitness-coach-guide/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/personal-ai-fitness-coach-guide/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/personal-ai-fitness-coach-guide",
+                                        "url": "https://tribeworkout.netlify.app/blog/personal-ai-fitness-coach-guide",
+                                        "name": "Personal AI Fitness Coach Guide"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

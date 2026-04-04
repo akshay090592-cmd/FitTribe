@@ -19,13 +19,47 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                     "@graph": [
                         {
                             "@type": "AboutPage",
+                            "@id": "https://tribeworkout.netlify.app/about/#webpage",
                             "url": "https://tribeworkout.netlify.app/about",
                             "name": "About FitTribe",
                             "description": "Learn about FitTribe's mission to transform fitness through community power, social accountability, and gamification.",
-                            "publisher": {
-                                "@type": "Organization",
-                                "name": "FitTribe",
-                                "url": "https://tribeworkout.netlify.app/"
+                            "publisher": { "@id": "https://tribeworkout.netlify.app/#organization" },
+                            "breadcrumb": { "@id": "https://tribeworkout.netlify.app/about/#breadcrumb" }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/about/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/about",
+                                        "url": "https://tribeworkout.netlify.app/about",
+                                        "name": "About"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "@type": "Organization",
+                            "@id": "https://tribeworkout.netlify.app/#organization",
+                            "name": "FitTribe",
+                            "url": "https://tribeworkout.netlify.app/",
+                            "logo": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
                             }
                         },
                         {

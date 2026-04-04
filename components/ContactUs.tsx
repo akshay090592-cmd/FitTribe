@@ -17,15 +17,58 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
-                    "@type": "ContactPage",
-                    "url": "https://tribeworkout.netlify.app/contact",
-                    "name": "Contact FitTribe",
-                    "description": "Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive.",
-                    "contactPoint": {
-                        "@type": "ContactPoint",
-                        "email": "mindweave.app@gmail.com",
-                        "contactType": "customer support"
-                    }
+                    "@graph": [
+                        {
+                            "@type": "ContactPage",
+                            "@id": "https://tribeworkout.netlify.app/contact/#webpage",
+                            "url": "https://tribeworkout.netlify.app/contact",
+                            "name": "Contact FitTribe",
+                            "description": "Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive.",
+                            "publisher": { "@id": "https://tribeworkout.netlify.app/#organization" },
+                            "breadcrumb": { "@id": "https://tribeworkout.netlify.app/contact/#breadcrumb" }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/contact/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/contact",
+                                        "url": "https://tribeworkout.netlify.app/contact",
+                                        "name": "Contact"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "@type": "Organization",
+                            "@id": "https://tribeworkout.netlify.app/#organization",
+                            "name": "FitTribe",
+                            "url": "https://tribeworkout.netlify.app/",
+                            "logo": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                            },
+                            "contactPoint": {
+                                "@type": "ContactPoint",
+                                "email": "mindweave.app@gmail.com",
+                                "contactType": "customer support"
+                            }
+                        }
+                    ]
                 }}
             />
             <section className="space-y-8">

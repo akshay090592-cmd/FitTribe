@@ -85,6 +85,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           "@context": "https://schema.org",
           "@graph": [
             {
+              "@type": "WebSite",
+              "@id": "https://tribeworkout.netlify.app/#website",
+              "url": "https://tribeworkout.netlify.app",
+              "name": "FitTribe Tracker",
+              "description": "The Free Social Fitness Tracker for Communities",
+              "publisher": { "@id": "https://tribeworkout.netlify.app/#organization" },
+              "potentialAction": [{
+                "@type": "SearchAction",
+                "target": "https://tribeworkout.netlify.app/?s={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }],
+              "inLanguage": "en-US"
+            },
+            {
               "@type": "SoftwareApplication",
               "name": "FitTribe Tracker",
               "applicationCategory": "HealthApplication",
@@ -102,8 +116,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             },
             {
               "@type": "WebPage",
+              "@id": "https://tribeworkout.netlify.app/#webpage",
+              "url": "https://tribeworkout.netlify.app",
               "name": "FitTribe - Free Community Fitness & Workout Tracker",
-              "description": "Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated."
+              "description": "Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated.",
+              "breadcrumb": { "@id": "https://tribeworkout.netlify.app/#breadcrumb" }
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": "https://tribeworkout.netlify.app/#breadcrumb",
+              "itemListElement": [{
+                "@type": "ListItem",
+                "position": 1,
+                "item": {
+                  "@type": "WebPage",
+                  "@id": "https://tribeworkout.netlify.app/",
+                  "url": "https://tribeworkout.netlify.app/",
+                  "name": "Home"
+                }
+              }]
             },
             {
               "@type": "FAQPage",
@@ -152,9 +183,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             },
             {
               "@type": "Organization",
+              "@id": "https://tribeworkout.netlify.app/#organization",
               "name": "FitTribe",
               "url": "https://tribeworkout.netlify.app",
-              "logo": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+              }
             }
           ]
         }}

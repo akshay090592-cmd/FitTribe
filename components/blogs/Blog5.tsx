@@ -30,14 +30,59 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/breaking-fitness-barriers/#article",
                             "headline": "Breaking Fitness Barriers: The Power of Working Out Together",
+                            "description": "Tackle the biggest obstacles: lack of motivation, gym intimidation, boredom, confusion, and loneliness—and learn how community conquers them all.",
                             "datePublished": "2026-01-29",
+                            "dateModified": "2026-01-29",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_accessible_fitness.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_accessible_fitness.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/breaking-fitness-barriers/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/breaking-fitness-barriers/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/breaking-fitness-barriers",
+                                        "url": "https://tribeworkout.netlify.app/blog/breaking-fitness-barriers",
+                                        "name": "Breaking Fitness Barriers"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

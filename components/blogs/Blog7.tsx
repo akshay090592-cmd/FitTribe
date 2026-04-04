@@ -28,14 +28,59 @@ export const Blog7: React.FC<Blog7Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/best-workout-plan-science/#article",
                             "headline": "What is the Best Workout Plan for Results?",
+                            "description": "Discover the science-backed components of the best workout plan. From progressive overload to specific periodization, learn how to build a plan that actually works.",
                             "datePublished": "2026-01-30",
+                            "dateModified": "2026-01-30",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/blog7_hero.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/blog7_hero.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/best-workout-plan-science/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/best-workout-plan-science/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/best-workout-plan-science",
+                                        "url": "https://tribeworkout.netlify.app/blog/best-workout-plan-science",
+                                        "name": "Best Workout Plan Science"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

@@ -28,14 +28,59 @@ export const Blog9: React.FC<Blog9Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/gamified-fitness-motivation-hack/#article",
                             "headline": "Gamified Fitness: How to Level Up Your Health Like a Pro",
+                            "description": "Discover why gamified fitness is the ultimate hack for motivation. From XP and levels to badges and streaks, learn how to turn your health journey into an addictive game.",
                             "datePublished": "2026-01-30",
+                            "dateModified": "2026-01-30",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/blog9_hero.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/blog9_hero.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/gamified-fitness-motivation-hack/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/gamified-fitness-motivation-hack/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/gamified-fitness-motivation-hack",
+                                        "url": "https://tribeworkout.netlify.app/blog/gamified-fitness-motivation-hack",
+                                        "name": "Gamified Fitness Motivation Hack"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

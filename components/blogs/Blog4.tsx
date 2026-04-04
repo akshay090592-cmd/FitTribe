@@ -28,14 +28,59 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/consistency-mechanisms/#article",
                             "headline": "5 Ways Community Workouts Keep You Consistent",
+                            "description": "From scheduled accountability to built-in support systems, discover the five mechanisms that make consistency effortless.",
                             "datePublished": "2026-01-29",
+                            "dateModified": "2026-01-29",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/consistency-mechanisms/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/consistency-mechanisms/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/consistency-mechanisms",
+                                        "url": "https://tribeworkout.netlify.app/blog/consistency-mechanisms",
+                                        "name": "Consistency Mechanisms"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

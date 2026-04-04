@@ -28,14 +28,59 @@ export const Blog15: React.FC<Blog15Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/community-fitness-tracker-vs-solo/#article",
                             "headline": "Community Fitness Tracker vs Solo Gym Sessions: What Actually Works?",
+                            "description": "Compare the long-term adherence rates of solo gym sessions versus using a community fitness tracker and discover why social fitness wins.",
                             "datePublished": "2026-02-25",
+                            "dateModified": "2026-02-25",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_accessible_fitness.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_accessible_fitness.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/community-fitness-tracker-vs-solo/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/community-fitness-tracker-vs-solo/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/community-fitness-tracker-vs-solo",
+                                        "url": "https://tribeworkout.netlify.app/blog/community-fitness-tracker-vs-solo",
+                                        "name": "Community Fitness Tracker vs Solo"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

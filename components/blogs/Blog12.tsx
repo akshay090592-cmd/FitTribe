@@ -28,14 +28,59 @@ export const Blog12: React.FC<Blog12Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness/#article",
                             "headline": "Finding Your Virtual Workout Buddy: How Social Fitness Apps Keep You Accountable",
+                            "description": "Learn the ultimate benefits of having a virtual workout buddy and how modern free workout tracker communities act as your permanent accountability partner.",
                             "datePublished": "2026-02-16",
+                            "dateModified": "2026-02-16",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_science_together.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_science_together.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness",
+                                        "url": "https://tribeworkout.netlify.app/blog/virtual-workout-buddy-social-fitness",
+                                        "name": "Virtual Workout Buddy Social Fitness"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

@@ -21,14 +21,59 @@ export const Blog16: React.FC<Blog16Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/open-source-fitness-tracker/#article",
                             "headline": "Building a Free Workout Community App Together: FitTribe Goes Open Source",
+                            "description": "Why FitTribe is 100% open-source. Join our mission to build the best free community fitness tracker and contribute to a healthier world.",
                             "datePublished": "2026-03-01",
+                            "dateModified": "2026-03-01",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_science_together.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_science_together.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/open-source-fitness-tracker/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/open-source-fitness-tracker/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/open-source-fitness-tracker",
+                                        "url": "https://tribeworkout.netlify.app/blog/open-source-fitness-tracker",
+                                        "name": "Open Source Fitness Tracker"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

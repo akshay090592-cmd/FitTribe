@@ -16,10 +16,53 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 type="website"
                 schema={{
                     "@context": "https://schema.org",
-                    "@type": "WebPage",
-                    "url": "https://tribeworkout.netlify.app/privacy",
-                    "name": "FitTribe Privacy Policy",
-                    "description": "Read our Privacy Policy to understand how FitTribe collects, uses, and protects your personal and fitness data."
+                    "@graph": [
+                        {
+                            "@type": "WebPage",
+                            "@id": "https://tribeworkout.netlify.app/privacy/#webpage",
+                            "url": "https://tribeworkout.netlify.app/privacy",
+                            "name": "FitTribe Privacy Policy",
+                            "description": "Read our Privacy Policy to understand how FitTribe collects, uses, and protects your personal and fitness data.",
+                            "publisher": { "@id": "https://tribeworkout.netlify.app/#organization" },
+                            "breadcrumb": { "@id": "https://tribeworkout.netlify.app/privacy/#breadcrumb" }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/privacy/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/privacy",
+                                        "url": "https://tribeworkout.netlify.app/privacy",
+                                        "name": "Privacy Policy"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "@type": "Organization",
+                            "@id": "https://tribeworkout.netlify.app/#organization",
+                            "name": "FitTribe",
+                            "url": "https://tribeworkout.netlify.app/",
+                            "logo": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                            }
+                        }
+                    ]
                 }}
             />
             <section className="space-y-6">

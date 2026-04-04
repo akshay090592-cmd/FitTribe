@@ -28,14 +28,59 @@ export const Blog14: React.FC<Blog14Props> = ({ onNavigate, onScrollToAuth }) =>
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "BlogPosting",
+                            "@type": "TechArticle",
+                            "@id": "https://tribeworkout.netlify.app/blog/weight-lifting-tracker-friends/#article",
                             "headline": "How a Free Weight Lifting Tracker with Friends Boosts Your Gains",
+                            "description": "Harness the competitive nature of a fitness tracker with friends to push harder, lift heavier, and stay consistent.",
                             "datePublished": "2026-02-21",
+                            "dateModified": "2026-02-21",
                             "author": {
-                                "@type": "Organization",
-                                "name": "FitTribe Team"
+                                "@type": "Person",
+                                "name": "Akshay Singh",
+                                "url": "https://akshay-singh.netlify.app/"
                             },
-                            "image": "https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "FitTribe",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://tribeworkout.netlify.app/assets/panda_male.webp"
+                                }
+                            },
+                            "image": {
+                                "@type": "ImageObject",
+                                "url": "https://tribeworkout.netlify.app/assets/panda_gamified_rewards.webp"
+                            },
+                            "mainEntityOfPage": {
+                                "@type": "WebPage",
+                                "@id": "https://tribeworkout.netlify.app/blog/weight-lifting-tracker-friends/#webpage"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "@id": "https://tribeworkout.netlify.app/blog/weight-lifting-tracker-friends/#breadcrumb",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/",
+                                        "url": "https://tribeworkout.netlify.app/",
+                                        "name": "Home"
+                                    }
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "item": {
+                                        "@type": "WebPage",
+                                        "@id": "https://tribeworkout.netlify.app/blog/weight-lifting-tracker-friends",
+                                        "url": "https://tribeworkout.netlify.app/blog/weight-lifting-tracker-friends",
+                                        "name": "Weight Lifting Tracker Friends"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "@type": "FAQPage",

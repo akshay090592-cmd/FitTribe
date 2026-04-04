@@ -5,11 +5,18 @@ import { SEO } from './SEO';
 
 interface ContactUsProps {
     onBack: () => void;
+    onNavigate?: (view: string) => void;
+    onScrollToAuth?: () => void;
 }
 
-export const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
+export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScrollToAuth }) => {
     return (
-        <FooterPageLayout title="Contact Us" onBack={onBack}>
+        <FooterPageLayout 
+            title="Contact Us" 
+            onBack={onBack}
+            onNavigate={onNavigate}
+            onScrollToAuth={onScrollToAuth}
+        >
             <SEO
                 title="Contact FitTribe - We're Here to Help"
                 description="Have questions or feedback? Reach out to the FitTribe team. We're dedicated to helping our community thrive."

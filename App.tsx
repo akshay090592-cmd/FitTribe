@@ -905,12 +905,6 @@ const App: React.FC = () => {
     return <LoadingSpinner fullScreen />;
   }
 
-  // 1. Footer Pages (Public/Accessible always)
-  if (view === 'about') return <AboutUs onBack={() => setView('dashboard')} />;
-  if (view === 'privacy') return <PrivacyPolicy onBack={() => setView('dashboard')} />;
-  if (view === 'terms') return <TermsOfService onBack={() => setView('dashboard')} />;
-  if (view === 'contact') return <ContactUs onBack={() => setView('dashboard')} />;
-
   // Blog Pages (Public/Accessible always)
   const scrollToAuth = () => {
     setView('landing');
@@ -921,6 +915,12 @@ const App: React.FC = () => {
       }
     }, 100);
   };
+
+  // 1. Footer Pages (Public/Accessible always)
+  if (view === 'about') return <AboutUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'privacy') return <PrivacyPolicy onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'terms') return <TermsOfService onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'contact') return <ContactUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
 
   if (view === 'blog1') return <Blog1 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
   if (view === 'blog2') return <Blog2 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;

@@ -6,6 +6,24 @@ import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircl
 
 import { WorkoutLog } from '../types';
 
+const FormattedMessage = ({ text }: { text: string }) => {
+    return (
+        <>
+            {text.split('\n').map((line, i, lines) => (
+                <React.Fragment key={i}>
+                    {line.split(/(\*\*.*?\*\*)/).map((part, j) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            return <b key={j}>{part.slice(2, -2)}</b>;
+                        }
+                        return part;
+                    })}
+                    {i < lines.length - 1 && <br />}
+                </React.Fragment>
+            ))}
+        </>
+    );
+};
+
 interface Props {
     userProfile: UserProfile;
     lastWorkout?: WorkoutLog;
@@ -574,7 +592,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
                                             ? 'bg-orange-500 text-white rounded-br-none'
                                             : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
                                             }`}>
-                                            <div dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
+                                            <FormattedMessage text={m.text} />
                                         </div>
                                     </div>
                                 ))}
@@ -750,7 +768,7 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
                                         ? 'bg-emerald-600 text-white rounded-br-none'
                                         : 'bg-white text-emerald-900 border border-emerald-100 rounded-bl-none'
                                         }`}>
-                                        <div dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
+                                        <FormattedMessage text={m.text} />
                                     </div>
                                 </div>
                             ))}

@@ -92,7 +92,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({
         }}
         className={`text-sm font-bold hover:underline ${dark ? 'text-emerald-300' : 'text-emerald-600'}`}
       >
-        {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+        {isSignUp ? 'Already have a panda? Sign in' : "New to the tribe? Join the pack"}
       </button>
     </div>
   </>

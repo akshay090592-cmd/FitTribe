@@ -148,4 +148,22 @@ describe('CoachView', () => {
             }));
         });
     });
+
+    it('renders bold text and line breaks safely in chat messages', async () => {
+        render(<CoachView userProfile={mockProfile} />);
+
+        // Switch to AI Coach tab
+        const chatTab = screen.getByRole('button', { name: /AI Coach/i });
+        fireEvent.click(chatTab);
+
+        // Check for bold text in the initial message
+        await waitFor(() => {
+            const boldElements = screen.getAllByText('Custom Workouts', { selector: 'b' });
+            expect(boldElements.length).toBeGreaterThan(0);
+        });
+
+        // Check for line breaks
+        const container = screen.getByText(/Hello/i).closest('div');
+        expect(container?.querySelector('br')).not.toBeNull();
+    });
 });

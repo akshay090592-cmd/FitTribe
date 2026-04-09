@@ -69,7 +69,8 @@ export enum WorkoutType {
   B = 'B',
   CUSTOM = 'Custom',
   CUSTOM_TEMPLATE = 'Custom_Template',
-  COMMITMENT = 'COMMITMENT'
+  COMMITMENT = 'COMMITMENT',
+  WATER = 'WATER'
 }
 
 export interface ExerciseSet {
@@ -226,7 +227,7 @@ export interface PointLog {
 }
 
 // --- QUEST TYPES ---
-export type QuestType = 'workout' | 'social_reaction' | 'social_gift' | 'manual';
+export type QuestType = 'workout' | 'social_reaction' | 'social_gift' | 'manual' | 'water';
 
 export interface Quest {
   id: string;

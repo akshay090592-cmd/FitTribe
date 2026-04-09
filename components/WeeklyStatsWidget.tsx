@@ -17,7 +17,11 @@ export const WeeklyStatsWidget: React.FC<Props> = ({ logs, userProfile, onClick,
     const weekStart = startOfWeek(now); // default starts on Sunday
     weekStart.setHours(0, 0, 0, 0);
 
-    const weekLogs = logs.filter(l => new Date(l.date) >= weekStart && l.type !== WorkoutType.COMMITMENT);
+    const weekLogs = logs.filter(l =>
+      new Date(l.date) >= weekStart &&
+      l.type !== WorkoutType.COMMITMENT &&
+      l.type !== WorkoutType.WATER
+    );
 
     const duration = weekLogs.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
     const calories = weekLogs.reduce((acc, l) => acc + (l.calories || 0), 0);

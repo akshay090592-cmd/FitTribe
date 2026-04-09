@@ -104,7 +104,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            const visibleLogs = allLogs;
+            const visibleLogs = allLogs.filter(l => l.type !== WorkoutType.WATER);
 
             const combined: FeedItem[] = [
                 // Optimization: Keep date as string to avoid instantiation overhead

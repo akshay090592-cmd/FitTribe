@@ -23,6 +23,9 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, log
 
     return logs
       .filter(log => {
+        // Filter out Water logs by default, unless explicitly requested (currently not an option in dropdown)
+        if (log.type === WorkoutType.WATER && filterType !== 'WATER') return false;
+
         // Filter by Type
         if (filterType !== 'ALL' && log.type !== filterType) return false;
 

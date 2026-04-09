@@ -99,13 +99,18 @@ export const calculateXP = (logs: WorkoutLog[]) => {
       } else {
         logXp = Math.min(log.durationMinutes, 60);
       }
+    } else if (log.type === WorkoutType.WATER) {
+      logXp = Math.floor((log.durationMinutes || 0) / 250) * 5;
     } else {
       logXp = 100; // Plan A/B
     }
 
     // 2. Streak Calculation for Bonus
     // Rule: Workouts < 30 mins do not count towards streak
-    const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
+    const isStreakEligible = !(
+      ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30) ||
+      log.type === WorkoutType.WATER
+    );
 
     if (isStreakEligible) {
       const logDate = new Date(log.date);
@@ -167,12 +172,17 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
       } else {
         logXp = Math.min(log.durationMinutes, 60);
       }
+    } else if (log.type === WorkoutType.WATER) {
+      logXp = Math.floor((log.durationMinutes || 0) / 250) * 5;
     } else {
       logXp = 100; // Plan A/B
     }
 
     // 2. Streak Calculation for Bonus
-    const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
+    const isStreakEligible = !(
+      ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30) ||
+      log.type === WorkoutType.WATER
+    );
 
     if (isStreakEligible) {
       const logDate = new Date(log.date);
@@ -210,7 +220,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
 };
 
 export const calculatePoints = (log: WorkoutLog): number => {
-  if (log.type === WorkoutType.COMMITMENT) return 0;
+  if (log.type === WorkoutType.COMMITMENT || log.type === WorkoutType.WATER) return 0;
 
   if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) {
     if (log.durationMinutes < 30) return 0;
@@ -758,6 +768,9 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
       xpToLose = Math.min(log.durationMinutes, 60);
     }
     pointsToLose = Math.floor((log.calories || 0) / 10);
+  } else if (log.type === WorkoutType.WATER) {
+    xpToLose = Math.floor((log.durationMinutes || 0) / 250) * 5;
+    pointsToLose = 0;
   } else {
     // Plan A / B
     xpToLose = log.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;

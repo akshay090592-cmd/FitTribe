@@ -25,6 +25,7 @@ import { TutorialPage } from './components/TutorialPage';
 import { HistoryModal } from './components/HistoryModal';
 import { formatDistanceToNow } from 'date-fns';
 import { WeeklyStatsWidget } from './components/WeeklyStatsWidget';
+import { WaterTracker } from './components/WaterTracker';
 import { CreateChallengeModal } from './components/CreateChallengeModal';
 import { Plus } from 'lucide-react';
 import { WorkoutLibraryModal } from './components/WorkoutLibraryModal';
@@ -871,6 +872,28 @@ const App: React.FC = () => {
     loadProfile(true); // Refresh to update TribePulse
   };
 
+  const handleLogWater = async (amount: number) => {
+    if (!userProfile || !currentUser) return;
+
+    const waterLog = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: currentUser,
+      type: WorkoutType.WATER,
+      exercises: [],
+      durationMinutes: amount // Use durationMinutes to store ml
+    };
+
+    await saveLog(waterLog as any, userProfile);
+
+    // Update Quests
+    const { updateQuestProgress } = await import('./utils/questUtils');
+    await updateQuestProgress(currentUser, userProfile, 'water', amount);
+
+    showToast(`Logged ${amount}ml of water!`, "success");
+    loadProfile(true); // Refresh logs
+  };
+
   const handleOpenStats = async (type: 'workouts' | 'streak' | 'weekly') => {
     // Refresh logs just in case
     if (currentUser) {
@@ -1569,6 +1592,14 @@ const App: React.FC = () => {
                   userProfile={userProfile}
                   weeklyProgress={weeklyProgress}
                   onClick={() => handleOpenStats('weekly')}
+                />
+              </div>
+
+              {/* Water Tracker Widget */}
+              <div className="md:col-span-2 lg:col-span-1">
+                <WaterTracker
+                  logs={allLogs}
+                  onLogWater={handleLogWater}
                 />
               </div>
 

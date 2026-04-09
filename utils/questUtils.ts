@@ -71,8 +71,8 @@ const QUEST_TEMPLATES: Omit<Quest, 'id' | 'progress' | 'completed'>[] = [
     templateId: 'drink_water',
     title: 'Hydration Station',
     description: 'Drink 2L of water today.',
-    type: 'manual',
-    target: 1,
+    type: 'water',
+    target: 2000,
     rewardPoints: 5,
     rewardXp: 10,
     icon: 'GlassWater'

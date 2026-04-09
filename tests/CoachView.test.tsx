@@ -22,6 +22,7 @@ vi.mock('../utils/storage', () => ({
     getUserDiet: vi.fn().mockResolvedValue(null),
     saveUserDiet: vi.fn(),
     saveUserPlan: vi.fn(),
+    saveCustomWorkoutPlan: vi.fn(),
     getUserPlans: vi.fn().mockResolvedValue(null),
     getUserLogs: vi.fn().mockResolvedValue([]),
     getUserLogsById: vi.fn().mockResolvedValue([]),
@@ -165,5 +166,42 @@ describe('CoachView', () => {
         // Check for line breaks
         const container = screen.getByText(/Hello/i).closest('div');
         expect(container?.querySelector('br')).not.toBeNull();
+    });
+
+    it('renders AI action confirmation card and handles confirmation', async () => {
+        const mockWorkoutAction = {
+            type: 'SAVE_WORKOUT',
+            payload: {
+                title: 'AI Generated Workout',
+                exercises: [{ name: 'Pushups', defaultSets: 3, defaultReps: '10' }]
+            }
+        };
+
+        (AICoachService.chatWithCoach as any).mockResolvedValue({
+            text: 'I have created a workout for you!',
+            action: mockWorkoutAction
+        });
+
+        render(<CoachView userProfile={mockProfile} />);
+
+        // Switch to AI Coach tab
+        const chatTab = screen.getByRole('button', { name: /AI Coach/i });
+        fireEvent.click(chatTab);
+
+        // Send a message to trigger AI action
+        const input = screen.getByPlaceholderText(/Ask for advice/i);
+        fireEvent.change(input, { target: { value: 'Create a workout' } });
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+        // Check if action card appears
+        expect(await screen.findByText(/Custom Workout/i, {}, { timeout: 3000 })).toBeInTheDocument();
+        expect(await screen.findByText(/AI Generated Workout/i, {}, { timeout: 3000 })).toBeInTheDocument();
+
+        // Click Confirm & Save
+        const confirmBtn = screen.getByRole('button', { name: /Confirm & Save/i });
+        fireEvent.click(confirmBtn);
+
+        // Success state should appear
+        expect(await screen.findByText(/Saved!/i, {}, { timeout: 3000 })).toBeInTheDocument();
     });
 });

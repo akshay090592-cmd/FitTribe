@@ -88,7 +88,7 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScro
                         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
                             <Mail size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Email Us</h3>
+                        <h2 className="text-xl font-bold text-slate-900 mb-2 font-['Fredoka']">Email Us</h2>
                         <p className="text-slate-500 text-sm mb-4">The fastest way to reach us for support or inquiries.</p>
                         <a
                             href="mailto:mindweave.app@gmail.com"
@@ -102,7 +102,7 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScro
                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                             <MessageSquare size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Feedback</h3>
+                        <h2 className="text-xl font-bold text-slate-900 mb-2 font-['Fredoka']">Feedback</h2>
                         <p className="text-slate-500 text-sm mb-4">Want to suggest a feature or report a bug?</p>
                         <a
                             href="mailto:mindweave.app@gmail.com?subject=FitTribe Feedback"
@@ -114,7 +114,7 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScro
                 </div>
 
                 <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center mt-12">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">Global Community</h3>
+                    <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Fredoka']">Global Community</h2>
                     <p className="text-slate-500 max-w-lg mx-auto">
                         FitTribe is a global community of fitness enthusiasts. While we don't have physical offices for visitors, our digital doors are always open.
                     </p>

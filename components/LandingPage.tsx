@@ -219,33 +219,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/assets/professional_jungle_hero.webp"
-            alt="Professional Jungle Gym"
-            className="w-full h-full object-cover animate-scale-up-slow"
-            onError={handleImgError}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/60 to-emerald-900/30"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50 to-transparent"></div>
-        </div>
+      {/* Main Content Landmark */}
+      <main>
+        {/* Hero Section */}
+        <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/assets/professional_jungle_hero.webp"
+              alt="Professional Jungle Gym"
+              className="w-full h-full object-cover animate-scale-up-slow"
+              onError={handleImgError}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/60 to-emerald-900/30"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50 to-transparent"></div>
+          </div>
 
-        <div className="container mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="text-white space-y-8 animate-fade-in pt-20 lg:pt-0">
-            <div className="inline-flex items-center space-x-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-full px-4 py-1.5 text-emerald-100 text-sm font-bold uppercase tracking-wider mb-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>The Free Social Fitness Tracker</span>
-            </div>
+          <div className="container mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-16 items-center">
+            <div className="text-white space-y-8 animate-fade-in pt-20 lg:pt-0">
+              <div className="inline-flex items-center space-x-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-full px-4 py-1.5 text-emerald-100 text-sm font-bold uppercase tracking-wider mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>The Free Social Fitness Tracker</span>
+              </div>
 
-            <h1 className="text-5xl lg:text-7xl font-bold font-['Fredoka'] leading-[1.1] drop-shadow-xl tracking-tight">
-              Wildly Fun. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-lime-300">
-                Seriously Effective.
-              </span>
-            </h1>
+              <h1 className="text-5xl lg:text-7xl font-bold font-['Fredoka'] leading-[1.1] drop-shadow-xl tracking-tight">
+                FitTribe Tracker. <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-lime-300">
+                  Wildly Fun Fitness.
+                </span>
+              </h1>
 
             <p className="text-xl text-emerald-50/90 max-w-lg leading-relaxed font-light">
               Transform your fitness tracking into a shared adventure. Connect with your free workout community, hold each other accountable, and unleash your inner beast (or panda).
@@ -445,9 +447,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Blog Section - Only on Landing (Logged Out State) */}
-      {!isLoggedIn && <BlogSection onNavigate={onNavigate || (() => { })} />}
-
       {/* Testimonials */}
       <section className="py-24 bg-emerald-900 relative overflow-hidden text-center">
         <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-5 mix-blend-overlay"></div>
@@ -516,8 +515,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Blog Section - Logged Out/In State Visibility */}
-      <BlogSection onNavigate={onNavigate || (() => { })} />
+        {/* Blog Section - Logged Out/In State Visibility */}
+        <BlogSection onNavigate={onNavigate || (() => { })} />
+      </main>
 
       {/* Footer */}
       <Footer onNavigate={onNavigate} />

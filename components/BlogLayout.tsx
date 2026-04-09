@@ -69,13 +69,14 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
         </div>
       </nav>
 
-      {children}
+      <main>
+        {children}
 
-      <div className="border-t border-slate-200">
+        <div className="border-t border-slate-200">
           <BlogSection onNavigate={onNavigate} />
-      </div>
+        </div>
 
-      <section id="blog-signup-form" className="relative py-24 flex items-center overflow-hidden border-t border-slate-200">
+        <section id="blog-signup-form" className="relative py-24 flex items-center overflow-hidden border-t border-slate-200">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img
@@ -116,6 +117,7 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
           </div>
         </div>
       </section>
+      </main>
 
       <Footer onNavigate={onNavigate} />
     </div>

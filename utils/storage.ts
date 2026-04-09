@@ -596,6 +596,7 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
       date: log.date
     })
     .eq('id', recordId)
+    .eq('user_id', userProfile.id) // Defense in depth: Ensure user owns the log
     .select();
 
   if (error) {
@@ -1057,6 +1058,7 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
     .from('workout_logs')
     .select('*')
     .eq('id', recordId)
+    .eq('user_id', userProfile.id) // Ensure user owns the log before fetching
     .single();
 
   if (fetchError || !logData) {
@@ -1076,7 +1078,8 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
   const { error } = await supabase
     .from('workout_logs')
     .delete()
-    .eq('id', recordId);
+    .eq('id', recordId)
+    .eq('user_id', userProfile.id); // Ensure user owns the log before deleting
 
   if (error) {
     console.error("Error deleting log", error);
@@ -1166,17 +1169,20 @@ export const saveWorkoutFeedback = async (feedback: import('../types').WorkoutFe
 // --- TRIBE PHOTO ---
 
 export const getLatestTribePhoto = async (tribeId?: string): Promise<TribePhoto | null> => {
-  const cacheKey = tribeId ? `tribe_photo_latest_${tribeId}` : 'tribe_photo_latest_global';
+  // Security: Require tribeId to prevent cross-tribe data access
+  if (!tribeId) return null;
+
+  const cacheKey = `tribe_photo_latest_${tribeId}`;
   const cached = getFromCache<TribePhoto>(cacheKey);
   if (cached) return cached;
 
   if (!navigator.onLine) return null;
 
-  let query = supabase.from('tribe_photo').select('*').order('created_at', { ascending: false }).limit(1);
-
-  if (tribeId) {
-    query = query.eq('tribe_id', tribeId);
-  }
+  let query = supabase.from('tribe_photo')
+    .select('*')
+    .eq('tribe_id', tribeId)
+    .order('created_at', { ascending: false })
+    .limit(1);
 
   const { data, error } = await query;
 

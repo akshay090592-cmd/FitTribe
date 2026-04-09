@@ -107,7 +107,8 @@ describe('Tribe Photo Storage', () => {
 
         const limitMock = vi.fn().mockResolvedValue({ data: [mockPhotoData], error: null });
         const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-        const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+        const eqMock = vi.fn().mockReturnValue({ order: orderMock });
+        const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
 
         (supabase.from as any).mockImplementation((table: string) => {
             if (table === 'tribe_photo') {
@@ -118,7 +119,7 @@ describe('Tribe Photo Storage', () => {
             return {};
         });
 
-        const photo = await getLatestTribePhoto();
+        const photo = await getLatestTribePhoto('tribe-123');
 
         expect(photo).not.toBeNull();
         expect(photo?.id).toBe("101");
@@ -131,13 +132,20 @@ describe('Tribe Photo Storage', () => {
 
         const limitMock = vi.fn().mockResolvedValue({ data: [], error: null });
         const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-        const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+        const eqMock = vi.fn().mockReturnValue({ order: orderMock });
+        const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
 
         (supabase.from as any).mockReturnValue({
             select: selectMock
         });
 
-        const photo = await getLatestTribePhoto();
+        const photo = await getLatestTribePhoto('tribe-123');
+        expect(photo).toBeNull();
+    });
+
+    it('should return null if tribeId is missing (Security)', async () => {
+        const { getLatestTribePhoto } = await import('../utils/storage');
+        const photo = await getLatestTribePhoto(undefined);
         expect(photo).toBeNull();
     });
 });

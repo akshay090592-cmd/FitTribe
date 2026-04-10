@@ -199,9 +199,10 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
   const cached = getFromCache<UserProfile>(cacheKey);
   if (cached) return cached;
 
+  // Security: Only select non-sensitive fields for public consumption
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, display_name, avatar_id, tribe_id, custom_challenge, completed_challenges, fitness_level, workout_templates')
     .eq('display_name', displayName)
     .single();
 
@@ -209,18 +210,15 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
 
   const profile: UserProfile = {
     id: data.id,
-    email: data.email,
+    email: '', // Hidden for privacy
     displayName: data.display_name as User,
-    height: data.height,
-    weight: data.weight,
-    gender: data.gender,
-    dob: data.dob,
-    weeklyGoal: parseInt(localStorage.getItem(`weekly_goal_${data.id}`) || '0') || 3,
+    avatarId: data.avatar_id,
+    weeklyGoal: 3, // Default for public view
     customChallenges: Array.isArray(data.custom_challenge) ? data.custom_challenge : (data.custom_challenge ? [data.custom_challenge] : []),
     completedChallenges: data.completed_challenges || [],
     tribeId: data.tribe_id,
     fitnessLevel: data.fitness_level as 'beginner' | 'advanced',
-    customPlans: data.custom_plans || [],
+    customPlans: [], // Not needed for public view
     workoutTemplates: data.workout_templates || []
   };
 
@@ -287,7 +285,11 @@ export const getTribe = async (tribeId: string): Promise<Tribe | null> => {
 };
 
 export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> => {
-  const { data, error } = await supabase.from('profiles').select('*').eq('tribe_id', tribeId);
+  // Security: Only select non-sensitive fields for tribe members
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, avatar_id, tribe_id, fitness_level, custom_challenge, completed_challenges, workout_templates')
+    .eq('tribe_id', tribeId);
 
   if (error || !data) {
     console.error("Error fetching tribe members", error);
@@ -296,18 +298,15 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
 
   return data.map((d: any) => ({
     id: d.id,
-    email: d.email,
+    email: '', // Hidden
     displayName: d.display_name,
     tribeId: d.tribe_id,
     avatarId: d.avatar_id,
     fitnessLevel: d.fitness_level,
-    height: d.height,
-    weight: d.weight,
-    gender: d.gender,
-    dob: d.dob,
-    weeklyGoal: 3, // Default or fetch from local storage if needed, but for list view it's minor
-    customChallenges: [],
-    completedChallenges: []
+    weeklyGoal: 3,
+    customChallenges: Array.isArray(d.custom_challenge) ? d.custom_challenge : (d.custom_challenge ? [d.custom_challenge] : []),
+    completedChallenges: d.completed_challenges || [],
+    workoutTemplates: d.workout_templates || []
   }));
 };
 

@@ -2,6 +2,18 @@ import { ExerciseSet, User, WorkoutLog, PRStats, UserGamificationState, GiftTran
 import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './gamification';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
+// --- SECURITY & VALIDATION ---
+
+export const isValidImageData = (data: string): boolean => {
+  if (!data) return false;
+  // Basic check for data URI format: data:image/[format];base64,[data]
+  return data.startsWith('data:image/') && data.includes(';base64,');
+};
+
+export const sanitizeString = (str: string, maxLength: number): string => {
+  return str.trim().substring(0, maxLength);
+};
+
 // --- CACHING MECHANISM ---
 
 // --- CACHING MECHANISM (PERSISTENT & MEMORY) ---
@@ -227,11 +239,15 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
 };
 
 export const createTribe = async (name: string, userId: string): Promise<Tribe | null> => {
+  // Security: Sanitize name and limit length
+  const sanitizedName = sanitizeString(name, 50);
+  if (!sanitizedName) return null;
+
   // Generate a random 6 char code
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const { data, error } = await supabase.from('tribes').insert({
-    name,
+    name: sanitizedName,
     code
   }).select().single();
 
@@ -513,6 +529,17 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
 };
 
 export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {
+  // Security: Validate image data if present
+  if (log.image_data && !isValidImageData(log.image_data)) {
+    console.warn("Invalid image data provided to saveLog. Removing image.");
+    log.image_data = undefined;
+  }
+
+  // Security: Sanitize custom activity name
+  if (log.customActivity) {
+    log.customActivity = sanitizeString(log.customActivity, 100);
+  }
+
   // Optimistically update cache first (so UI updates immediately)
   // We can't easily update the "global" logs cache without fetching, but we can invalidate it.
 
@@ -863,6 +890,10 @@ export const getComments = async (logId: string): Promise<SocialComment[]> => {
 };
 
 export const addComment = async (logId: string, text: string, profile: UserProfile) => {
+  // Security: Sanitize comment text and limit length
+  const sanitizedText = sanitizeString(text, 500);
+  if (!sanitizedText) return;
+
   // Optimistic update logic handles in UI usually, but we could cache it.
   // For now direct Supabase call.
   // Helper to safely handle ID
@@ -871,7 +902,7 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
     log_id: recordId,
     user_id: profile.id,
     user_name: profile.displayName,
-    text
+    text: sanitizedText
   });
 };
 
@@ -1204,6 +1235,12 @@ export const getLatestTribePhoto = async (tribeId?: string): Promise<TribePhoto 
 };
 
 export const saveTribePhoto = async (imageData: string, profile: UserProfile) => {
+  // Security: Validate image data
+  if (!isValidImageData(imageData)) {
+    console.error("Invalid image data provided to saveTribePhoto");
+    return;
+  }
+
   if (!isSupabaseConfigured()) {
     const photo: TribePhoto = {
       id: 'mock-photo',

@@ -50,18 +50,32 @@ describe('Notification Center Logic', () => {
 
     it('should mark a notification as read', async () => {
         const updateMock = vi.fn().mockReturnThis();
-        const eqMock = vi.fn().mockResolvedValue({ error: null });
+        const eqMock = vi.fn().mockReturnThis();
+        const finalEqMock = vi.fn().mockResolvedValue({ error: null });
 
         (supabase.from as any).mockReturnValue({
             update: updateMock,
-            eq: eqMock,
+            eq: (key: string, value: any) => {
+                if (key === 'id') return { eq: finalEqMock };
+                return { eq: finalEqMock };
+            }
         });
 
-        await markNotificationAsRead('notif-1');
+        // Better way to mock the chain:
+        const chain = {
+            update: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+        };
+        chain.eq.mockReturnValue(chain);
+        (chain as any).then = vi.fn((cb) => cb({ error: null }));
+        (supabase.from as any).mockReturnValue(chain);
+
+        await markNotificationAsRead('notif-1', 'user-123');
 
         expect(supabase.from).toHaveBeenCalledWith('notifications');
-        expect(updateMock).toHaveBeenCalledWith({ read: true });
-        expect(eqMock).toHaveBeenCalledWith('id', 'notif-1');
+        expect(chain.update).toHaveBeenCalledWith({ read: true });
+        expect(chain.eq).toHaveBeenCalledWith('id', 'notif-1');
+        expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
     });
 
     it('should mark all notifications as read', async () => {

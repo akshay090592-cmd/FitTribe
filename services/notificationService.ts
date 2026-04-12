@@ -112,11 +112,12 @@ export const getUnreadNotifications = async (userId: string) => {
   return data;
 };
 
-export const markNotificationAsRead = async (notificationId: string) => {
+export const markNotificationAsRead = async (notificationId: string, userId: string) => {
   const { error } = await supabase
     .from('notifications')
     .update({ read: true })
-    .eq('id', notificationId);
+    .eq('id', notificationId)
+    .eq('user_id', userId);
 
   if (error) {
     console.error('Error marking notification as read:', error);

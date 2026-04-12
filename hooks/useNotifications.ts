@@ -19,10 +19,11 @@ export const useNotifications = (userProfile: UserProfile | null) => {
     }, [userProfile]);
 
     const markAsRead = async (id: string) => {
+        if (!userProfile) return;
         // Optimistic update
         setNotifications(prev => prev.filter(n => n.id !== id));
         setUnreadCount(prev => Math.max(0, prev - 1));
-        await markNotificationAsRead(id);
+        await markNotificationAsRead(id, userProfile.id);
     };
 
     const markAllAsRead = async () => {

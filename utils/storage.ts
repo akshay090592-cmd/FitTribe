@@ -832,7 +832,7 @@ export const toggleReaction = async (logId: string, profile: UserProfile) => {
     .single();
 
   if (data) {
-    await supabase.from('reactions').delete().eq('id', data.id);
+    await supabase.from('reactions').delete().eq('id', data.id).eq('user_id', profile.id);
   } else {
     await supabase.from('reactions').insert({
       log_id: recordId,

@@ -6,12 +6,25 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export const isValidImageData = (data: string): boolean => {
   if (!data) return false;
+  // Security: Prevent DoS by limiting string length (approx 5MB)
+  if (data.length > 5 * 1024 * 1024) return false;
   // Basic check for data URI format: data:image/[format];base64,[data]
   return data.startsWith('data:image/') && data.includes(';base64,');
 };
 
 export const sanitizeString = (str: string, maxLength: number): string => {
   return str.trim().substring(0, maxLength);
+};
+
+export const generateSecureCode = (length: number): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const array = new Uint32Array(length);
+  crypto.getRandomValues(array);
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars[array[i] % chars.length];
+  }
+  return code;
 };
 
 // --- CACHING MECHANISM ---
@@ -243,8 +256,8 @@ export const createTribe = async (name: string, userId: string): Promise<Tribe |
   const sanitizedName = sanitizeString(name, 50);
   if (!sanitizedName) return null;
 
-  // Generate a random 6 char code
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  // Security: Use cryptographically secure random value for code
+  const code = generateSecureCode(6);
 
   const { data, error } = await supabase.from('tribes').insert({
     name: sanitizedName,
@@ -281,7 +294,8 @@ export const getTribe = async (tribeId: string): Promise<Tribe | null> => {
   // Ensure code exists. If not, generate and save it.
   if (!data.code) {
     console.log("Tribe missing code, generating new alias...");
-    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Security: Use cryptographically secure random value
+    const newCode = generateSecureCode(6);
 
     const { error: updateError } = await supabase
       .from('tribes')
@@ -1263,7 +1277,8 @@ export const saveTribePhoto = async (imageData: string, profile: UserProfile) =>
   if (profile.tribeId) {
     await supabase.from('tribe_photo').delete().eq('tribe_id', profile.tribeId);
   } else {
-    await supabase.from('tribe_photo').delete().is('tribe_id', null);
+    // Security: If no tribeId, only delete photos belonging to the CURRENT user
+    await supabase.from('tribe_photo').delete().is('tribe_id', null).eq('user_id', profile.id);
   }
 
   // 2. Insert new

@@ -61,10 +61,13 @@ describe('Tribe Photo Storage', () => {
         };
         const mockImage = 'data:image/jpeg;base64,test-image-data';
 
-        const deleteChain = {
-            eq: vi.fn().mockResolvedValue({ error: null }),
-            is: vi.fn().mockResolvedValue({ error: null }),
+        const deleteChain: any = {
+            eq: vi.fn().mockImplementation(() => deleteChain),
+            is: vi.fn().mockImplementation(() => deleteChain),
         };
+        // Mock the final promise behavior
+        deleteChain.then = vi.fn().mockImplementation((resolve: any) => Promise.resolve({ error: null }).then(resolve));
+
         const deleteMock = vi.fn().mockReturnValue(deleteChain);
         const insertMock = vi.fn().mockResolvedValue({ error: null });
 

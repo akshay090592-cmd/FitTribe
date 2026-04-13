@@ -12,3 +12,8 @@
 **Vulnerability:** Users could potentially mark anyone's notifications as read or delete any user's reactions by guessing or obtaining internal IDs.
 **Learning:** Object-level authorization must be enforced in the application layer by including the owner's `user_id` in all mutation queries (UPDATE/DELETE), even if Row Level Security (RLS) is expected to handle it.
 **Prevention:** Always require a `userId` parameter in service functions that modify user-owned data and append a `.eq('user_id', userId)` filter to the Supabase query builder.
+
+## 2026-04-13 - [Security Hardening: Randomness & Ownership]
+**Vulnerability:** Predictable tribe codes using `Math.random()` and unauthorized deletion of non-tribe photos in `saveTribePhoto`.
+**Learning:** Standard PRNGs are predictable and unsuitable for security-sensitive identifiers. Additionally, maintenance-style deletions (cleaning up old records) must always be scoped to the owner when a group-level filter (like `tribe_id`) is missing.
+**Prevention:** Use `crypto.getRandomValues()` for all random string generation and enforce user ownership filters in all DELETE operations, even when cleaning up "global" or orphaned records.

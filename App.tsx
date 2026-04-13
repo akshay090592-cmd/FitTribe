@@ -202,7 +202,7 @@ const App: React.FC = () => {
     if (hasActiveWorkoutSession()) return 'workout';
 
     // 2. Check URL path
-    const path = window.location.pathname;
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
     const initialView = PATH_TO_VIEW[path];
     if (initialView) {
       return initialView as AppView;

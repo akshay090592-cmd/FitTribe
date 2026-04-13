@@ -81,6 +81,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <SEO
         title="FitTribe Tracker - Free Community Workout & Fitness Tracking App"
         description="Transform your fitness journey with FitTribe. Join a supportive free workout community, track workouts, compete with friends, and stay motivated with gamified challenges."
+        url="https://tribeworkout.netlify.app"
         schema={{
           "@context": "https://schema.org",
           "@graph": [

@@ -143,7 +143,9 @@ describe('CoachView', () => {
         await waitFor(() => {
             // Should be auto-marked as not_done because it's in the past and status was null
             // So adherence stats should show 1 Miss
-            expect(screen.getByText(/1/)).toBeInTheDocument(); // Miss count
+            // Use specific selector to avoid ambiguity with user-1 ID
+            const missCount = screen.getByText('Miss').previousSibling;
+            expect(missCount?.textContent).toBe('1');
             expect(saveUserPlan).toHaveBeenCalledWith(mockProfile.id, expect.objectContaining({
                 schedule: [expect.objectContaining({ status: 'not_done' })]
             }));

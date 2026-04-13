@@ -3,7 +3,7 @@
 
   <!-- Core Pages -->
   <url>
-    <loc>https://tribeworkout.netlify.app/</loc>
+    <loc>https://tribeworkout.netlify.app</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

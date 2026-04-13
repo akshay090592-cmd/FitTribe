@@ -21,7 +21,8 @@ export const SEO: React.FC<SEOProps> = ({
     schema
 }) => {
     const siteUrl = 'https://tribeworkout.netlify.app';
-    const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : siteUrl);
+    const rawUrl = url || (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : siteUrl);
+    const currentUrl = rawUrl.replace(/\/$/, "");
     const metaImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
 
     return (

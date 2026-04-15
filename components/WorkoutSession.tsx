@@ -16,8 +16,8 @@ import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Spark
 import { compressImage } from '../utils/imageUtils';
 import { saveTribePhoto } from '../utils/storage';
 import { GoogleGenAI, Type } from "@google/genai";
-import { useTimer } from '../hooks/useTimer';
 import { updateQuestProgress } from '../utils/questUtils';
+import { getAvatarPath } from '../utils/avatar';
 
 interface Props {
   user: User;
@@ -807,7 +807,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         {!analysis ? (
           <div className="text-center relative z-20">
             <div className="w-24 h-24 bg-emerald-800 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce border-4 border-emerald-700 shadow-xl">
-              <img src={`/assets/panda_${user.toLowerCase()}.webp`} className="w-16 h-16 object-contain" alt={user} />
+              <img src={getAvatarPath(userProfile.avatarId)} className="w-16 h-16 object-contain" alt={user} />
             </div>
             <h2 className="text-3xl font-bold text-emerald-50 mb-2 font-['Fredoka']">Great Work!</h2>
             <p className="text-emerald-200/80 animate-pulse">Calculating bamboo earnings...</p>
@@ -815,8 +815,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         ) : (
           <div className="relative z-20 w-full max-w-md animate-slide-up">
             <div className="text-center mb-8">
-              <div className="inline-block bg-emerald-500 p-4 rounded-full mb-4 shadow-lg shadow-emerald-500/30 ring-4 ring-emerald-400/50">
-                <Leaf size={40} className="text-white" />
+              <div className="inline-block p-1 rounded-full mb-4 shadow-lg shadow-emerald-500/30 ring-4 ring-emerald-400/50 bg-emerald-800">
+                <img src={getAvatarPath(userProfile.avatarId, 'fire')} className="w-20 h-20 object-contain" alt={user} />
               </div>
               <h2 className="text-3xl font-bold text-white font-['Fredoka']">Panda Power!</h2>
               <p className="text-emerald-200">You crushed it, {user}!</p>

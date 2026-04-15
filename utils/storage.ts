@@ -227,7 +227,7 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
   // Security: Only select non-sensitive fields for public consumption
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, avatar_id, tribe_id, custom_challenge, completed_challenges, fitness_level, workout_templates')
+    .select('id, display_name, avatar_id, tribe_id, custom_challenge, completed_challenges, fitness_level')
     .eq('display_name', displayName)
     .single();
 
@@ -244,7 +244,7 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
     tribeId: data.tribe_id,
     fitnessLevel: data.fitness_level as 'beginner' | 'advanced',
     customPlans: [], // Not needed for public view
-    workoutTemplates: data.workout_templates || []
+    workoutTemplates: [] // Excluded for privacy
   };
 
   setInCache(cacheKey, profile);
@@ -318,7 +318,7 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
   // Security: Only select non-sensitive fields for tribe members
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, avatar_id, tribe_id, fitness_level, custom_challenge, completed_challenges, workout_templates')
+    .select('id, display_name, avatar_id, tribe_id, fitness_level, custom_challenge, completed_challenges')
     .eq('tribe_id', tribeId);
 
   if (error || !data) {
@@ -336,7 +336,7 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
     weeklyGoal: 3,
     customChallenges: Array.isArray(d.custom_challenge) ? d.custom_challenge : (d.custom_challenge ? [d.custom_challenge] : []),
     completedChallenges: d.completed_challenges || [],
-    workoutTemplates: d.workout_templates || []
+    workoutTemplates: [] // Excluded for privacy
   }));
 };
 

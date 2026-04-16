@@ -853,10 +853,14 @@ const App: React.FC = () => {
     if (!userProfile) return;
     setIsCommitting(true);
 
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0); // Default to 9 AM tomorrow
+
     // Create a commitment log
     const commitmentLog = {
       id: Date.now().toString(),
-      date: new Date().toISOString(),
+      date: tomorrow.toISOString(),
       user: currentUser,
       type: WorkoutType.COMMITMENT,
       exercises: [],
@@ -866,7 +870,7 @@ const App: React.FC = () => {
     await saveLog(commitmentLog as any, userProfile);
     await notifyTribeOnCommitment(currentUser as User, userProfile?.tribeId || '');
 
-    showToast("You committed to workout! The tribe is watching.", "success");
+    showToast("You committed to workout tomorrow! The tribe is watching.", "success");
     setIsCommitting(false);
     loadProfile(true); // Refresh to update TribePulse
   };
@@ -1629,10 +1633,10 @@ const App: React.FC = () => {
 
                   <button
                     onClick={handleCommit}
-                    disabled={isCommitting}
-                    className="w-full mt-2.5 bg-emerald-900/30 text-emerald-100 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-900/50 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98]"
+                    disabled={isCommitting || !!allLogs.find(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString())}
+                    className="w-full mt-2.5 bg-emerald-900/30 text-emerald-100 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-900/50 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isCommitting ? 'Committing...' : '✋ I Commit to Workout Today'}
+                    {isCommitting ? 'Committing...' : allLogs.find(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
                   </button>
                 </div>
               </div>

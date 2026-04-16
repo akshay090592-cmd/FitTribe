@@ -128,6 +128,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
         // Logic to check for commitment log to replace
         let logId: string = crypto.randomUUID();
 
+        let isFulfillment = false;
         try {
             // We need to check if there is a commitment log to replace
             // This requires importing getUserLogs dynamically to avoid circular dependencies if any
@@ -142,6 +143,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
             if (commitLog) {
                 logId = commitLog.id; // Reuse existing commitment ID
+                isFulfillment = true;
             }
         } catch (error) {
             console.error("Error checking for commitment logs", error);
@@ -158,7 +160,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
             vibes: vibes > 0 ? vibes : undefined,
             image_data: tribePhoto || undefined,
             customActivity: (activity === 'Other' && customOtherActivity) ? customOtherActivity : activity,
-            intensity: intensity
+            intensity: intensity,
+            isCommitmentFulfillment: isFulfillment
         };
         onSave(log, tribePhoto || undefined);
         onClose();

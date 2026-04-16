@@ -68,7 +68,7 @@ export const notifyTribeOnActivity = async (actor: User, activity: string, tribe
 export const notifyTribeOnCommitment = async (actor: User, tribeId: string) => {
   const { getTribeMembers } = await import('../utils/storage');
   const members = await getTribeMembers(tribeId);
-  const message = `${actor} committed to workout today! Cheer them on! 🙌`;
+  const message = `${actor} committed to workout tomorrow! Cheer them on! 🙌`;
 
   for (const member of members) {
     if (member.displayName !== actor) {

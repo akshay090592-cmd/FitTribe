@@ -69,7 +69,8 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                                 : log.type === 'COMMITMENT'
                                     ? <span className="text-amber-500/80">✋ Commitment</span>
                                     : (log.type === 'A' ? '🌿 Plan A' : '🎋 Plan B')
-                            } • {formatTimeAgo(log.date)}
+                            } {log.isCommitmentFulfillment && <span className="ml-2 bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md flex items-center shadow-sm border border-emerald-200 animate-pulse"><TrendingUp size={8} className="mr-0.5" /> PROMISE KEPT</span>}
+                            <span className="mx-1.5 opacity-50">•</span> {formatTimeAgo(log.date)}
                         </div>
                     </div>
                 </div>
@@ -129,7 +130,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                             <div className="text-center">
                                 <div className="text-3xl mb-2">{isFailedCommitment ? '⚠️' : '✋'}</div>
                                 <div className={`text-lg leading-tight ${isFailedCommitment ? 'text-red-800' : 'text-amber-800'}`}>
-                                    {isFailedCommitment ? 'Commitment Failed' : 'I commit to workout today!'}
+                                    {isFailedCommitment ? 'Commitment Failed' : 'I commit to workout tomorrow!'}
                                 </div>
                                 <div className={`text-[10px] font-medium mt-1 uppercase tracking-widest ${isFailedCommitment ? 'text-red-600/70' : 'text-amber-600/70'}`}>
                                     {isFailedCommitment ? 'Better luck next time!' : 'Cheer me on!'}

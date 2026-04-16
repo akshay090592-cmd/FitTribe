@@ -163,6 +163,7 @@ describe('WorkoutSession Commitment Flow', () => {
         const updateCall = (storage.updateLog as any).mock.calls[0][0];
         expect(updateCall.id).toBe('commitment_123'); // MUST PRESERVE ID
         expect(updateCall.type).toBe('A'); // Type matches plan
+        expect(updateCall.isCommitmentFulfillment).toBe(true);
     });
 
     it('should save new log if no commitment exists', async () => {

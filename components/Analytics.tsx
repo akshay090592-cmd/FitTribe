@@ -99,7 +99,7 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
           const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
           const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 
-          key = `${d.getUTCFullYear()}-W${weekNo}`;
+          key = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
           const weekStart = new Date(d);
           weekStart.setUTCDate(d.getUTCDate() - 3); // Back to Monday
           label = weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

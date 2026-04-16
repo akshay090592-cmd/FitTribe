@@ -209,7 +209,7 @@ describe('Dashboard Interactions', () => {
         render(<App />);
         await waitFor(() => screen.getByText(/Hi, TestUser!/i));
 
-        const commitBtn = screen.getByText(/I Commit to Workout Today/i);
+        const commitBtn = screen.getByText(/I Commit to Workout Tomorrow/i);
         fireEvent.click(commitBtn);
 
         await waitFor(() => expect(storage.saveLog).toHaveBeenCalled());

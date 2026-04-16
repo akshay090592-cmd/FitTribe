@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, WorkoutType } from '../types';
-import { getTodaysLogs } from '../utils/storage';
-import { CheckCircle2, BedDouble, Flame, Hand } from 'lucide-react';
+import { getLogs } from '../utils/storage';
+import { CheckCircle2, BedDouble, Flame, Hand, AlertTriangle, CalendarDays } from 'lucide-react';
 import { getAvatarPath } from '../utils/avatar';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarMap = {}, refreshTrigger = 0, onUserClick }) => {
-    const [statuses, setStatuses] = useState<Record<string, 'done' | 'resting' | 'committing'>>({});
+    const [statuses, setStatuses] = useState<Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'>>({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -23,27 +23,46 @@ export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarM
     const loadStatus = async () => {
         if (!members || members.length === 0) return;
 
-        // Optimization: Fetch only today's logs instead of full history
-        const todaysLogs = await getTodaysLogs();
+        // Fetch logs to check today, tomorrow, and yesterday
+        const allLogs = await getLogs();
+        const now = new Date();
+        const todayStr = now.toDateString();
+        
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const tomorrowStr = tomorrow.toDateString();
 
-        const todayStatus: Record<string, 'done' | 'resting' | 'committing'> = {};
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
+
+        const pulseStatus: Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'> = {};
 
         members.forEach(user => {
-            const userLogs = todaysLogs.filter(l => l.user === user);
+            const userLogs = allLogs.filter(l => l.user === user);
 
-            const hasCompletedWorkout = userLogs.some(l => l.type !== WorkoutType.COMMITMENT);
-            const hasCommitment = userLogs.some(l => l.type === WorkoutType.COMMITMENT);
+            const workedToday = userLogs.some(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date).toDateString() === todayStr);
+            const committedToday = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === todayStr);
+            const committedTomorrow = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
+            
+            const committedYesterday = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === yesterdayStr);
+            const workedYesterday = userLogs.some(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date).toDateString() === yesterdayStr);
+            const failedYesterday = committedYesterday && !workedYesterday;
 
-            if (hasCompletedWorkout) {
-                todayStatus[user] = 'done';
-            } else if (hasCommitment) {
-                todayStatus[user] = 'committing';
+            if (workedToday) {
+                pulseStatus[user] = 'done';
+            } else if (committedToday) {
+                pulseStatus[user] = 'committing';
+            } else if (committedTomorrow) {
+                pulseStatus[user] = 'tomorrow';
+            } else if (failedYesterday) {
+                pulseStatus[user] = 'failed';
             } else {
-                todayStatus[user] = 'resting';
+                pulseStatus[user] = 'resting';
             }
         });
 
-        setStatuses(todayStatus);
+        setStatuses(pulseStatus);
         setLoading(false);
     };
 
@@ -63,26 +82,42 @@ export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarM
                         className={`flex flex-col items-center min-w-[60px] transition-all active:scale-95 group ${user === currentUser ? 'opacity-100' : 'opacity-80'}`}
                     >
                         <div className="relative group-hover:scale-110 transition-transform">
-                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden ${statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50' : statuses[user] === 'committing' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden ${
+                                statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50' : 
+                                statuses[user] === 'committing' ? 'border-amber-400 bg-amber-50 animate-pulse' : 
+                                statuses[user] === 'tomorrow' ? 'border-blue-400 bg-blue-50' :
+                                statuses[user] === 'failed' ? 'border-red-400 bg-red-50' :
+                                'border-slate-200 bg-slate-50'
+                            }`}>
                                 <img
                                     src={getAvatarPath(avatarMap[user])}
                                     alt={user}
-                                    className={`w-full h-full object-cover ${statuses[user] === 'resting' ? 'grayscale opacity-70' : ''}`}
+                                    className={`w-full h-full object-cover ${(statuses[user] === 'resting' || statuses[user] === 'tomorrow' || statuses[user] === 'failed') ? 'grayscale opacity-70' : ''}`}
                                     onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40/10b981/ffffff?text=P'}
                                 />
                             </div>
                             {statuses[user] === 'done' && (
-                                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white">
+                                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
                                     <CheckCircle2 size={10} />
                                 </div>
                             )}
                             {statuses[user] === 'committing' && (
-                                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white rounded-full p-0.5 border-2 border-white">
+                                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
                                     <Hand size={10} />
                                 </div>
                             )}
+                            {statuses[user] === 'tomorrow' && (
+                                <div className="absolute -bottom-1 -right-1 bg-blue-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
+                                    <CalendarDays size={10} />
+                                </div>
+                            )}
+                            {statuses[user] === 'failed' && (
+                                <div className="absolute -bottom-1 -right-1 bg-red-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm animate-bounce">
+                                    <AlertTriangle size={10} />
+                                </div>
+                            )}
                             {statuses[user] === 'resting' && (
-                                <div className="absolute -bottom-1 -right-1 bg-slate-400 text-white rounded-full p-0.5 border-2 border-white">
+                                <div className="absolute -bottom-1 -right-1 bg-slate-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
                                     <BedDouble size={10} />
                                 </div>
                             )}

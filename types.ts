@@ -129,6 +129,7 @@ export interface WorkoutLog {
   image_data?: string;
   customActivity?: string;
   intensity?: number;
+  isCommitmentFulfillment?: boolean;
 }
 
 export interface PRStats {

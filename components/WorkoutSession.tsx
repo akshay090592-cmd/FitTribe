@@ -390,7 +390,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             const updatedLog: WorkoutLog = {
               ...currentLog,
               id: commitLog.id, // Reuse ID to keep reactions
-              date: currentLog.date
+              date: currentLog.date,
+              isCommitmentFulfillment: true
             };
             await import('../utils/storage').then(({ updateLog }) => updateLog(updatedLog, userProfile));
           } else {
@@ -403,7 +404,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       }
 
       workoutTimer.reset();
-      localStorage.removeItem(`workout_session_${plan.id}`); // Clear saved session
+      // Clear ALL possible sessions to ensure they don't get stuck
+      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
+        localStorage.removeItem(`workout_session_${type}`);
+      });
+      localStorage.removeItem('active_custom_plan');
       sessionStorage.removeItem(`workoutStep_${plan.id}`);
       onCancel();
     } else {
@@ -463,7 +468,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         const updatedLog: WorkoutLog = {
           ...currentLog,
           id: commitLog.id, // Reuse ID
-          date: new Date().toISOString() // Update date to now to show completion time.
+          date: new Date().toISOString(), // Update date to now to show completion time.
+          isCommitmentFulfillment: true
         };
 
         const result = await import('../utils/storage').then(({ updateLog }) => updateLog(updatedLog, userProfile));
@@ -495,7 +501,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       }
 
       // Critical: Only clear session if save was successful
-      localStorage.removeItem(`workout_session_${plan.id}`);
+      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
+        localStorage.removeItem(`workout_session_${type}`);
+      });
+      localStorage.removeItem('active_custom_plan');
       sessionStorage.removeItem(`workoutStep_${plan.id}`);
 
       const newBadges = await checkAchievements(currentLog, userProfile);
@@ -915,10 +924,23 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0FDF4]">
+    <div className="min-h-screen flex flex-col bg-[#F0FDF4] pb-6">
+      <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="mr-3">
+              <h2 className="font-bold text-emerald-900 text-base leading-tight">Zen Mode</h2>
+              <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Cool Down</div>
+            </div>
+          </div>
+          <button onClick={() => setShowExitModal(true)} className="bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 p-2 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+
       <Confetti active={showCelebration} />
       <div className="p-6">
-        <h2 className="text-3xl font-bold mb-2 text-emerald-900">Zen Mode</h2>
         <p className="text-emerald-600 mb-8">Cool down like a panda in the shade.</p>
         <div className="space-y-4">
           {plan.cooldown.map((item, idx) => (

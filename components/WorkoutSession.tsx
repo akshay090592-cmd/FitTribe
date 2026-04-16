@@ -18,6 +18,7 @@ import { saveTribePhoto } from '../utils/storage';
 import { GoogleGenAI, Type } from "@google/genai";
 import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
+import { useTimer } from '../hooks/useTimer';
 
 interface Props {
   user: User;

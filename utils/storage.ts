@@ -607,6 +607,17 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
 };
 
 export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {
+  // Security: Validate image data if present
+  if (log.image_data && !isValidImageData(log.image_data)) {
+    console.warn("Invalid image data provided to updateLog. Removing image.");
+    log.image_data = undefined;
+  }
+
+  // Security: Sanitize custom activity name
+  if (log.customActivity) {
+    log.customActivity = sanitizeString(log.customActivity, 100);
+  }
+
   // Update cache first
   const cacheKey = 'logs_global';
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
@@ -1368,6 +1379,13 @@ export const addXPLog = async (userId: string, amount: number, source: string, s
     return;
   }
 
+  // Security: Defense in depth - verify user ownership via session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id !== userId) {
+    console.error("Unauthorized XP log attempt: userId mismatch");
+    return;
+  }
+
   const { error } = await supabase.from('xp_logs').insert({
     user_id: userId,
     amount,
@@ -1381,6 +1399,13 @@ export const addXPLog = async (userId: string, amount: number, source: string, s
 export const addPointLog = async (userId: string, amount: number, type: 'earned' | 'spent', source: string, sourceId?: string) => {
   if (!navigator.onLine) {
     console.warn("Offline: Point Log skipped");
+    return;
+  }
+
+  // Security: Defense in depth - verify user ownership via session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id !== userId) {
+    console.error("Unauthorized Point log attempt: userId mismatch");
     return;
   }
 

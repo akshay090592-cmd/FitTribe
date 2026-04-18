@@ -34,6 +34,11 @@ vi.mock('../utils/supabaseClient', () => ({
         from: vi.fn(() => ({
             select: vi.fn(() => ({ data: [], error: null })),
         })),
+        auth: {
+            getSession: vi.fn().mockResolvedValue({
+                data: { session: { user: { id: 'user-123' } } }
+            }),
+        },
     },
     isSupabaseConfigured: vi.fn(() => true),
 }));

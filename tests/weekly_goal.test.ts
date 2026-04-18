@@ -17,6 +17,7 @@ global.localStorage = localStorageMock as any;
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+  isSupabaseConfigured: vi.fn(() => true),
   supabase: {
     auth: {
       getSession: vi.fn(),
@@ -162,6 +163,17 @@ describe('Weekly Goal Persistence', () => {
       }))
     } as any);
 
+    // Setup session
+    const getSessionMock = vi.mocked(supabase.auth.getSession);
+    getSessionMock.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: '123' },
+        } as any,
+      },
+      error: null,
+    });
+
     await updateProfile(newProfile);
 
     expect(localStorage.getItem('weekly_goal_123')).toBe('7');
@@ -184,6 +196,17 @@ describe('Weekly Goal Persistence', () => {
         eq: updateMock
       }))
     } as any);
+
+    // Setup session
+    const getSessionMock = vi.mocked(supabase.auth.getSession);
+    getSessionMock.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: '123' },
+        } as any,
+      },
+      error: null,
+    });
 
     await updateProfile(newProfile);
 

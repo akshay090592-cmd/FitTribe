@@ -27,6 +27,16 @@ export const generateSecureCode = (length: number): string => {
   return code;
 };
 
+export const isSessionValid = async (userId: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return true;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id !== userId) {
+    console.error("Unauthorized operation: session user ID mismatch");
+    return false;
+  }
+  return true;
+};
+
 // --- CACHING MECHANISM ---
 
 // --- CACHING MECHANISM (PERSISTENT & MEMORY) ---
@@ -252,6 +262,9 @@ export const getPublicProfile = async (displayName: string): Promise<UserProfile
 };
 
 export const createTribe = async (name: string, userId: string): Promise<Tribe | null> => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return null;
+
   // Security: Sanitize name and limit length
   const sanitizedName = sanitizeString(name, 50);
   if (!sanitizedName) return null;
@@ -351,6 +364,9 @@ export const createProfile = async (
   gender?: 'male' | 'female',
   dob?: string
 ) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return;
+
   await supabase.from('profiles').insert({
     id: userId,
     email,
@@ -378,6 +394,9 @@ export const createProfile = async (
 };
 
 export const updateProfile = async (profile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   // Optimistic update
   const cacheKey = `profile_${profile.id}`;
   setInCache(cacheKey, profile);
@@ -543,6 +562,9 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
 };
 
 export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userProfile.id)) return undefined;
+
   // Security: Validate image data if present
   if (log.image_data && !isValidImageData(log.image_data)) {
     console.warn("Invalid image data provided to saveLog. Removing image.");
@@ -607,6 +629,9 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
 };
 
 export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userProfile.id)) return undefined;
+
   // Security: Validate image data if present
   if (log.image_data && !isValidImageData(log.image_data)) {
     console.warn("Invalid image data provided to updateLog. Removing image.");
@@ -820,6 +845,9 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
 };
 
 export const toggleReaction = async (logId: string, profile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   if (!navigator.onLine) {
     // Optimistic update for reactions is tricky without a proper local DB for relational data.
     // For now, we will just queue it or ignore it. 
@@ -915,6 +943,9 @@ export const getComments = async (logId: string): Promise<SocialComment[]> => {
 };
 
 export const addComment = async (logId: string, text: string, profile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   // Security: Sanitize comment text and limit length
   const sanitizedText = sanitizeString(text, 500);
   if (!sanitizedText) return;
@@ -1000,6 +1031,9 @@ const createDefaultGamificationState = (): Record<User, UserGamificationState> =
 };
 
 export const saveGamificationState = async (profile: UserProfile, state: UserGamificationState) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   // Re-inject commitment into badges
   const badgesToSave = [...state.badges];
   if (state.commitment) {
@@ -1068,6 +1102,9 @@ export const getGiftTransactions = async (tribeId?: string): Promise<GiftTransac
 
 
 export const sendGift = async (profile: UserProfile, transaction: GiftTransaction) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   if (!navigator.onLine) {
     addToOfflineQueue({
       type: 'SEND_GIFT',
@@ -1096,6 +1133,9 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
 };
 
 export const deleteLog = async (logId: string, userProfile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userProfile.id)) return;
+
   if (!navigator.onLine) {
     console.log("Offline: Queuing log deletion");
     addToOfflineQueue({
@@ -1190,6 +1230,9 @@ export const processOfflineQueue = async () => {
 // --- AI COACH FEEDBACK ---
 
 export const saveWorkoutFeedback = async (feedback: import('../types').WorkoutFeedback, userProfile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userProfile.id)) return;
+
   if (!isSupabaseConfigured()) {
     console.log("Mock Mode: Feedback saved to cache", feedback);
     // In mock mode, we can just attach feedback to the log in cache if we wanted,
@@ -1260,6 +1303,9 @@ export const getLatestTribePhoto = async (tribeId?: string): Promise<TribePhoto 
 };
 
 export const saveTribePhoto = async (imageData: string, profile: UserProfile) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(profile.id)) return;
+
   // Security: Validate image data
   if (!isValidImageData(imageData)) {
     console.error("Invalid image data provided to saveTribePhoto");
@@ -1380,11 +1426,7 @@ export const addXPLog = async (userId: string, amount: number, source: string, s
   }
 
   // Security: Defense in depth - verify user ownership via session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user?.id !== userId) {
-    console.error("Unauthorized XP log attempt: userId mismatch");
-    return;
-  }
+  if (!await isSessionValid(userId)) return;
 
   const { error } = await supabase.from('xp_logs').insert({
     user_id: userId,
@@ -1403,11 +1445,7 @@ export const addPointLog = async (userId: string, amount: number, type: 'earned'
   }
 
   // Security: Defense in depth - verify user ownership via session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user?.id !== userId) {
-    console.error("Unauthorized Point log attempt: userId mismatch");
-    return;
-  }
+  if (!await isSessionValid(userId)) return;
 
   const { error } = await supabase.from('point_logs').insert({
     user_id: userId,

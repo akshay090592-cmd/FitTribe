@@ -38,6 +38,11 @@ vi.mock('../utils/supabaseClient', () => ({
             limit: vi.fn(),
             single: vi.fn(),
         })),
+        auth: {
+            getSession: vi.fn().mockResolvedValue({
+                data: { session: { user: { id: 'user-123' } } }
+            }),
+        },
     },
 }));
 

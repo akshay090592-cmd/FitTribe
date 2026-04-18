@@ -7,6 +7,11 @@ import { UserProfile } from '../types';
 vi.mock('../utils/supabaseClient', () => ({
     supabase: {
         from: vi.fn(),
+        auth: {
+            getSession: vi.fn().mockResolvedValue({
+                data: { session: { user: { id: 'user-123' } } }
+            }),
+        },
     },
     isSupabaseConfigured: vi.fn(() => true),
 }));

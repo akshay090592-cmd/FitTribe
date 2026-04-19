@@ -4,6 +4,7 @@ import { User, WorkoutLog, UserProfile, UserGamificationState, WorkoutType } fro
 
 // Mock supabaseClient first to override isSupabaseConfigured
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         auth: { getSession: vi.fn() },
         from: vi.fn(),

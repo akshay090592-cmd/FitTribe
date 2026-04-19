@@ -1,4 +1,4 @@
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSessionValid } from '../utils/supabaseClient';
 import { User, GiftTransaction } from '../types';
 
 // Cache for user IDs to avoid repeated DB calls
@@ -98,6 +98,9 @@ export const notifyComment = async (from: string, to: string, commentText: strin
 
 // 3. Persistence Helpers
 export const getUnreadNotifications = async (userId: string) => {
+  // Security: Defense in depth - verify session matches userId
+  if (!await isSessionValid(userId)) return [];
+
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
@@ -113,6 +116,9 @@ export const getUnreadNotifications = async (userId: string) => {
 };
 
 export const markNotificationAsRead = async (notificationId: string, userId: string) => {
+  // Security: Defense in depth - verify session matches userId
+  if (!await isSessionValid(userId)) return;
+
   const { error } = await supabase
     .from('notifications')
     .update({ read: true })
@@ -125,6 +131,9 @@ export const markNotificationAsRead = async (notificationId: string, userId: str
 };
 
 export const markAllNotificationsAsRead = async (userId: string) => {
+  // Security: Defense in depth - verify session matches userId
+  if (!await isSessionValid(userId)) return;
+
   const { error } = await supabase
     .from('notifications')
     .update({ read: true })

@@ -8,6 +8,7 @@ import * as storage from '../utils/storage';
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'test-user-id', email: 'test@example.com' } } } }),

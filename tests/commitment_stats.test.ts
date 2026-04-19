@@ -5,6 +5,7 @@ import { getLogs, getFromCache, setInCache } from '../utils/storage';
 
 // Mock supabaseClient
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         auth: { getSession: vi.fn() },
         from: vi.fn(),

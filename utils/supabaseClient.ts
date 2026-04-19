@@ -17,3 +17,13 @@ export const isSupabaseConfigured = () => {
 };
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export const isSessionValid = async (userId: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return true;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id !== userId) {
+    console.error("Unauthorized operation: session user ID mismatch");
+    return false;
+  }
+  return true;
+};

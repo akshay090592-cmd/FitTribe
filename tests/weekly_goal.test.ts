@@ -17,6 +17,7 @@ global.localStorage = localStorageMock as any;
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
   isSupabaseConfigured: vi.fn(() => true),
   supabase: {
     auth: {

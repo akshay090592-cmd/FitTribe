@@ -4,6 +4,7 @@ import { supabase } from '../utils/supabaseClient';
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         from: vi.fn(),
     },

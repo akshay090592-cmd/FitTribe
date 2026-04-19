@@ -1,6 +1,6 @@
 import { ExerciseSet, User, WorkoutLog, PRStats, UserGamificationState, GiftTransaction, UserProfile, SocialComment, TribePhoto, Tribe, WorkoutPlan, WorkoutTemplate } from '../types';
 import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './gamification';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, isSessionValid } from './supabaseClient';
 
 // --- SECURITY & VALIDATION ---
 
@@ -25,16 +25,6 @@ export const generateSecureCode = (length: number): string => {
     code += chars[array[i] % chars.length];
   }
   return code;
-};
-
-export const isSessionValid = async (userId: string): Promise<boolean> => {
-  if (!isSupabaseConfigured()) return true;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user?.id !== userId) {
-    console.error("Unauthorized operation: session user ID mismatch");
-    return false;
-  }
-  return true;
 };
 
 // --- CACHING MECHANISM ---

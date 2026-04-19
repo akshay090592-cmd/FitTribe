@@ -24,6 +24,7 @@ Object.defineProperty(window, 'localStorage', {
 
 // Shared Mocks
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         auth: {
             getSession: vi.fn(),
@@ -121,6 +122,7 @@ const mockChannel = {
 };
 
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         auth: {
             getSession: vi.fn(),

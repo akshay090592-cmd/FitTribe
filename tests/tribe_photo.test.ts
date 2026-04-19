@@ -25,6 +25,7 @@ Object.defineProperty(window, 'localStorage', {
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     isSupabaseConfigured: vi.fn(() => true),
     supabase: {
         from: vi.fn(() => ({

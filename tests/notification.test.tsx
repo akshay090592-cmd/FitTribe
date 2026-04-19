@@ -64,6 +64,7 @@ vi.mock('../services/notificationService', () => ({
 }));
 
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),

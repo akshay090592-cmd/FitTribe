@@ -13,6 +13,7 @@ vi.mock('../utils/supabaseClient', () => ({
         },
     },
     isSupabaseConfigured: vi.fn(() => true),
+    isSessionValid: vi.fn().mockResolvedValue(true),
 }));
 
 describe('Tribe Flow', () => {

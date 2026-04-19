@@ -17,3 +17,8 @@
 **Vulnerability:** Predictable tribe codes using `Math.random()` and unauthorized deletion of non-tribe photos in `saveTribePhoto`.
 **Learning:** Standard PRNGs are predictable and unsuitable for security-sensitive identifiers. Additionally, maintenance-style deletions (cleaning up old records) must always be scoped to the owner when a group-level filter (like `tribe_id`) is missing.
 **Prevention:** Use `crypto.getRandomValues()` for all random string generation and enforce user ownership filters in all DELETE operations, even when cleaning up "global" or orphaned records.
+
+## 2026-04-14 - [Centralized Authorization Utility]
+**Pattern:** Reusable `isSessionValid` helper for defense-in-depth authorization.
+**Learning:** To prevent IDOR and ensure data isolation across multiple service modules (Storage, Notifications, etc.) without circular dependencies, authorization logic should be centralized in a foundational module like `supabaseClient.ts`.
+**Prevention:** Always use the centralized `isSessionValid` check at the start of any service function that performs user-specific data retrieval or modification.

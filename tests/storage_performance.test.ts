@@ -17,6 +17,7 @@ if (typeof localStorage === 'undefined') {
 
 // Mock Supabase to avoid network calls
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),

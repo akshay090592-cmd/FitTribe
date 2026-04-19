@@ -5,6 +5,7 @@ import { UserProfile } from '../types';
 
 // Mock Supabase
 vi.mock('../utils/supabaseClient', () => ({
+    isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         from: vi.fn(),
         auth: {

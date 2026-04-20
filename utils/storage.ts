@@ -1344,6 +1344,9 @@ export const saveTribePhoto = async (imageData: string, profile: UserProfile) =>
 };
 
 export const getUserPlans = async (userId: string): Promise<Record<string, any> | null> => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return null;
+
   // Try local storage first as a robust fallback/primary for now
   try {
     const saved = localStorage.getItem(`user_plans_${userId}`);
@@ -1356,6 +1359,9 @@ export const getUserPlans = async (userId: string): Promise<Record<string, any> 
 };
 
 export const saveUserPlan = async (userId: string, plans: any) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return;
+
   try {
     localStorage.setItem(`user_plans_${userId}`, JSON.stringify(plans));
   } catch (e) {
@@ -1365,6 +1371,9 @@ export const saveUserPlan = async (userId: string, plans: any) => {
 };
 
 export const getUserDiet = async (userId: string): Promise<any | null> => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return null;
+
   try {
     const saved = localStorage.getItem(`user_diet_${userId}`);
     if (saved) return JSON.parse(saved);
@@ -1376,6 +1385,9 @@ export const getUserDiet = async (userId: string): Promise<any | null> => {
 };
 
 export const saveUserDiet = async (userId: string, diet: any) => {
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return;
+
   try {
     localStorage.setItem(`user_diet_${userId}`, JSON.stringify(diet));
   } catch (e) {
@@ -1466,6 +1478,9 @@ export const getXPLogs = async (userId: string): Promise<import('../types').XPLo
 
 export const getPointLogs = async (userId: string): Promise<import('../types').PointLog[]> => {
   if (!navigator.onLine) return [];
+
+  // Security: Defense in depth - verify user ownership via session
+  if (!await isSessionValid(userId)) return [];
 
   const { data, error } = await supabase
     .from('point_logs')

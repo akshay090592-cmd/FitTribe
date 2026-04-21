@@ -22,3 +22,8 @@
 **Pattern:** Reusable `isSessionValid` helper for defense-in-depth authorization.
 **Learning:** To prevent IDOR and ensure data isolation across multiple service modules (Storage, Notifications, etc.) without circular dependencies, authorization logic should be centralized in a foundational module like `supabaseClient.ts`.
 **Prevention:** Always use the centralized `isSessionValid` check at the start of any service function that performs user-specific data retrieval or modification.
+
+## 2026-04-15 - [Session Hardening & Input Sanitization]
+**Vulnerability:** Potential authorization bypass in `isSessionValid` due to loose equality/missing checks, and lack of length limits on user-provided strings.
+**Learning:** Defense-in-depth requires explicit verification that both the target user ID and the session user ID are present before comparison, to avoid edge-case bypasses. Furthermore, all public-facing mutations should enforce strict length limits to prevent storage-based DoS.
+**Prevention:** Always validate that session identifiers are non-falsy before performing ownership checks, and use whitelisted sanitization for all string inputs.

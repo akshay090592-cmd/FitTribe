@@ -20,10 +20,21 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const isSessionValid = async (userId: string): Promise<boolean> => {
   if (!isSupabaseConfigured()) return true;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user?.id !== userId) {
-    console.error("Unauthorized operation: session user ID mismatch");
+
+  // Security: Explicitly reject missing or empty userId
+  if (!userId) {
+    console.error("Unauthorized operation: Missing or empty userId");
     return false;
   }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const sessionUserId = session?.user?.id;
+
+  // Security: Ensure session user ID exists and matches the provided userId
+  if (!sessionUserId || sessionUserId !== userId) {
+    console.error("Unauthorized operation: session user ID mismatch or missing session");
+    return false;
+  }
+
   return true;
 };

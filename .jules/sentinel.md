@@ -27,3 +27,8 @@
 **Vulnerability:** Potential authorization bypass in `isSessionValid` due to loose equality/missing checks, and lack of length limits on user-provided strings.
 **Learning:** Defense-in-depth requires explicit verification that both the target user ID and the session user ID are present before comparison, to avoid edge-case bypasses. Furthermore, all public-facing mutations should enforce strict length limits to prevent storage-based DoS.
 **Prevention:** Always validate that session identifiers are non-falsy before performing ownership checks, and use whitelisted sanitization for all string inputs.
+
+## 2026-04-16 - [Hardened Session Validation]
+**Vulnerability:** Fail-open authorization logic in `isSessionValid` due to loose equality with `undefined`/`null`.
+**Learning:** Comparing two missing values (e.g., `undefined === undefined`) can lead to unauthorized access in authorization helpers if input and session data are both absent.
+**Prevention:** Always perform explicit truthiness checks on both the target ID and the session ID before performing a comparison in authorization logic.

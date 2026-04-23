@@ -37,6 +37,12 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [photoUploaded, setPhotoUploaded] = useState(false);
     const [tribePhoto, setTribePhoto] = useState<string | null>(null);
+    const getLocalISOString = () => {
+        const tzOffset = new Date().getTimezoneOffset() * 60000;
+        return new Date(Date.now() - tzOffset).toISOString().slice(0, 16);
+    };
+
+    const [startTime, setStartTime] = useState<string>(getLocalISOString());
 
     useEffect(() => {
         if (isOpen) {
@@ -49,6 +55,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
             setNewFavoriteName('');
             setPhotoUploaded(false);
             setTribePhoto(null);
+            setStartTime(getLocalISOString());
 
             // Load saved activities
             const saved = localStorage.getItem(`saved_activities_${currentUser}`);
@@ -151,7 +158,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
         const log: WorkoutLog = {
             id: logId as any,
-            date: new Date().toISOString(),
+            date: new Date(startTime).toISOString(),
             user: currentUser as any,
             type: WorkoutType.CUSTOM,
             exercises: [], // No gym exercises
@@ -276,6 +283,19 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                         </div>
                     )}
 
+                    <div className="space-y-2">
+                        <label htmlFor="start-time-input" className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center">
+                            <Clock size={16} className="mr-1 text-emerald-500" /> Start Date & Time
+                        </label>
+                        <input
+                            id="start-time-input"
+                            type="datetime-local"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-6">
                         {/* Duration Input */}
                         <div className="space-y-2">
@@ -343,33 +363,61 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                         </h3>
 
                         {!photoUploaded ? (
-                            <label className={`block w-full cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    className="hidden"
-                                    onChange={async (e) => {
-                                        if (e.target.files && e.target.files[0] && userProfile) {
-                                            setUploadingPhoto(true);
-                                            try {
-                                                const base64 = await compressImage(e.target.files[0]);
-                                                await saveTribePhoto(base64, userProfile);
-                                                setTribePhoto(base64);
-                                                setPhotoUploaded(true);
-                                            } catch (err) {
-                                                console.error(err);
-                                                alert("Failed to upload photo");
-                                            } finally {
-                                                setUploadingPhoto(false);
+                            <div className="grid grid-cols-2 gap-2">
+                                <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            if (e.target.files && e.target.files[0] && userProfile) {
+                                                setUploadingPhoto(true);
+                                                try {
+                                                    const base64 = await compressImage(e.target.files[0]);
+                                                    await saveTribePhoto(base64, userProfile);
+                                                    setTribePhoto(base64);
+                                                    setPhotoUploaded(true);
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert("Failed to upload photo");
+                                                } finally {
+                                                    setUploadingPhoto(false);
+                                                }
                                             }
-                                        }
-                                    }}
-                                />
-                                <div className="bg-white hover:bg-emerald-50 text-emerald-600 py-2 px-4 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-sm">
-                                    {uploadingPhoto ? 'Uploading...' : 'Take Photo (Tribe Only)'}
-                                </div>
-                            </label>
+                                        }}
+                                    />
+                                    <div className="bg-white hover:bg-emerald-50 text-emerald-600 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
+                                        {uploadingPhoto ? 'Uploading...' : 'Camera'}
+                                    </div>
+                                </label>
+                                <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            if (e.target.files && e.target.files[0] && userProfile) {
+                                                setUploadingPhoto(true);
+                                                try {
+                                                    const base64 = await compressImage(e.target.files[0]);
+                                                    await saveTribePhoto(base64, userProfile);
+                                                    setTribePhoto(base64);
+                                                    setPhotoUploaded(true);
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert("Failed to upload photo");
+                                                } finally {
+                                                    setUploadingPhoto(false);
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <div className="bg-emerald-100/50 hover:bg-emerald-100 text-emerald-700 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
+                                        {uploadingPhoto ? 'Uploading...' : 'Gallery'}
+                                    </div>
+                                </label>
+                            </div>
                         ) : (
                             <div className="bg-emerald-100 text-emerald-700 py-2 rounded-xl font-bold flex items-center justify-center text-sm border border-emerald-200">
                                 <CheckCircle size={16} className="mr-2" /> Photo Shared!

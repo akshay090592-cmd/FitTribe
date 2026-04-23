@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Star, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 
 interface Props {
@@ -35,8 +36,8 @@ export const FeedbackModal: React.FC<Props> = ({ isOpen, onClose, onSubmit, exer
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-up border border-emerald-100">
                 <div className="bg-emerald-500/10 p-6 flex justify-between items-start border-b border-emerald-100">
                     <div>
@@ -140,6 +141,7 @@ export const FeedbackModal: React.FC<Props> = ({ isOpen, onClose, onSubmit, exer
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

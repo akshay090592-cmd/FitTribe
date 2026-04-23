@@ -860,33 +860,62 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               </h3>
 
               {!photoUploaded ? (
-                <label className={`block w-full cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={async (e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setUploadingPhoto(true);
-                        try {
-                          const base64 = await compressImage(e.target.files[0]);
-                          await saveTribePhoto(base64, userProfile);
-                          setTribePhoto(base64);
-                          setPhotoUploaded(true);
-                        } catch (err) {
-                          console.error(err);
-                          alert("Failed to upload photo");
-                        } finally {
-                          setUploadingPhoto(false);
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadingPhoto(true);
+                          try {
+                            const base64 = await compressImage(e.target.files[0]);
+                            await saveTribePhoto(base64, userProfile);
+                            setTribePhoto(base64);
+                            setPhotoUploaded(true);
+                          } catch (err) {
+                            console.error(err);
+                            alert("Failed to upload photo");
+                          } finally {
+                            setUploadingPhoto(false);
+                          }
                         }
-                      }
-                    }}
-                  />
-                  <div className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-800">
-                    {uploadingPhoto ? 'Compressing & Uploading...' : 'Take Photo (Tribe Only)'}
-                  </div>
-                </label>
+                      }}
+                    />
+                    <div className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-2 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-800 text-xs">
+                      {uploadingPhoto ? 'Uploading...' : 'Camera'}
+                    </div>
+                  </label>
+
+                  <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadingPhoto(true);
+                          try {
+                            const base64 = await compressImage(e.target.files[0]);
+                            await saveTribePhoto(base64, userProfile);
+                            setTribePhoto(base64);
+                            setPhotoUploaded(true);
+                          } catch (err) {
+                            console.error(err);
+                            alert("Failed to upload photo");
+                          } finally {
+                            setUploadingPhoto(false);
+                          }
+                        }
+                      }}
+                    />
+                    <div className="bg-emerald-100/20 hover:bg-emerald-100/30 text-emerald-100 py-3 px-2 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-900/40 text-xs">
+                      {uploadingPhoto ? 'Uploading...' : 'Gallery'}
+                    </div>
+                  </label>
+                </div>
               ) : (
                 <div className="bg-emerald-800/50 text-emerald-200 py-3 rounded-2xl font-bold flex items-center justify-center border border-emerald-500/30">
                   <CheckCircle size={18} className="mr-2 text-emerald-400" /> Photo Shared!

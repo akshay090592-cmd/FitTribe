@@ -5,9 +5,11 @@ import { notifyTribeOnActivity } from '../services/notificationService';
 // Mock getTribeMembers
 vi.mock('../utils/storage', () => ({
   getTribeMembers: vi.fn(),
+  isValidImageData: vi.fn().mockImplementation((data: string) => data.startsWith('data:image/')),
+  sanitizeString: vi.fn().mockImplementation((str: string, maxLength: number) => str.substring(0, maxLength)),
 }));
 
-import { getTribeMembers } from '../utils/storage';
+import { getTribeMembers, isValidImageData } from '../utils/storage';
 import { supabase } from '../utils/supabaseClient';
 
 // Mock the supabase client
@@ -62,7 +64,7 @@ describe('Notification Service', () => {
   it('should include image data in notification if provided', async () => {
     const actor = 'User1';
     const activity = 'workout';
-    const imageData = 'base64_encoded_image_data';
+    const imageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
     // Mock tribe members
     const members = [
@@ -81,6 +83,28 @@ describe('Notification Service', () => {
         expect.objectContaining({
           message: expect.stringContaining(activity),
           image_data: imageData
+        })
+      ])
+    );
+  });
+
+  it('should remove invalid image data from notification', async () => {
+    const actor = 'User1';
+    const activity = 'workout';
+    const invalidImageData = 'not-an-image';
+
+    // Mock tribe members
+    const members = [{ id: '2', displayName: 'User2' }];
+    (getTribeMembers as Mock).mockResolvedValue(members);
+    (isValidImageData as Mock).mockReturnValue(false);
+
+    await notifyTribeOnActivity(actor, activity, 'tribe-123', invalidImageData);
+
+    // Verify supabase insert call does NOT include image_data
+    expect(supabase.from('notifications').insert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          image_data: undefined
         })
       ])
     );

@@ -1504,67 +1504,6 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              <React.Suspense fallback={null}>
-                <ActivityTrackerModal
-                  isOpen={isActivityModalOpen}
-                  onClose={() => setIsActivityModalOpen(false)}
-                  currentUser={currentUser}
-                  userProfile={userProfile}
-                  mode={activityModalMode}
-                  onSave={async (log, photo) => {
-                    // Save log: Check for existing commitment to replace
-                    if (!userProfile) return;
-
-                    const allUserLogs = await getUserLogs(currentUser);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    const commitLog = allUserLogs.find(l => {
-                      const d = new Date(l.date);
-                      d.setHours(0, 0, 0, 0);
-                      return l.type === 'COMMITMENT' && d.getTime() === today.getTime();
-                    });
-
-                    if (commitLog) {
-                      log.id = commitLog.id; // Reuse ID
-                      await updateLog(log, userProfile);
-                    } else {
-                      await saveLog(log, userProfile);
-                    }
-
-                    // Update Next Workout Type Logic
-                    if (log.type === WorkoutType.A) {
-                      localStorage.setItem('next_workout_type', WorkoutType.B);
-                      setSelectedWorkoutType(WorkoutType.B);
-                    } else if (log.type === WorkoutType.B) {
-                      localStorage.setItem('next_workout_type', WorkoutType.A);
-                      setSelectedWorkoutType(WorkoutType.A);
-                    } // Custom workouts do NOT change the cycle
-
-                    // Check achievements
-                    const badges = await checkAchievements(log, userProfile);
-                    if (badges.length > 0) {
-                      showToast(`🏆 Unlocked: ${badges.map(b => b.title).join(', ')}`, 'success');
-                    } else {
-                      const xpEarned = log.vibes ? Math.min(Math.floor(log.vibes), 60) : Math.floor((log.calories || 0) / 10);
-                      showToast(`Activity Saved! +${xpEarned} XP`, 'success');
-                    }
-
-                    if (currentUser && userProfile) {
-                      if (userProfile.tribeId) {
-                        await notifyTribeOnActivity(currentUser, log.customActivity || 'workout', userProfile.tribeId, photo);
-                      }
-
-                      // Also update quest progress for the newly logged activity
-                      import('./utils/questUtils').then(({ updateQuestProgress }) => {
-                        updateQuestProgress(currentUser, userProfile, 'workout', 1);
-                      });
-                    }
-
-                    loadProfile(true);
-                  }}
-                />
-              </React.Suspense>
 
               {/* Weekly Stats Widget */}
               <div>
@@ -1798,6 +1737,68 @@ const App: React.FC = () => {
         logs={allLogs}
         onDelete={handleDeleteLog}
       />
+
+      <React.Suspense fallback={null}>
+        <ActivityTrackerModal
+          isOpen={isActivityModalOpen}
+          onClose={() => setIsActivityModalOpen(false)}
+          currentUser={currentUser}
+          userProfile={userProfile}
+          mode={activityModalMode}
+          onSave={async (log, photo) => {
+            // Save log: Check for existing commitment to replace
+            if (!userProfile) return;
+
+            const allUserLogs = await getUserLogs(currentUser);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const commitLog = allUserLogs.find(l => {
+              const d = new Date(l.date);
+              d.setHours(0, 0, 0, 0);
+              return l.type === 'COMMITMENT' && d.getTime() === today.getTime();
+            });
+
+            if (commitLog) {
+              log.id = commitLog.id; // Reuse ID
+              await updateLog(log, userProfile);
+            } else {
+              await saveLog(log, userProfile);
+            }
+
+            // Update Next Workout Type Logic
+            if (log.type === WorkoutType.A) {
+              localStorage.setItem('next_workout_type', WorkoutType.B);
+              setSelectedWorkoutType(WorkoutType.B);
+            } else if (log.type === WorkoutType.B) {
+              localStorage.setItem('next_workout_type', WorkoutType.A);
+              setSelectedWorkoutType(WorkoutType.A);
+            } // Custom workouts do NOT change the cycle
+
+            // Check achievements
+            const badges = await checkAchievements(log, userProfile);
+            if (badges.length > 0) {
+              showToast(`🏆 Unlocked: ${badges.map(b => b.title).join(', ')}`, 'success');
+            } else {
+              const xpEarned = log.vibes ? Math.min(Math.floor(log.vibes), 60) : Math.floor((log.calories || 0) / 10);
+              showToast(`Activity Saved! +${xpEarned} XP`, 'success');
+            }
+
+            if (currentUser && userProfile) {
+              if (userProfile.tribeId) {
+                await notifyTribeOnActivity(currentUser, log.customActivity || 'workout', userProfile.tribeId, photo);
+              }
+
+              // Also update quest progress for the newly logged activity
+              import('./utils/questUtils').then(({ updateQuestProgress }) => {
+                updateQuestProgress(currentUser, userProfile, 'workout', 1);
+              });
+            }
+
+            loadProfile(true);
+          }}
+        />
+      </React.Suspense>
 
       <CreateChallengeModal
         isOpen={isChallengeModalOpen}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { WorkoutTemplate, UserProfile } from '../types';
 import { TemplateEditor } from './TemplateEditor';
 import { updateProfile } from '../utils/storage';
@@ -43,8 +44,8 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
   };
 
   if (view === 'create' || view === 'edit') {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    return createPortal(
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
         <div className="bg-white w-full max-w-md h-[80vh] rounded-[32px] overflow-hidden shadow-2xl">
           <TemplateEditor
             onSave={handleSaveTemplate}
@@ -52,12 +53,13 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
             initialTemplate={editingTemplate}
           />
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white w-full max-w-md max-h-[85vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up">
         {/* Header */}
         <div className="bg-indigo-600 p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0">
@@ -133,6 +135,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

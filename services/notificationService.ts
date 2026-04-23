@@ -1,5 +1,6 @@
 import { supabase, isSessionValid } from '../utils/supabaseClient';
 import { User, GiftTransaction } from '../types';
+import { isValidImageData, sanitizeString } from '../utils/storage';
 
 // Cache for user IDs to avoid repeated DB calls
 const userIdCache: Record<string, string> = {};
@@ -26,9 +27,19 @@ const getUserIdByName = async (displayName: string): Promise<string | null> => {
 
 // Function to send a notification
 const sendNotification = async (userId: string, message: string, imageData?: string) => {
+  // Security: Validate image data if present
+  let validatedImageData = imageData;
+  if (imageData && !isValidImageData(imageData)) {
+    console.warn("Invalid image data provided to sendNotification. Removing image.");
+    validatedImageData = undefined;
+  }
+
+  // Security: Sanitize message and limit length
+  const sanitizedMessage = sanitizeString(message, 500);
+
   const { data, error } = await supabase
     .from('notifications')
-    .insert([{ user_id: userId, message, read: false, image_data: imageData }]);
+    .insert([{ user_id: userId, message: sanitizedMessage, read: false, image_data: validatedImageData }]);
 
   if (error) {
     console.error('Error sending notification:', error);
@@ -88,7 +99,10 @@ export const notifyNudge = async (from: User, to: User) => {
 };
 
 export const notifyComment = async (from: string, to: string, commentText: string) => {
-  const message = `${from} commented: "${commentText}"`;
+  // Security: Sanitize both sender name and comment text for notification message
+  const sanitizedFrom = sanitizeString(from, 50);
+  const sanitizedComment = sanitizeString(commentText, 200);
+  const message = `${sanitizedFrom} commented: "${sanitizedComment}"`;
   const recipientId = await getUserIdByName(to);
   if (recipientId) {
     console.log(`Sending comment notification to ${to}: ${message}`);

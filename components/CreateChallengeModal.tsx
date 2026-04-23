@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserProfile, CustomChallenge } from '../types';
 import { X, Calendar, Target, Award } from 'lucide-react';
 
@@ -70,8 +71,8 @@ export const CreateChallengeModal: React.FC<Props> = ({ isOpen, onClose, onSave 
       return "Days / Times per Month";
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
       <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-scale-up">
         <div className="bg-emerald-600 p-6 text-white relative">
           <button
@@ -159,6 +160,7 @@ export const CreateChallengeModal: React.FC<Props> = ({ isOpen, onClose, onSave 
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

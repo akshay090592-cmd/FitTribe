@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Flame, Clock, Activity, Save, Star, Trash2, Plus, Camera, CheckCircle, Heart } from 'lucide-react';
 import { ACTIVITIES_LIST, MET_VALUES, WELLBEING_ACTIVITIES } from '../constants';
 import { UserProfile, WorkoutType, WorkoutLog } from '../types';
@@ -176,8 +177,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="bg-white w-full max-w-md max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up">
                 <div className={`${mode === 'wellbeing' ? 'bg-pink-500' : 'bg-emerald-600'} p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0`}>
                     <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-10"></div>
@@ -435,6 +436,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

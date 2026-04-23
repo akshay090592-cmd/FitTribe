@@ -720,8 +720,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   if (step === 'workout') {
     return (
       <div className="min-h-screen bg-[#F0FDF4] pb-32 relative">
-        {showExitModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        {showExitModal && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl animate-scale-up">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -752,7 +752,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">

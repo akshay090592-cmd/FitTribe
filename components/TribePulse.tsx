@@ -6,25 +6,27 @@ import { getAvatarPath } from '../utils/avatar';
 
 interface Props {
     currentUser: string | null;
+    tribeId?: string;
     members?: string[];
     avatarMap?: Record<string, string>;
     refreshTrigger?: number;
     onUserClick?: (user: string) => void;
 }
 
-export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarMap = {}, refreshTrigger = 0, onUserClick }) => {
+// Performance Optimization: Memoize TribePulse to prevent redundant re-renders from App state
+export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, members = [], avatarMap = {}, refreshTrigger = 0, onUserClick }) => {
     const [statuses, setStatuses] = useState<Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'>>({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadStatus();
-    }, [refreshTrigger, members]);
+    }, [refreshTrigger, members, tribeId]);
 
     const loadStatus = async () => {
         if (!members || members.length === 0) return;
 
-        // Fetch logs to check today, tomorrow, and yesterday
-        const allLogs = await getLogs();
+        // Optimization: Scope logs to tribeId to reduce data processing and reuse cache
+        const allLogs = await getLogs(tribeId);
         const now = new Date();
         const todayStr = now.toDateString();
         
@@ -36,24 +38,52 @@ export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarM
         yesterday.setDate(now.getDate() - 1);
         const yesterdayStr = yesterday.toDateString();
 
+        // Performance Optimization: O(N + M) algorithm instead of O(N * M)
+        // N = number of logs, M = number of members.
+        const memberSet = new Set(members);
+        const memberFlags: Record<string, {
+            workedToday: boolean;
+            committedToday: boolean;
+            committedTomorrow: boolean;
+            committedYesterday: boolean;
+            workedYesterday: boolean;
+        }> = {};
+
+        members.forEach(m => {
+            memberFlags[m] = { workedToday: false, committedToday: false, committedTomorrow: false, committedYesterday: false, workedYesterday: false };
+        });
+
+        // Single pass over logs to populate flags for all tribe members
+        allLogs.forEach(log => {
+            if (!memberSet.has(log.user)) return;
+
+            const logDateStr = new Date(log.date).toDateString();
+            const isCommitment = log.type === WorkoutType.COMMITMENT;
+            const flags = memberFlags[log.user];
+
+            if (logDateStr === todayStr) {
+                if (isCommitment) flags.committedToday = true;
+                else flags.workedToday = true;
+            } else if (logDateStr === tomorrowStr) {
+                if (isCommitment) flags.committedTomorrow = true;
+            } else if (logDateStr === yesterdayStr) {
+                if (isCommitment) flags.committedYesterday = true;
+                else flags.workedYesterday = true;
+            }
+        });
+
         const pulseStatus: Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'> = {};
 
+        // Derive status from pre-calculated flags
         members.forEach(user => {
-            const userLogs = allLogs.filter(l => l.user === user);
+            const flags = memberFlags[user];
+            const failedYesterday = flags.committedYesterday && !flags.workedYesterday;
 
-            const workedToday = userLogs.some(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date).toDateString() === todayStr);
-            const committedToday = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === todayStr);
-            const committedTomorrow = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
-            
-            const committedYesterday = userLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === yesterdayStr);
-            const workedYesterday = userLogs.some(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date).toDateString() === yesterdayStr);
-            const failedYesterday = committedYesterday && !workedYesterday;
-
-            if (workedToday) {
+            if (flags.workedToday) {
                 pulseStatus[user] = 'done';
-            } else if (committedToday) {
+            } else if (flags.committedToday) {
                 pulseStatus[user] = 'committing';
-            } else if (committedTomorrow) {
+            } else if (flags.committedTomorrow) {
                 pulseStatus[user] = 'tomorrow';
             } else if (failedYesterday) {
                 pulseStatus[user] = 'failed';
@@ -128,4 +158,4 @@ export const TribePulse: React.FC<Props> = ({ currentUser, members = [], avatarM
             </div>
         </div>
     );
-};
+});

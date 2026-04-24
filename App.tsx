@@ -1353,6 +1353,7 @@ const App: React.FC = () => {
                 <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
                   <TribePulse
                     currentUser={currentUser}
+                    tribeId={userProfile?.tribeId}
                     members={tribeMembers}
                     avatarMap={avatarMap}
                     refreshTrigger={pulseRefreshTrigger}
@@ -1635,6 +1636,7 @@ const App: React.FC = () => {
             {!isOffline && currentUser && (
               <TribePulse
                 currentUser={currentUser}
+                tribeId={userProfile?.tribeId}
                 members={tribeMembers}
                 avatarMap={avatarMap}
                 refreshTrigger={pulseRefreshTrigger}

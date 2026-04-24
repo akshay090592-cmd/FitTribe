@@ -43,6 +43,7 @@ vi.mock('../utils/storage', () => ({
 }));
 
 vi.mock('../utils/gamification', () => ({
+    calculateStreaks: vi.fn().mockReturnValue(5),
     checkAchievements: vi.fn().mockResolvedValue([]),
     getStreakRisk: vi.fn().mockResolvedValue(false),
     getProgressionSuggestion: vi.fn(),

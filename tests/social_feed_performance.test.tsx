@@ -45,6 +45,7 @@ vi.mock('../utils/storage', () => ({
 }));
 
 vi.mock('../utils/gamification', () => ({
+    calculateStreaks: vi.fn().mockReturnValue(5),
   getTeamStats: vi.fn(),
   getMood: vi.fn(),
   calculateLogXPBreakdown: vi.fn(),

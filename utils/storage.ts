@@ -276,7 +276,10 @@ export const createTribe = async (name: string, userId: string): Promise<Tribe |
 };
 
 export const joinTribe = async (code: string): Promise<Tribe | null> => {
-  const { data, error } = await supabase.from('tribes').select('*').eq('code', code.toUpperCase()).single();
+  const trimmedCode = code.trim().toUpperCase();
+  if (!trimmedCode) return null;
+
+  const { data, error } = await supabase.from('tribes').select('*').eq('code', trimmedCode).single();
 
   if (error || !data) {
     console.error("Error joining tribe", error);
@@ -357,10 +360,13 @@ export const createProfile = async (
   // Security: Defense in depth - verify user ownership via session
   if (!await isSessionValid(userId)) return;
 
+  // Security: Sanitize display name
+  const sanitizedName = sanitizeString(displayName, 50);
+
   await supabase.from('profiles').insert({
     id: userId,
     email,
-    display_name: displayName,
+    display_name: sanitizedName,
     tribe_id: tribeId,
     avatar_id: gender === 'female' ? 'female' : 'male', // Default avatar based on gender
     fitness_level: fitnessLevel,
@@ -1095,6 +1101,9 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
   // Security: Defense in depth - verify user ownership via session
   if (!await isSessionValid(profile.id)) return;
 
+  // Security: Sanitize gift message (no direct mutation of transaction object)
+  const sanitizedMessage = transaction.message ? sanitizeString(transaction.message, 500) : '';
+
   if (!navigator.onLine) {
     addToOfflineQueue({
       type: 'SEND_GIFT',
@@ -1115,7 +1124,7 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
     gift_id: transaction.giftId,
     gift_name: transaction.giftName,
     gift_emoji: transaction.giftEmoji,
-    message: transaction.message
+    message: sanitizedMessage
   });
 
   invalidateCache('gifts_all');
@@ -1223,6 +1232,9 @@ export const saveWorkoutFeedback = async (feedback: import('../types').WorkoutFe
   // Security: Defense in depth - verify user ownership via session
   if (!await isSessionValid(userProfile.id)) return;
 
+  // Security: Sanitize feedback notes (no direct mutation of feedback object)
+  const sanitizedNotes = feedback.notes ? sanitizeString(feedback.notes, 500) : '';
+
   if (!isSupabaseConfigured()) {
     console.log("Mock Mode: Feedback saved to cache", feedback);
     // In mock mode, we can just attach feedback to the log in cache if we wanted,
@@ -1243,7 +1255,7 @@ export const saveWorkoutFeedback = async (feedback: import('../types').WorkoutFe
   const { error } = await supabase.from('workout_feedback').insert({
     log_id: logId,
     user_id: userProfile.id,
-    feedback_text: feedback.notes,
+    feedback_text: sanitizedNotes,
     difficulty_rating: feedback.difficultyRating,
     exercises_skipped: feedback.skippedExercises,
     pain_points: feedback.painPoints

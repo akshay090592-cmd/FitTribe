@@ -294,9 +294,13 @@ export const getStreakLogs = async (user: User, tribeId?: string) => {
   return (await getStreaks(user, tribeId, true)) as WorkoutLog[];
 };
 
-export const getStreakRisk = async (user: User, tribeId?: string): Promise<boolean> => {
-  const rawLogs = await getUserLogs(user, tribeId);
-  const logs = rawLogs; // getUserLogs is sorted DESC.
+export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | WorkoutLog[]): Promise<boolean> => {
+  let logs: WorkoutLog[];
+  if (Array.isArray(tribeIdOrLogs)) {
+    logs = tribeIdOrLogs;
+  } else {
+    logs = await getUserLogs(user, tribeIdOrLogs as string);
+  }
 
   if (logs.length === 0) return false;
 

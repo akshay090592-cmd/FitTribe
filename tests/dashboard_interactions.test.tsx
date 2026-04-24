@@ -40,6 +40,7 @@ vi.mock('../utils/sync', () => ({
 }));
 
 vi.mock('../utils/gamification', () => ({
+    calculateStreaks: vi.fn().mockReturnValue(5),
     getMood: vi.fn().mockResolvedValue('normal'),
     getTeamStats: vi.fn().mockResolvedValue({ userStats: {} }),
     getLevelProgress: vi.fn().mockReturnValue({ level: 1, progress: 0 }),

@@ -11,7 +11,7 @@ import { useNotifications } from './hooks/useNotifications';
 import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
-import { getMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk } from './utils/gamification';
+import { getMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
@@ -468,46 +468,47 @@ const App: React.FC = () => {
       if (profile) {
         setUserProfile(profile);
         setCurrentUser(profile.displayName);
-        // Load initial stats
-        const logs = await getUserLogs(profile.displayName);
-        setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
-        setAllLogs(logs); // Store for popups
-        // Note: selectedWorkoutType is now handled by local storage preference/active session check
 
-        // Load Mood & Weekly Progress
-        const m = await getMood(profile.displayName, profile.tribeId);
+        // Optimization: Parallelize independent data fetches
+        const [logs, stats, gameState, members, savedPlans] = await Promise.all([
+          getUserLogs(profile.displayName, profile.tribeId),
+          getTeamStats(profile.tribeId),
+          getGamificationState(profile.tribeId),
+          profile.tribeId ? getTribeMembers(profile.tribeId) : Promise.resolve([]),
+          getUserPlans(profile.id)
+        ]);
+
+        // 1. Process Logs
+        setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
+        setAllLogs(logs);
+
+        // 2. Process Mood (Reusing logs)
+        const m = await getMood(profile.displayName, logs);
         setMood(m);
 
-        const stats = await getTeamStats();
+        // 3. Process Stats
         setTeamStats(stats);
-        const myWeekly = stats.userStats[profile.displayName] || 0;
-        setWeeklyProgress(myWeekly);
+        setWeeklyProgress(stats.userStats[profile.displayName] || 0);
 
-        // Load Theme & Gamification
-        const gameState = await getGamificationState();
+        // 4. Process Gamification
         setAllGamificationState(gameState);
         if (gameState && gameState[profile.displayName]) {
           const userState = gameState[profile.displayName];
           setActiveTheme(userState.activeTheme || 'default');
           const xpToUse = userState.lifetimeXp !== undefined ? userState.lifetimeXp : userState.points;
           setXpData(getLevelProgress(xpToUse));
-
-          // Check commitment (Legacy logic removed, now using logs)
-          // TribePulse handles the status display based on logs.
         }
 
-        const s = await getStreaks(profile.displayName, profile.tribeId);
-        setStreak(s);
-        const risk = await getStreakRisk(profile.displayName, profile.tribeId);
-        setStreakRisk(risk);
+        // 5. Process Streaks & Risk (Reusing logs)
+        setStreak(calculateStreaks(logs, { isSorted: true }) as number);
+        setStreakRisk(await getStreakRisk(profile.displayName, logs));
 
-        // Load Quests
+        // 6. Load Quests (Uses profile)
         setQuests(getDailyQuests(profile.displayName, profile));
         setOnboardingQuests(getOnboardingQuests(profile.displayName));
 
-        // Load Tribe Members
-        if (profile.tribeId) {
-          const members = await getTribeMembers(profile.tribeId);
+        // 7. Process Tribe Members
+        if (members.length > 0) {
           setTribeMembers(members.map(m => m.displayName));
           const avatars: Record<string, string> = {};
           members.forEach(m => {
@@ -516,14 +517,12 @@ const App: React.FC = () => {
           setAvatarMap(avatars);
         }
 
-        // Load Dynamic Plans
-        const savedPlans = await getUserPlans(profile.id);
+        // 8. Load Dynamic Plans
         if (savedPlans) {
           console.log("Loaded dynamic plans for user");
           setAllUserPlans(prev => ({ ...prev, [profile.displayName]: savedPlans as any }));
         } else {
           console.log("Migrating static plans to DB");
-          // Migration: Save default PLANS to DB
           await saveUserPlan(profile.id, STARTER_PLANS[profile.fitnessLevel || 'beginner']);
         }
       }

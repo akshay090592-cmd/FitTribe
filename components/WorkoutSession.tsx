@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { User, WorkoutPlan, ExerciseRecord, WorkoutLog, ExerciseSet, Badge, UserProfile, WorkoutType } from '../types';
 import { ExerciseCard } from './ExerciseCard';
 import { Timer } from './Timer';

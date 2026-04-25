@@ -907,6 +907,8 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
+    } else {
+      return {};
     }
   }
 
@@ -1058,6 +1060,8 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
+    } else {
+      return createDefaultGamificationState();
     }
   }
 
@@ -1158,6 +1162,8 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('from_user_id', memberIds);
+    } else {
+      return [];
     }
   }
 
@@ -1176,7 +1182,7 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
   if (!data) return [];
 
   const transactions = data.map((row: any) => ({
-    id: row.id,
+    id: String(row.id),
     from: row.from_name,
     to: row.to_name,
     giftId: row.gift_id,
@@ -1185,6 +1191,8 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
     message: row.message,
     date: row.created_at
   }));
+  
+  setInCache(cacheKey, transactions);
   return transactions;
 };
 

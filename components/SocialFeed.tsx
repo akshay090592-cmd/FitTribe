@@ -223,7 +223,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
         onFetching?.(true);
         const nextPage = page + 1;
-        const PAGE_SIZE = 10;
+        const PAGE_SIZE = 20;
 
         try {
             const [newLogs, newGifts] = await Promise.all([

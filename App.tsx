@@ -651,7 +651,13 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        setLoading(true); // Bolt: Ensure loading is true before setting session to prevent onboarding flash
+        // Silent update if token refreshed OR app is already loaded OR we have optimistic data
+        const isSilent = event === 'TOKEN_REFRESHED' || isAppReady.current || !!userProfile;
+        
+        if (!isSilent) {
+          setLoading(true); // Bolt: Ensure loading is true before setting session to prevent onboarding flash
+        }
+        
         setSession(session);
         // Handle explicit view transition on sign in
         // Use viewRef to avoid stale closure and check for active session
@@ -663,8 +669,6 @@ const App: React.FC = () => {
           }
         }
 
-        // Silent update if token refreshed OR app is already loaded OR we have optimistic data
-        const isSilent = event === 'TOKEN_REFRESHED' || isAppReady.current || !!userProfile;
         loadProfile(isSilent, session.user.id).then(() => {
           requestNotificationPermission(session.user.id);
         });

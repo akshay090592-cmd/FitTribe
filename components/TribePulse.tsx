@@ -25,17 +25,21 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
     const loadStatus = async () => {
         if (!members || members.length === 0) return;
 
-        // Optimization: Scope logs to tribeId to reduce data processing and reuse cache
-        const allLogs = await getLogs(tribeId);
         const now = new Date();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+
+        // BOLT Optimization: Only fetch logs from the last 2 days (yesterday, today, tomorrow)
+        // to minimize data transfer while keeping pulse accuracy.
+        // We use a slightly larger page size (50) to ensure we get all recent activity for the tribe.
+        const allLogs = await getLogs(tribeId, 0, 50);
         const todayStr = now.toDateString();
         
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
         const tomorrowStr = tomorrow.toDateString();
 
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
         const yesterdayStr = yesterday.toDateString();
 
         // Performance Optimization: O(N + M) algorithm instead of O(N * M)

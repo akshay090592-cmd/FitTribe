@@ -27,6 +27,15 @@ export const generateSecureCode = (length: number): string => {
   return code;
 };
 
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<any>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+    )
+  ]) as Promise<T>;
+};
+
 // --- CACHING MECHANISM ---
 
 // --- CACHING MECHANISM (PERSISTENT & MEMORY) ---
@@ -117,7 +126,7 @@ export const invalidateCache = (keyPattern: string) => {
 
 export interface OfflineAction {
   id: string;
-  type: 'SAVE_LOG' | 'TOGGLE_REACTION' | 'SEND_GIFT' | 'UPDATE_GAMIFICATION' | 'DELETE_LOG' | 'UPDATE_PROFILE';
+  type: 'SAVE_LOG' | 'UPDATE_LOG' | 'TOGGLE_REACTION' | 'SEND_GIFT' | 'UPDATE_GAMIFICATION' | 'DELETE_LOG' | 'UPDATE_PROFILE';
   payload: any;
   timestamp: number;
 }
@@ -188,7 +197,7 @@ export const getCurrentProfile = async (): Promise<UserProfile | null> => {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, custom_plans, workout_templates, custom_challenge, completed_challenges')
     .eq('id', userId)
     .single();
 
@@ -488,15 +497,28 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
     return offlineLogs;
   }
 
-  const logs = data.map((row: any) => ({
+  const dbLogs = data.map((row: any) => ({
     ...row.log_data,
     id: String(row.id), // Use DB ID as string
     user: row.display_name // Map display name back to User type
   }));
 
-  setInCache(cacheKey, logs);
+  setInCache(cacheKey, dbLogs);
 
-  return [...offlineLogs, ...logs].sort((a, b) => b.date.localeCompare(a.date));
+  // Merge offline logs with database logs and sort by date descending
+  // This ensures that logs created offline are visible even after a successful online fetch
+  const allLogs = [...dbLogs];
+
+  if (offlineLogs.length > 0) {
+    offlineLogs.forEach(offLog => {
+      // Avoid duplicates if a log with same ID exists (though offline IDs usually prefixed)
+      if (!allLogs.some(l => l.id === offLog.id)) {
+        allLogs.push(offLog);
+      }
+    });
+  }
+
+  return allLogs.sort((a, b) => b.date.localeCompare(a.date));
 };
 
 export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
@@ -549,7 +571,7 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
 
   const { data, error } = await supabase
     .from('workout_logs')
-    .select('*')
+    .select('id, user_id, display_name, log_data, date')
     .gte('date', today.toISOString())
     .lt('date', tomorrow.toISOString())
     .order('date', { ascending: false });
@@ -613,12 +635,14 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
   }
 
   try {
-    const { data, error } = await supabase.from('workout_logs').insert({
+    const response = await withTimeout(supabase.from('workout_logs').insert({
       user_id: userProfile.id,
       display_name: userProfile.displayName,
       log_data: log,
       date: log.date
-    }).select('id').single();
+    }).select('id').single() as any);
+
+    const { data, error } = response as { data: any, error: any };
 
     if (error) {
       // BOLT: Catch network errors or other issues and queue for offline
@@ -679,7 +703,11 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
   invalidateCache('gamification');
 
   if (!navigator.onLine) {
-    console.log("Offline: Queuing log update not fully supported, doing optimistic only");
+    console.log("Offline: Queuing log update");
+    addToOfflineQueue({
+      type: 'UPDATE_LOG',
+      payload: { log, userProfile }
+    });
     return log.id;
   }
 
@@ -688,28 +716,43 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
   // If it's a numeric string, we should let Supabase match it, but sometimes explicit casting helps.
   const recordId = /^\d+$/.test(String(log.id)) ? parseInt(String(log.id)) : log.id;
 
-  const { data, error } = await supabase
-    .from('workout_logs')
-    .update({
-      log_data: log,
-      display_name: userProfile.displayName, // Ensure consistency
-      date: log.date
-    })
-    .eq('id', recordId)
-    .eq('user_id', userProfile.id) // Defense in depth: Ensure user owns the log
-    .select();
+  try {
+    const response = await withTimeout(supabase
+      .from('workout_logs')
+      .update({
+        log_data: log,
+        display_name: userProfile.displayName, // Ensure consistency
+        date: log.date
+      })
+      .eq('id', recordId)
+      .eq('user_id', userProfile.id) // Defense in depth: Ensure user owns the log
+      .select() as any);
 
-  if (error) {
-    console.error("Error updating log", error);
+    const { data, error } = response as { data: any, error: any };
+
+    if (error) {
+      console.error("Error updating log, queuing for offline", error);
+      addToOfflineQueue({
+        type: 'UPDATE_LOG',
+        payload: { log, userProfile }
+      });
+      return log.id;
+    } else if (!data || data.length === 0) {
+      console.warn("Log to update not found, falling back to INSERT new log", recordId);
+      // If update found 0 rows, it means the ID doesn't exist (maybe deleted or RLS).
+      // Fallback to inserting a new log.
+      return await saveLog(log, userProfile);
+    }
+
+    return data?.[0]?.id || log.id;
+  } catch (err) {
+    console.error("Network error updating log, queuing for offline", err);
+    addToOfflineQueue({
+      type: 'UPDATE_LOG',
+      payload: { log, userProfile }
+    });
     return log.id;
-  } else if (!data || data.length === 0) {
-    console.warn("Log to update not found, falling back to INSERT new log", recordId);
-    // If update found 0 rows, it means the ID doesn't exist (maybe deleted or RLS).
-    // Fallback to inserting a new log.
-    return await saveLog(log, userProfile);
   }
-
-  return data?.[0]?.id || log.id;
 };
 
 export const getUserLogs = async (user: User, tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
@@ -735,6 +778,13 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
     .select('id, user_id, display_name, log_data, date')
     .eq('display_name', user)
     .order('date', { ascending: false });
+
+  // BOLT: Implementation of pagination
+  if (pageSize && page !== undefined) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
+  }
 
   if (tribeId) {
     const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
@@ -944,7 +994,7 @@ export const getComments = async (logId: string): Promise<SocialComment[]> => {
   const recordId = /^\d+$/.test(String(logId)) ? parseInt(String(logId)) : logId;
   const { data, error } = await supabase
     .from('comments')
-    .select('*')
+    .select('id, log_id, user_id, user_name, text, date')
     .eq('log_id', recordId)
     .order('date', { ascending: true }); // Order by 'date'
 
@@ -1094,6 +1144,7 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
   if (!navigator.onLine && cached) return cached;
 
   // BOLT: Only select required columns and support pagination
+  // Include created_at for chronological sorting in the social feed
   let query = supabase.from('gift_transactions')
     .select('id, from_name, to_name, gift_id, gift_name, gift_emoji, message, created_at')
     .order('created_at', { ascending: false });
@@ -1188,7 +1239,7 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
 
   const { data: logData, error: fetchError } = await supabase
     .from('workout_logs')
-    .select('*')
+    .select('id, user_id, display_name, log_data, date')
     .eq('id', recordId)
     .eq('user_id', userProfile.id) // Ensure user owns the log before fetching
     .single();
@@ -1242,6 +1293,9 @@ export const processOfflineQueue = async () => {
           // Avoid circular re-queueing by checking specific flag or just relying on online check
           // saveLog checks navigator.onLine, which is true here.
           await saveLog(action.payload.log, action.payload.userProfile);
+          break;
+        case 'UPDATE_LOG':
+          await updateLog(action.payload.log, action.payload.userProfile);
           break;
         case 'TOGGLE_REACTION':
           await toggleReaction(action.payload.logId, action.payload.profile);
@@ -1317,7 +1371,7 @@ export const getLatestTribePhoto = async (tribeId?: string): Promise<TribePhoto 
   if (!navigator.onLine) return null;
 
   let query = supabase.from('tribe_photo')
-    .select('*')
+    .select('id, user_id, user_name, image_data, tribe_id, created_at')
     .eq('tribe_id', tribeId)
     .order('created_at', { ascending: false })
     .limit(1);

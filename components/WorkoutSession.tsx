@@ -360,6 +360,18 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     setExpandedExerciseId(prev => prev === name ? null : name);
   };
 
+  const clearAllWorkoutSessions = useCallback(() => {
+    // BOLT: Robustly clear all workout-related storage to prevent stuck states
+    [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
+      localStorage.removeItem(`workout_session_${type}`);
+      sessionStorage.removeItem(`workoutStep_${type}`);
+    });
+    localStorage.removeItem('active_custom_plan');
+    // Also clear by current plan ID just in case it differs from type
+    localStorage.removeItem(`workout_session_${plan.id}`);
+    sessionStorage.removeItem(`workoutStep_${plan.id}`);
+  }, [plan.id]);
+
   const handleExit = async (action: 'end' | 'pause') => {
     if (action === 'end') {
       // Check for any completed sets with non-zero values
@@ -405,12 +417,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       }
 
       workoutTimer.reset();
-      // Clear ALL possible sessions to ensure they don't get stuck
-      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
-        localStorage.removeItem(`workout_session_${type}`);
-      });
-      localStorage.removeItem('active_custom_plan');
-      sessionStorage.removeItem(`workoutStep_${plan.id}`);
+      clearAllWorkoutSessions();
       onCancel();
     } else {
       workoutTimer.pause();
@@ -502,11 +509,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       }
 
       // Critical: Only clear session if save was successful
-      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
-        localStorage.removeItem(`workout_session_${type}`);
-      });
-      localStorage.removeItem('active_custom_plan');
-      sessionStorage.removeItem(`workoutStep_${plan.id}`);
+      clearAllWorkoutSessions();
 
       const newBadges = await checkAchievements(currentLog, userProfile);
 

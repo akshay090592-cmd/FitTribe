@@ -539,19 +539,26 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      // Cleanup expired sessions on mount
+      // BOLT: Cleanup expired or invalid sessions on mount
       const now = Date.now();
 
       [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
         const key = `workout_session_${type}`;
         const saved = localStorage.getItem(key);
         if (saved) {
-          const data = JSON.parse(saved);
-          if (now - data.lastUpdated >= SESSION_RESTORE_WINDOW) {
-            localStorage.removeItem(key);
-            if (type === WorkoutType.CUSTOM || type === WorkoutType.CUSTOM_TEMPLATE) {
-              localStorage.removeItem('active_custom_plan');
+          try {
+            const data = JSON.parse(saved);
+            // If session is older than window OR has invalid step (analysis means it's finished but didn't clear)
+            if (now - data.lastUpdated >= SESSION_RESTORE_WINDOW || data.step === 'analysis') {
+              localStorage.removeItem(key);
+              sessionStorage.removeItem(`workoutStep_${type}`);
+              if (type === WorkoutType.CUSTOM || type === WorkoutType.CUSTOM_TEMPLATE) {
+                localStorage.removeItem('active_custom_plan');
+              }
             }
+          } catch (e) {
+            // If parsing fails, it's corrupted, remove it
+            localStorage.removeItem(key);
           }
         }
       });

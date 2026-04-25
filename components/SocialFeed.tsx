@@ -50,7 +50,8 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
     const [lastLoaded, setLastLoaded] = useState<number>(0);
 
     // New State for Optimization & Features
-    const [displayCount, setDisplayCount] = useState(20);
+    const [page, setPage] = useState(0);
+    const [hasMoreLogs, setHasMoreLogs] = useState(true);
     const [showMyWorkouts, setShowMyWorkouts] = useState(false);
 
     // Leaderboard Interaction State
@@ -77,8 +78,9 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         }
 
         try {
-            const [allLogs, allGifts, allReactions, commentCounts, stats, gameState, members, tribe] = await Promise.all([
-                getLogs(profile.tribeId),
+            const PAGE_SIZE = 10;
+            const [initialLogs, allGifts, allReactions, commentCounts, stats, gameState, members, tribe] = await Promise.all([
+                getLogs(profile.tribeId, 0, PAGE_SIZE),
                 getGiftTransactions(profile.tribeId),
                 getAllReactions(profile.tribeId),
                 getCommentCounts(),
@@ -100,39 +102,24 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
             });
             setAvatarMap(avatars);
 
-            // Filter out failed commitments (past date)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const visibleLogs = allLogs;
-
             const combined: FeedItem[] = [
-                // Optimization: Keep date as string to avoid instantiation overhead
-                ...visibleLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
+                ...initialLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
                 ...allGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
             ].sort((a, b) => b.date.localeCompare(a.date));
 
             setCommentsMap(commentCounts);
 
-            // Filter logs by user for parallel mood fetching
-            const userLogsMap: Record<string, WorkoutLog[]> = {};
-            memberNames.forEach(u => {
-                userLogsMap[u] = [];
-            });
-            allLogs.forEach(l => {
-                if (userLogsMap[l.user]) {
-                    userLogsMap[l.user].push(l);
-                }
-            });
-
             // Parallelize mood fetching using cached logs to avoid N+1 queries
             const moods: Record<string, any> = {};
             await Promise.all(memberNames.map(async (u) => {
-                moods[u] = await getMood(u, userLogsMap[u]);
+                const userLogsInPage = initialLogs.filter(l => l.user === u);
+                moods[u] = await getMood(u, userLogsInPage.length > 0 ? userLogsInPage : undefined);
             }));
             setUserMoods(moods);
 
             setFeedItems(combined);
+            setPage(0);
+            setHasMoreLogs(initialLogs.length === PAGE_SIZE);
             localStorage.setItem('cache_feed_items', JSON.stringify(combined));
             setReactions(allReactions);
             setTeamStats(stats);
@@ -201,20 +188,13 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
                 return false;
             });
         }
-        return items.slice(0, displayCount);
-    }, [feedItems, showMyWorkouts, displayCount, currentUser]);
+        return items;
+    }, [feedItems, showMyWorkouts, currentUser]);
 
     const hasMore = useMemo(() => {
-        let total = feedItems.length;
-        if (showMyWorkouts) {
-            total = feedItems.filter(item => {
-                if (item.type === 'log') return item.data.user === currentUser;
-                if (item.type === 'gift') return item.data.from === currentUser || item.data.to === currentUser;
-                return false;
-            }).length;
-        }
-        return displayCount < total;
-    }, [feedItems, showMyWorkouts, displayCount, currentUser]);
+        if (showMyWorkouts) return false; // Server-side filtering for user logs not implemented in combined view
+        return hasMoreLogs;
+    }, [hasMoreLogs, showMyWorkouts]);
 
 
     const handleNudge = async (targetUser: string) => {
@@ -234,9 +214,40 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         return getAvatarPath(avatarId, mood);
     };
 
-    const loadMore = useCallback(() => {
-        setDisplayCount(prev => prev + 10);
-    }, []);
+    const loadMore = useCallback(async () => {
+        if (!hasMoreLogs || !profile.tribeId) return;
+
+        onFetching?.(true);
+        const nextPage = page + 1;
+        const PAGE_SIZE = 10;
+
+        try {
+            const newLogs = await getLogs(profile.tribeId, nextPage, PAGE_SIZE);
+
+            if (newLogs.length > 0) {
+                const newItems: FeedItem[] = newLogs.map(l => ({ type: 'log' as const, data: l, date: l.date }));
+                setFeedItems(prev => {
+                    const combined = [...prev, ...newItems].sort((a, b) => b.date.localeCompare(a.date));
+                    const seen = new Set();
+                    return combined.filter(item => {
+                        const id = item.type === 'log' ? item.data.id : item.data.id;
+                        const key = `${item.type}-${id}`;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                });
+                setPage(nextPage);
+                if (newLogs.length < PAGE_SIZE) setHasMoreLogs(false);
+            } else {
+                setHasMoreLogs(false);
+            }
+        } catch (err) {
+            console.error("Failed to load more logs", err);
+        } finally {
+            onFetching?.(false);
+        }
+    }, [page, hasMoreLogs, profile.tribeId, onFetching]);
 
     // Calculate Leaderboard Popup Data On-Demand
     const leaderboardPopupData = useMemo(() => {
@@ -449,7 +460,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
                 <button
                     onClick={() => {
                         setShowMyWorkouts(!showMyWorkouts);
-                        setDisplayCount(10); // Reset pagination on filter change
+                        setPage(0); // Reset pagination on filter change
                     }}
                     className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-full transition-all ${showMyWorkouts ? 'bg-emerald-500 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
                 >

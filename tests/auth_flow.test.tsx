@@ -182,39 +182,39 @@ describe('Authentication Flow', () => {
 
     it('renders Wizard when user is logged in but has no profile', async () => {
         // Session exists but getCurrentProfile returns null
-        (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: { id: 'test-user', email: 'test@test.com' } } } });
+        // Using session without email to test step 1
+        (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: { id: 'test-user' } } } });
         (storage.getCurrentProfile as any).mockResolvedValue(null);
 
         render(<App />);
 
         // Should wait for loading to finish and show Wizard Step 1
-        await waitFor(() => screen.getByText(/What's your name\?/i));
+        await waitFor(() => expect(screen.getByText(/What's your name\?/i)).toBeInTheDocument());
         expect(screen.getByPlaceholderText(/Enter your name/i)).toBeInTheDocument();
     });
 
     it('completes the onboarding wizard', async () => {
+        // Using session with email to test auto-skip to step 2 behavior
         (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: { id: 'test-user', email: 'test@test.com' } } } });
         (storage.getCurrentProfile as any).mockResolvedValue(null);
         (storage.createTribe as any).mockResolvedValue({ id: 'new-tribe' });
 
         render(<App />);
-        await waitFor(() => screen.getByText(/What's your name\?/i));
 
-        // Step 1: Name
-        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'New Panda' } });
-        fireEvent.click(screen.getByText('Next'));
+        // Should auto-fill name "Test" and show Wizard Step 2
+        await waitFor(() => expect(screen.getByText(/Tell us about yourself/i)).toBeInTheDocument());
+        expect(screen.getByText(/Welcome, Test!/i)).toBeInTheDocument();
 
         // Step 2: Profile Details (skip)
-        await waitFor(() => screen.getByText(/Tell us about yourself/i));
         fireEvent.click(screen.getByText('Next'));
 
         // Step 3: Fitness Level
-        await waitFor(() => screen.getByText(/Fitness Level/i));
+        await waitFor(() => expect(screen.getByText(/Select Fitness Level/i)).toBeInTheDocument());
         fireEvent.click(screen.getByText(/Beginner/i)); // Select Beginner
         fireEvent.click(screen.getByText('Next'));
 
         // Step 4: Tribe (Create)
-        await waitFor(() => screen.getByText(/Find your pack/i));
+        await waitFor(() => expect(screen.getByText(/Find your pack/i)).toBeInTheDocument());
         fireEvent.click(screen.getByText('Create Tribe')); // Ensure tab is active
         fireEvent.change(screen.getByPlaceholderText(/Tribe Name/i), { target: { value: 'Panda Tribe' } });
 
@@ -224,7 +224,7 @@ describe('Authentication Flow', () => {
         await waitFor(() => expect(storage.createProfile).toHaveBeenCalledWith(
             'test-user',
             'test@test.com',
-            'New Panda',
+            'Test', // Derived from test@test.com
             'new-tribe',
             'beginner',
             undefined,

@@ -163,11 +163,13 @@ export const removeFromOfflineQueue = (id: string) => {
 
 // --- AUTH & PROFILE ---
 
-export const getCurrentProfile = async (): Promise<UserProfile | null> => {
+export const getCurrentProfile = async (passedUserId?: string): Promise<UserProfile | null> => {
   // 1. Try to get session from Supabase (might work if cached by Supabase client)
-  const { data: { session } } = await supabase.auth.getSession();
-
-  let userId = session?.user?.id;
+  let userId = passedUserId;
+  if (!userId) {
+    const { data: { session } } = await supabase.auth.getSession();
+    userId = session?.user?.id;
+  }
 
   // 2. If no session from Supabase, check if we have a cached profile to infer user ID
   // This is a bit tricky since we don't know the ID to look up. 

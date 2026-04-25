@@ -351,21 +351,21 @@ const App: React.FC = () => {
   }, [view]);
 
   // Wizard State - Initialize based on session user
-  const [wizardStep, setWizardStep] = useState(() => {
-    // If user has email, extract name and skip to step 2 (profile details)
-    if (session?.user?.email) {
-      const emailName = session.user.email.split('@')[0];
-      return emailName ? 2 : 1;
+  const [wizardStep, setWizardStep] = useState(1);
+  const [setupName, setSetupName] = useState('');
+
+  // Sync wizard state when session is available but profile is not
+  useEffect(() => {
+    if (session?.user && !userProfile) {
+      if (session.user.email) {
+        const emailName = session.user.email.split('@')[0];
+        if (emailName) {
+          setSetupName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
+          setWizardStep(2);
+        }
+      }
     }
-    return 1;
-  });
-  const [setupName, setSetupName] = useState(() => {
-    if (session?.user?.email) {
-      const emailName = session.user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    return '';
-  });
+  }, [session, userProfile]);
   // Profile details
   const [setupHeight, setSetupHeight] = useState('');
   const [setupWeight, setSetupWeight] = useState('');
@@ -460,11 +460,11 @@ const App: React.FC = () => {
     // Initial Auth Check and Session Restoration
   }, [loading, userProfile]);
 
-  const loadProfile = async (silent = false) => {
+  const loadProfile = async (silent = false, passedUserId?: string) => {
     if (!silent) setLoading(true);
     else setFetchingCount(prev => prev + 1);
     try {
-      const profile = await getCurrentProfile();
+      const profile = await getCurrentProfile(passedUserId);
       if (profile) {
         setUserProfile(profile);
         setCurrentUser(profile.displayName);
@@ -650,8 +650,9 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
       if (session?.user) {
+        setLoading(true); // Bolt: Ensure loading is true before setting session to prevent onboarding flash
+        setSession(session);
         // Handle explicit view transition on sign in
         // Use viewRef to avoid stale closure and check for active session
         if (event === 'SIGNED_IN') {
@@ -664,10 +665,11 @@ const App: React.FC = () => {
 
         // Silent update if token refreshed OR app is already loaded OR we have optimistic data
         const isSilent = event === 'TOKEN_REFRESHED' || isAppReady.current || !!userProfile;
-        loadProfile(isSilent).then(() => {
+        loadProfile(isSilent, session.user.id).then(() => {
           requestNotificationPermission(session.user.id);
         });
       } else {
+        setSession(null);
         setLoading(false);
         setCurrentUser(null);
         setUserProfile(null);

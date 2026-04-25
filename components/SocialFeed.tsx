@@ -52,6 +52,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
     // New State for Optimization & Features
     const [page, setPage] = useState(0);
     const [hasMoreLogs, setHasMoreLogs] = useState(true);
+    const [hasMoreGifts, setHasMoreGifts] = useState(true);
     const [showMyWorkouts, setShowMyWorkouts] = useState(false);
 
     // Leaderboard Interaction State
@@ -78,10 +79,10 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         }
 
         try {
-            const PAGE_SIZE = 10;
-            const [initialLogs, allGifts, allReactions, commentCounts, stats, gameState, members, tribe] = await Promise.all([
+            const PAGE_SIZE = 20; // BOLT: Increased from 10 to 20 for better initial UX and mood accuracy
+            const [initialLogs, initialGifts, allReactions, commentCounts, stats, gameState, members, tribe] = await Promise.all([
                 getLogs(profile.tribeId, 0, PAGE_SIZE),
-                getGiftTransactions(profile.tribeId),
+                getGiftTransactions(profile.tribeId, 0, PAGE_SIZE),
                 getAllReactions(profile.tribeId),
                 getCommentCounts(),
                 getTeamStats(profile.tribeId),
@@ -104,22 +105,25 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
             const combined: FeedItem[] = [
                 ...initialLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
-                ...allGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
+                ...initialGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
             ].sort((a, b) => b.date.localeCompare(a.date));
 
             setCommentsMap(commentCounts);
 
             // Parallelize mood fetching using cached logs to avoid N+1 queries
+            // BOLT: We pass the tribeId to getMood, which will leverage the cached initialLogs
+            // from the previous getLogs(tribeId, 0, 20) call, avoiding individual API calls.
             const moods: Record<string, any> = {};
             await Promise.all(memberNames.map(async (u) => {
                 const userLogsInPage = initialLogs.filter(l => l.user === u);
-                moods[u] = await getMood(u, userLogsInPage.length > 0 ? userLogsInPage : undefined);
+                moods[u] = await getMood(u, userLogsInPage.length > 0 ? userLogsInPage : profile.tribeId);
             }));
             setUserMoods(moods);
 
             setFeedItems(combined);
             setPage(0);
             setHasMoreLogs(initialLogs.length === PAGE_SIZE);
+            setHasMoreGifts(initialGifts.length === PAGE_SIZE);
             localStorage.setItem('cache_feed_items', JSON.stringify(combined));
             setReactions(allReactions);
             setTeamStats(stats);
@@ -193,8 +197,8 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
     const hasMore = useMemo(() => {
         if (showMyWorkouts) return false; // Server-side filtering for user logs not implemented in combined view
-        return hasMoreLogs;
-    }, [hasMoreLogs, showMyWorkouts]);
+        return hasMoreLogs || hasMoreGifts;
+    }, [hasMoreLogs, hasMoreGifts, showMyWorkouts]);
 
 
     const handleNudge = async (targetUser: string) => {
@@ -215,17 +219,24 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
     };
 
     const loadMore = useCallback(async () => {
-        if (!hasMoreLogs || !profile.tribeId) return;
+        if ((!hasMoreLogs && !hasMoreGifts) || !profile.tribeId) return;
 
         onFetching?.(true);
         const nextPage = page + 1;
         const PAGE_SIZE = 10;
 
         try {
-            const newLogs = await getLogs(profile.tribeId, nextPage, PAGE_SIZE);
+            const [newLogs, newGifts] = await Promise.all([
+                hasMoreLogs ? getLogs(profile.tribeId, nextPage, PAGE_SIZE) : Promise.resolve([]),
+                hasMoreGifts ? getGiftTransactions(profile.tribeId, nextPage, PAGE_SIZE) : Promise.resolve([])
+            ]);
 
-            if (newLogs.length > 0) {
-                const newItems: FeedItem[] = newLogs.map(l => ({ type: 'log' as const, data: l, date: l.date }));
+            const newItems: FeedItem[] = [
+                ...newLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
+                ...newGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
+            ];
+
+            if (newItems.length > 0) {
                 setFeedItems(prev => {
                     const combined = [...prev, ...newItems].sort((a, b) => b.date.localeCompare(a.date));
                     const seen = new Set();
@@ -238,16 +249,16 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
                     });
                 });
                 setPage(nextPage);
-                if (newLogs.length < PAGE_SIZE) setHasMoreLogs(false);
-            } else {
-                setHasMoreLogs(false);
             }
+
+            if (newLogs.length < PAGE_SIZE) setHasMoreLogs(false);
+            if (newGifts.length < PAGE_SIZE) setHasMoreGifts(false);
         } catch (err) {
-            console.error("Failed to load more logs", err);
+            console.error("Failed to load more feed items", err);
         } finally {
             onFetching?.(false);
         }
-    }, [page, hasMoreLogs, profile.tribeId, onFetching]);
+    }, [page, hasMoreLogs, hasMoreGifts, profile.tribeId, onFetching]);
 
     // Calculate Leaderboard Popup Data On-Demand
     const leaderboardPopupData = useMemo(() => {

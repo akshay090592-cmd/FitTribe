@@ -279,7 +279,7 @@ export const joinTribe = async (code: string): Promise<Tribe | null> => {
   const trimmedCode = code.trim().toUpperCase();
   if (!trimmedCode) return null;
 
-  const { data, error } = await supabase.from('tribes').select('*').eq('code', trimmedCode).single();
+  const { data, error } = await supabase.from('tribes').select('id, name, code').eq('code', trimmedCode).single();
 
   if (error || !data) {
     console.error("Error joining tribe", error);
@@ -290,7 +290,7 @@ export const joinTribe = async (code: string): Promise<Tribe | null> => {
 };
 
 export const getTribe = async (tribeId: string): Promise<Tribe | null> => {
-  const { data, error } = await supabase.from('tribes').select('*').eq('id', tribeId).single();
+  const { data, error } = await supabase.from('tribes').select('id, name, code').eq('id', tribeId).single();
 
   if (error || !data) {
     console.error("Error fetching tribe", error);
@@ -429,21 +429,26 @@ export const updateProfile = async (profile: UserProfile) => {
 
 // --- LOGS ---
 
-export const getLogs = async (tribeId?: string): Promise<WorkoutLog[]> => {
-  // 1. Get offline logs first
-  const offlineQueue = getOfflineQueue();
-  const offlineLogs = offlineQueue
-    .filter(item => item.type === 'SAVE_LOG')
-    .map(item => ({
-      ...item.payload.log,
-      id: 'offline_' + item.id,
-      user: item.payload.userProfile.displayName,
-      isOffline: true
-    }));
+export const getLogs = async (tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
+  // 1. Get offline logs first (only for first page)
+  const isFirstPage = !page || page === 0;
+  let offlineLogs: any[] = [];
+
+  if (isFirstPage) {
+    const offlineQueue = getOfflineQueue();
+    offlineLogs = offlineQueue
+      .filter(item => item.type === 'SAVE_LOG')
+      .map(item => ({
+        ...item.payload.log,
+        id: 'offline_' + item.id,
+        user: item.payload.userProfile.displayName,
+        isOffline: true
+      }));
+  }
 
   // If tribeId is provided, filter offline logs broadly (we can't easily check tribe of offline logs without profile data, but usually it matches current user)
 
-  const cacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}` : 'logs_global';
+  const cacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
 
   if (cached) {
@@ -455,7 +460,8 @@ export const getLogs = async (tribeId?: string): Promise<WorkoutLog[]> => {
     return offlineLogs;
   }
 
-  let query = supabase.from('workout_logs').select('*').order('date', { ascending: false });
+  // BOLT: Only select required columns to minimize payload size
+  let query = supabase.from('workout_logs').select('id, user_id, display_name, log_data, date').order('date', { ascending: false });
 
   if (tribeId) {
     const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
@@ -466,6 +472,13 @@ export const getLogs = async (tribeId?: string): Promise<WorkoutLog[]> => {
       // No members found (or error), return empty or just offline
       return offlineLogs;
     }
+  }
+
+  // BOLT: Implement server-side pagination
+  if (pageSize && page !== undefined) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
   }
 
   const { data, error } = await query;
@@ -594,34 +607,49 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       type: 'SAVE_LOG',
       payload: { log, userProfile }
     });
-    // We also need to locally "cache" this log so it appears in getLogs
-    // For now, we rely on getLogs merging the offline queue.
     invalidateCache('logs');
     invalidateCache('stats');
     return log.id;
   }
 
-  const { data, error } = await supabase.from('workout_logs').insert({
-    user_id: userProfile.id,
-    display_name: userProfile.displayName,
-    log_data: log,
-    date: log.date
-  }).select('id').single();
+  try {
+    const { data, error } = await supabase.from('workout_logs').insert({
+      user_id: userProfile.id,
+      display_name: userProfile.displayName,
+      log_data: log,
+      date: log.date
+    }).select('id').single();
 
-  if (error) {
-    console.error("Error saving log", error);
-    // If it was a network error that didn't trigger navigator.onLine, we might want to queue it too.
-    // But for now, rely on explicit offline check.
+    if (error) {
+      // BOLT: Catch network errors or other issues and queue for offline
+      console.error("Error saving log, queuing for offline", error);
+      addToOfflineQueue({
+        type: 'SAVE_LOG',
+        payload: { log, userProfile }
+      });
+      invalidateCache('logs');
+      invalidateCache('stats');
+      return log.id;
+    }
+
+    // Invalidate caches dependent on logs
+    invalidateCache('logs'); // Clears logs_global and logs_user_...
+    const logDateKey = log.date.split('T')[0];
+    invalidateCache(`logs_date_${logDateKey}`); // Invalidate today's cache if applicable
+    invalidateCache('stats'); // Clears any computed stats
+    invalidateCache('gamification'); // Gamification logic depends on logs
+
+    return data?.id;
+  } catch (err) {
+    console.error("Network error saving log, queuing for offline", err);
+    addToOfflineQueue({
+      type: 'SAVE_LOG',
+      payload: { log, userProfile }
+    });
+    invalidateCache('logs');
+    invalidateCache('stats');
+    return log.id;
   }
-
-  // Invalidate caches dependent on logs
-  invalidateCache('logs'); // Clears logs_global and logs_user_...
-  const logDateKey = log.date.split('T')[0];
-  invalidateCache(`logs_date_${logDateKey}`); // Invalidate today's cache if applicable
-  invalidateCache('stats'); // Clears any computed stats
-  invalidateCache('gamification'); // Gamification logic depends on logs
-
-  return data?.id;
 };
 
 export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {
@@ -684,26 +712,27 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
   return data?.[0]?.id || log.id;
 };
 
-export const getUserLogs = async (user: User, tribeId?: string): Promise<WorkoutLog[]> => {
-  const cacheKey = tribeId ? `logs_user_${user}_${tribeId}` : `logs_user_${user}`;
+export const getUserLogs = async (user: User, tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
+  const cacheKey = tribeId ? `logs_user_${user}_${tribeId}_p${page || 0}` : `logs_user_${user}_p${page || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
   if (cached) return [...cached];
 
   // OPTIMIZATION: Check global cache first to avoid redundant network call
-  // Global cache (filtered by tribe if tribeId is passed to getLogs)
-  // If we have tribeId, we check logs_tribe_...
-  const globalCacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}` : 'logs_global';
-  const globalCached = getFromCache<WorkoutLog[]>(globalCacheKey);
-  if (globalCached) {
+  const globalCacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
+  const globalLegacyCacheKey = tribeId ? `logs_tribe_${tribeId}` : 'logs_global';
+  const globalCached = getFromCache<WorkoutLog[]>(globalCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
+
+  if (globalCached && !page) { // Only use global cache for unpaginated requests to avoid confusion
     const userLogs = globalCached.filter(l => l.user === user);
     setInCache(cacheKey, userLogs);
     return [...userLogs];
   }
 
+  // BOLT: Only select required columns
   let query = supabase
     .from('workout_logs')
-    .select('*')
+    .select('id, user_id, display_name, log_data, date')
     .eq('display_name', user)
     .order('date', { ascending: false });
 
@@ -729,26 +758,24 @@ export const getUserLogs = async (user: User, tribeId?: string): Promise<Workout
   return logs;
 };
 
-export const getUserLogsById = async (userId: string, displayName?: string): Promise<WorkoutLog[]> => {
-  const cacheKey = `logs_userid_${userId}`;
+export const getUserLogsById = async (userId: string, displayName?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
+  const cacheKey = `logs_userid_${userId}_p${page || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   if (cached) return [...cached];
 
-  // OPTIMIZATION: Check global cache first
-  const globalCached = getFromCache<WorkoutLog[]>('logs_global');
-  if (globalCached && displayName) {
-    // If the cache only has displayName, we can try to filter by user (display_name).
-    // Note: If display names aren't unique, this optimization could theoretically leak in cache, 
-    // but typically the current user's display name will match their logs here. However, to be strict,
-    // we bypass global cache for exact ID matching unless we enhance cache to store user_id. 
-    // For now, we'll fetch from DB if we want to be 100% strict by ID, but falling back to DB is safe.
-  }
-
+  // BOLT: Only select required columns
   let query = supabase
     .from('workout_logs')
-    .select('*')
+    .select('id, user_id, display_name, log_data, date')
     .eq('user_id', userId)
     .order('date', { ascending: false });
+
+  // BOLT: Pagination
+  if (pageSize && page !== undefined) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
+  }
 
   const { data, error } = await query;
 
@@ -818,7 +845,8 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
   const cached = getFromCache<Record<string, string[]>>(cacheKey, 60 * 1000); // Short TTL (1 min) for reactions
   if (cached) return cached;
 
-  let query = supabase.from('reactions').select('*');
+  // BOLT: Only select required columns
+  let query = supabase.from('reactions').select('log_id, user_name');
 
   if (tribeId) {
     const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
@@ -968,7 +996,8 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
     return cached;
   }
 
-  let query = supabase.from('gamification_state').select('*');
+  // BOLT: Only select required columns
+  let query = supabase.from('gamification_state').select('user_id, display_name, badges, inventory, points, unlocked_themes, active_theme, lifetime_xp');
 
   if (tribeId) {
     const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
@@ -1058,13 +1087,16 @@ export const updateUserCommitment = async (profile: UserProfile, date: Date | nu
   await saveGamificationState(profile, userState);
 };
 
-export const getGiftTransactions = async (tribeId?: string): Promise<GiftTransaction[]> => {
-  const cacheKey = tribeId ? `gifts_tribe_${tribeId}` : 'gifts_global';
+export const getGiftTransactions = async (tribeId?: string, page?: number, pageSize?: number): Promise<GiftTransaction[]> => {
+  const cacheKey = tribeId ? `gifts_tribe_${tribeId}_p${page || 0}` : `gifts_global_p${page || 0}`;
   const cached = getFromCache<GiftTransaction[]>(cacheKey);
 
   if (!navigator.onLine && cached) return cached;
 
-  let query = supabase.from('gift_transactions').select('*').order('created_at', { ascending: false });
+  // BOLT: Only select required columns and support pagination
+  let query = supabase.from('gift_transactions')
+    .select('id, from_name, to_name, gift_id, gift_name, gift_emoji, message, created_at')
+    .order('created_at', { ascending: false });
 
   if (tribeId) {
     const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
@@ -1072,6 +1104,12 @@ export const getGiftTransactions = async (tribeId?: string): Promise<GiftTransac
       const memberIds = members.map(m => m.id);
       query = query.in('from_user_id', memberIds);
     }
+  }
+
+  if (pageSize && page !== undefined) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
   }
 
   const { data, error } = await query;
@@ -1472,14 +1510,15 @@ export const addPointLog = async (userId: string, amount: number, type: 'earned'
   if (error) console.error("Error adding Point log", error);
 };
 
-export const getXPLogs = async (userId: string): Promise<import('../types').XPLog[]> => {
+export const getXPLogs = async (userId: string, limit = 50): Promise<import('../types').XPLog[]> => {
   if (!navigator.onLine) return [];
 
   const { data, error } = await supabase
     .from('xp_logs')
-    .select('*')
+    .select('id, user_id, amount, source, source_id, created_at')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) {
     console.error("Error fetching XP logs", error);
@@ -1488,7 +1527,7 @@ export const getXPLogs = async (userId: string): Promise<import('../types').XPLo
   return data as import('../types').XPLog[];
 };
 
-export const getPointLogs = async (userId: string): Promise<import('../types').PointLog[]> => {
+export const getPointLogs = async (userId: string, limit = 50): Promise<import('../types').PointLog[]> => {
   if (!navigator.onLine) return [];
 
   // Security: Defense in depth - verify user ownership via session
@@ -1496,9 +1535,10 @@ export const getPointLogs = async (userId: string): Promise<import('../types').P
 
   const { data, error } = await supabase
     .from('point_logs')
-    .select('*')
+    .select('id, user_id, amount, type, source, source_id, created_at')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) {
     console.error("Error fetching Point logs", error);

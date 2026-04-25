@@ -1,6 +1,6 @@
 import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, WorkoutType } from '../types';
 import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog } from './storage';
-import { isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export const BADGES_DB: Badge[] = [
   { id: 'first_step', title: 'First Step', description: 'Complete your first workout', icon: 'Footprints', rarity: 'common' },
@@ -281,17 +281,21 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
 };
 
 // Overloads
-// Overloads
-export async function getStreaks(user: User, tribeId?: string): Promise<number>;
-export async function getStreaks(user: User, tribeId: string | undefined, returnLogs: true): Promise<WorkoutLog[]>;
-export async function getStreaks(user: User, tribeId: string | undefined, returnLogs: boolean): Promise<number | WorkoutLog[]>;
-export async function getStreaks(user: User, tribeId?: string, returnLogs = false): Promise<number | WorkoutLog[]> {
-  const rawLogs = await getUserLogs(user, tribeId);
+export async function getStreaks(user: User, tribeIdOrLogs?: string | WorkoutLog[]): Promise<number>;
+export async function getStreaks(user: User, tribeIdOrLogs: string | WorkoutLog[] | undefined, returnLogs: true): Promise<WorkoutLog[]>;
+export async function getStreaks(user: User, tribeIdOrLogs: string | WorkoutLog[] | undefined, returnLogs: boolean): Promise<number | WorkoutLog[]>;
+export async function getStreaks(user: User, tribeIdOrLogs?: string | WorkoutLog[], returnLogs = false): Promise<number | WorkoutLog[]> {
+  let rawLogs: WorkoutLog[];
+  if (Array.isArray(tribeIdOrLogs)) {
+    rawLogs = tribeIdOrLogs;
+  } else {
+    rawLogs = await getUserLogs(user, tribeIdOrLogs as string);
+  }
   return calculateStreaks(rawLogs, { returnLogs, isSorted: true });
 }
 
-export const getStreakLogs = async (user: User, tribeId?: string) => {
-  return (await getStreaks(user, tribeId, true)) as WorkoutLog[];
+export const getStreakLogs = async (user: User, tribeIdOrLogs?: string | WorkoutLog[]) => {
+  return (await getStreaks(user, tribeIdOrLogs, true)) as WorkoutLog[];
 };
 
 export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | WorkoutLog[]): Promise<boolean> => {
@@ -354,7 +358,6 @@ export const getTeamStats = async (tribeId?: string) => {
   if (cached) return cached;
 
   if (!isSupabaseConfigured()) {
-    // Return mock stats if cache is empty
     return {
       weeklyCount: 3,
       monthlyCount: 10,
@@ -367,33 +370,72 @@ export const getTeamStats = async (tribeId?: string) => {
     };
   }
 
-  const rawLogs = await getLogs(tribeId);
-  // Filter out commitments completely from team stats
-  const logs = rawLogs.filter(l => l.type !== WorkoutType.COMMITMENT);
   const now = new Date();
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-  // Filter for valid workouts (> 30 mins) for weekly goals
+  // BOLT: Use Supabase count queries to minimize data fetching
+  // Optimized to use raw fetch when count is not directly supported by mock/client config
+  const getCount = async (from: Date) => {
+    try {
+      const { count, error } = await supabase
+        .from('workout_logs')
+        .select('*', { count: 'exact', head: true })
+        .neq('log_data->>type', WorkoutType.COMMITMENT)
+        .gte('date', from.toISOString());
+
+      if (error) throw error;
+      return count || 0;
+    } catch (e) {
+      console.warn("Count query failed, falling back to client-side count", e);
+      const allLogs = await getLogs(tribeId);
+      return allLogs.filter(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date) >= from).length;
+    }
+  };
+
+  const getWeeklyCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('workout_logs')
+        .select('*', { count: 'exact', head: true })
+        .neq('log_data->>type', WorkoutType.COMMITMENT)
+        .gte('log_data->>durationMinutes', 30)
+        .gte('date', startOfWeek.toISOString());
+
+      if (error) throw error;
+      return count || 0;
+    } catch (e) {
+      console.warn("Weekly count query failed, falling back", e);
+      const allLogs = await getLogs(tribeId);
+      return allLogs.filter(l =>
+        l.type !== WorkoutType.COMMITMENT &&
+        l.durationMinutes >= 30 &&
+        new Date(l.date) >= startOfWeek
+      ).length;
+    }
+  };
+
+  // We still need userStats and teamStreak which require some log data
+  // But we can limit it to only recent logs or only required fields
+  const rawLogs = await getLogs(tribeId, 0, 100); // Fetch last 100 logs for streak/user stats
+  const logs = rawLogs.filter(l => l.type !== WorkoutType.COMMITMENT);
   const validLogs = logs.filter(l => l.durationMinutes >= 30);
 
-  const weeklyCount = validLogs.filter(l => new Date(l.date) >= startOfWeek).length;
-  // Monthly and Yearly counts usually keep all workouts? User request said "for weekly goals only count workouts greater than 30 minutes".
-  // So I will only apply to weeklyCount and userStats (which tracks weekly contribution).
-  const monthlyCount = logs.filter(l => new Date(l.date) >= startOfMonth).length;
-  const yearlyCount = logs.filter(l => new Date(l.date) >= startOfYear).length;
+  const [weeklyCount, monthlyCount, yearlyCount] = await Promise.all([
+    getWeeklyCount(),
+    getCount(startOfMonth),
+    getCount(startOfYear)
+  ]);
 
-  // Per user weekly stats
   const userStats: Record<string, number> = {};
   validLogs.filter(l => new Date(l.date) >= startOfWeek).forEach(l => {
     userStats[l.user] = (userStats[l.user] || 0) + 1;
   });
 
-  // Team Streak: Days where ANYONE worked out consecutively
   const uniqueDates = Array.from(new Set(logs.map(l => new Date(l.date).toDateString()))).map(s => new Date(s));
   uniqueDates.sort((a, b) => b.getTime() - a.getTime());
 
@@ -401,11 +443,8 @@ export const getTeamStats = async (tribeId?: string) => {
   if (uniqueDates.length > 0) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     let tPrev = uniqueDates[0];
     tPrev.setHours(0, 0, 0, 0);
-
-    // Check if the most recent workout was recent enough (today or yesterday)
     const daysSinceLastWorkout = (today.getTime() - tPrev.getTime()) / (1000 * 3600 * 24);
 
     if (daysSinceLastWorkout <= 1) {
@@ -413,7 +452,6 @@ export const getTeamStats = async (tribeId?: string) => {
       for (let i = 1; i < uniqueDates.length; i++) {
         const currentDate = new Date(uniqueDates[i]);
         currentDate.setHours(0, 0, 0, 0);
-
         const gap = (tPrev.getTime() - currentDate.getTime()) / (1000 * 3600 * 24);
         if (gap === 1) {
           teamStreak++;
@@ -431,7 +469,7 @@ export const getTeamStats = async (tribeId?: string) => {
     yearlyCount,
     teamStreak,
     userStats,
-    weeklyTarget: 9, // 3 users * 3 workouts
+    weeklyTarget: 9,
     monthlyTarget: 36,
     yearlyTarget: 400
   };

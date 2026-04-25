@@ -199,11 +199,12 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, custom_plans, workout_templates, custom_challenge, completed_challenges')
+    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, avatar_id, workout_templates, custom_challenge, completed_challenges')
     .eq('id', userId)
     .single();
 
   if (error || !data) {
+    if (error) console.error("Error fetching profile from Supabase:", error);
     return null;
   }
 
@@ -211,6 +212,7 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
     id: data.id,
     email: data.email,
     displayName: data.display_name as User,
+    avatarId: data.avatar_id,
     height: data.height,
     weight: data.weight,
     gender: data.gender,
@@ -220,7 +222,7 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
     completedChallenges: data.completed_challenges || [],
     tribeId: data.tribe_id,
     fitnessLevel: data.fitness_level as 'beginner' | 'advanced',
-    customPlans: data.custom_plans || [],
+    customPlans: [], // Not stored in DB yet, but part of interface
     workoutTemplates: data.workout_templates || []
   };
 

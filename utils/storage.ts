@@ -122,6 +122,27 @@ export const invalidateCache = (keyPattern: string) => {
   keysToRemove.forEach(key => localStorage.removeItem(key));
 };
 
+// --- REQUEST DEDUPLICATION ---
+
+const pendingRequests = new Map<string, Promise<any>>();
+
+/**
+ * BOLT: Deduplicates concurrent identical requests by returning the same promise.
+ * Prevents "thundering herd" issues where multiple components request the same data simultaneously.
+ */
+export const deduplicateRequest = <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key) as Promise<T>;
+  }
+
+  const promise = fetcher().finally(() => {
+    pendingRequests.delete(key);
+  });
+
+  pendingRequests.set(key, promise);
+  return promise;
+};
+
 // --- OFFLINE QUEUE ---
 
 export interface OfflineAction {
@@ -334,8 +355,10 @@ export const getTribe = async (tribeId: string): Promise<Tribe | null> => {
 };
 
 export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> => {
-  // Security: Only select non-sensitive fields for tribe members
-  const { data, error } = await supabase
+  const cacheKey = `tribe_members_${tribeId}`;
+  return deduplicateRequest(cacheKey, async () => {
+    // Security: Only select non-sensitive fields for tribe members
+    const { data, error } = await supabase
     .from('profiles')
     .select('id, display_name, avatar_id, tribe_id, fitness_level, custom_challenge, completed_challenges')
     .eq('tribe_id', tribeId);
@@ -357,6 +380,7 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
     completedChallenges: d.completed_challenges || [],
     workoutTemplates: [] // Excluded for privacy
   }));
+  });
 };
 
 export const createProfile = async (
@@ -443,8 +467,11 @@ export const updateProfile = async (profile: UserProfile) => {
 // --- LOGS ---
 
 export const getLogs = async (tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
-  // 1. Get offline logs first (only for first page)
-  const isFirstPage = !page || page === 0;
+  const cacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
+
+  return deduplicateRequest(cacheKey, async () => {
+    // 1. Get offline logs first (only for first page)
+    const isFirstPage = !page || page === 0;
   let offlineLogs: any[] = [];
 
   if (isFirstPage) {
@@ -507,22 +534,23 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
     user: row.display_name // Map display name back to User type
   }));
 
-  setInCache(cacheKey, dbLogs);
+    setInCache(cacheKey, dbLogs);
 
-  // Merge offline logs with database logs and sort by date descending
-  // This ensures that logs created offline are visible even after a successful online fetch
-  const allLogs = [...dbLogs];
+    // Merge offline logs with database logs and sort by date descending
+    // This ensures that logs created offline are visible even after a successful online fetch
+    const allLogs = [...dbLogs];
 
-  if (offlineLogs.length > 0) {
-    offlineLogs.forEach(offLog => {
-      // Avoid duplicates if a log with same ID exists (though offline IDs usually prefixed)
-      if (!allLogs.some(l => l.id === offLog.id)) {
-        allLogs.push(offLog);
-      }
-    });
-  }
+    if (offlineLogs.length > 0) {
+      offlineLogs.forEach(offLog => {
+        // Avoid duplicates if a log with same ID exists (though offline IDs usually prefixed)
+        if (!allLogs.some(l => l.id === offLog.id)) {
+          allLogs.push(offLog);
+        }
+      });
+    }
 
-  return allLogs.sort((a, b) => b.date.localeCompare(a.date));
+    return allLogs.sort((a, b) => b.date.localeCompare(a.date));
+  });
 };
 
 export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
@@ -761,6 +789,8 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
 
 export const getUserLogs = async (user: User, tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
   const cacheKey = tribeId ? `logs_user_${user}_${tribeId}_p${page || 0}` : `logs_user_${user}_p${page || 0}`;
+
+  return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
   if (cached) return [...cached];
@@ -808,8 +838,9 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
     user: row.display_name
   }));
 
-  setInCache(cacheKey, logs);
-  return logs;
+    setInCache(cacheKey, logs);
+    return logs;
+  });
 };
 
 export const getUserLogsById = async (userId: string, displayName?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
@@ -896,6 +927,8 @@ export const getReactions = async (logId: string): Promise<string[]> => {
 
 export const getAllReactions = async (tribeId?: string): Promise<Record<string, string[]>> => {
   const cacheKey = tribeId ? `reactions_tribe_${tribeId}` : 'reactions_all';
+
+  return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<Record<string, string[]>>(cacheKey, 60 * 1000); // Short TTL (1 min) for reactions
   if (cached) return cached;
 
@@ -920,8 +953,9 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
     result[row.log_id].push(row.user_name);
   });
 
-  setInCache(cacheKey, result);
-  return result;
+    setInCache(cacheKey, result);
+    return result;
+  });
 };
 
 export const toggleReaction = async (logId: string, profile: UserProfile) => {
@@ -1046,6 +1080,8 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
 
 export const getGamificationState = async (tribeId?: string): Promise<Record<User, UserGamificationState>> => {
   const cacheKey = tribeId ? `gamification_tribe_${tribeId}` : 'gamification_all';
+
+  return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<Record<User, UserGamificationState>>(cacheKey);
 
   if (!navigator.onLine && cached) {
@@ -1103,8 +1139,9 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
     });
   }
 
-  setInCache(cacheKey, state);
-  return state;
+    setInCache(cacheKey, state);
+    return state;
+  });
 };
 
 const createDefaultGamificationState = (): Record<User, UserGamificationState> => {
@@ -1147,6 +1184,8 @@ export const updateUserCommitment = async (profile: UserProfile, date: Date | nu
 
 export const getGiftTransactions = async (tribeId?: string, page?: number, pageSize?: number): Promise<GiftTransaction[]> => {
   const cacheKey = tribeId ? `gifts_tribe_${tribeId}_p${page || 0}` : `gifts_global_p${page || 0}`;
+
+  return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<GiftTransaction[]>(cacheKey);
 
   if (!navigator.onLine && cached) return cached;
@@ -1192,8 +1231,9 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
     date: row.created_at
   }));
   
-  setInCache(cacheKey, transactions);
-  return transactions;
+    setInCache(cacheKey, transactions);
+    return transactions;
+  });
 };
 
 

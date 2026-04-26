@@ -18,11 +18,12 @@ vi.mock('../utils/storage', () => ({
     getLogs: vi.fn(),
     getGamificationState: vi.fn(),
     saveGamificationState: vi.fn(),
+    getGiftTransactions: vi.fn().mockResolvedValue([]),
     getFromCache: vi.fn(),
     setInCache: vi.fn(),
 }));
 
-import { getUserLogs, getLogs, getGamificationState, saveGamificationState, getFromCache, setInCache } from '../utils/storage';
+import { getUserLogs, getLogs, getGamificationState, saveGamificationState, getFromCache, setInCache, getGiftTransactions } from '../utils/storage';
 
 // Helper to create a date
 const d = (daysAgo: number) => {
@@ -226,13 +227,9 @@ describe('gamification', () => {
     });
 
     describe('checkAchievements', () => {
-        // Create a fixed date: e.g., Wednesday at 2:00 PM (14:00) to avoid Lunch Break badge
-        const fixedDate = new Date();
-        fixedDate.setHours(14, 0, 0, 0);
-        // Ensure it's not weekend (0 or 6)
-        while (fixedDate.getDay() === 0 || fixedDate.getDay() === 6) {
-            fixedDate.setDate(fixedDate.getDate() + 1);
-        }
+        // Create a fixed date: Oct 25, 2023 is Wednesday at 2:00 PM (14:00)
+        // to avoid Lunch Break and Weekend Warrior badges
+        const fixedDate = new Date(2023, 9, 25, 14, 0, 0);
 
         const mockLog: WorkoutLog = {
             id: 'log1',
@@ -261,6 +258,7 @@ describe('gamification', () => {
             };
             (getGamificationState as Mock).mockResolvedValue({ ['TestUser']: mockState });
             (getLogs as Mock).mockResolvedValue([]); // Prevent TypeError in getTeamStats
+            (getGiftTransactions as Mock).mockResolvedValue([]);
         });
 
         it('should award "First Step" for the very first workout', async () => {
@@ -276,8 +274,12 @@ describe('gamification', () => {
         });
 
         it('should not award a badge that is already earned', async () => {
+            // Use a fixed time for the history log to avoid flakiness (e.g. Early Bird)
+            const historyLogDate = new Date(fixedDate);
+            historyLogDate.setDate(historyLogDate.getDate() - 1);
+
             mockState.badges.push('first_step');
-            (getUserLogs as Mock).mockResolvedValue([mockLog, { ...mockLog, id: 'log0', date: d(1) }]);
+            (getUserLogs as Mock).mockResolvedValue([mockLog, { ...mockLog, id: 'log0', date: historyLogDate.toISOString() }]);
 
             const newBadges = await checkAchievements(mockLog, mockProfile);
 

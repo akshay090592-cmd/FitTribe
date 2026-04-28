@@ -504,7 +504,8 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
   let query = supabase.from('workout_logs').select('id, user_id, display_name, log_data, date').order('date', { ascending: false });
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use getTribeMembers to leverage caching and deduplication
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -821,7 +822,8 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   }
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use getTribeMembers to leverage caching and deduplication
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -936,7 +938,8 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
   let query = supabase.from('reactions').select('log_id, user_name');
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use getTribeMembers to leverage caching and deduplication
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -1092,7 +1095,8 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
   let query = supabase.from('gamification_state').select('user_id, display_name, badges, inventory, points, unlocked_themes, active_theme, lifetime_xp');
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use getTribeMembers to leverage caching and deduplication
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -1197,7 +1201,8 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
     .order('created_at', { ascending: false });
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use getTribeMembers to leverage caching and deduplication
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('from_user_id', memberIds);

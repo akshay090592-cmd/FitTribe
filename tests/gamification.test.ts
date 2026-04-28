@@ -7,7 +7,19 @@ vi.mock('../utils/supabaseClient', () => ({
     isSessionValid: vi.fn().mockResolvedValue(true),
     supabase: {
         auth: { getSession: vi.fn() },
-        from: vi.fn(),
+        from: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+            gte: vi.fn().mockReturnThis(),
+            lte: vi.fn().mockReturnThis(),
+            lt: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            range: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            then: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 })
+        }),
     },
     isSupabaseConfigured: vi.fn(() => true),
 }));
@@ -19,11 +31,12 @@ vi.mock('../utils/storage', () => ({
     getGamificationState: vi.fn(),
     saveGamificationState: vi.fn(),
     getGiftTransactions: vi.fn().mockResolvedValue([]),
+    getTribeMembers: vi.fn().mockResolvedValue([]),
     getFromCache: vi.fn(),
     setInCache: vi.fn(),
 }));
 
-import { getUserLogs, getLogs, getGamificationState, saveGamificationState, getFromCache, setInCache, getGiftTransactions } from '../utils/storage';
+import { getUserLogs, getLogs, getGamificationState, saveGamificationState, getFromCache, setInCache, getGiftTransactions, getTribeMembers } from '../utils/storage';
 
 // Helper to create a date
 const d = (daysAgo: number) => {

@@ -795,12 +795,15 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
   if (cached) return [...cached];
 
-  // OPTIMIZATION: Check global cache first to avoid redundant network call
+  // OPTIMIZATION: Check global and tribe-wide caches first to avoid redundant network calls
   const globalCacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
+  const tribeStandardCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s50` : `logs_global_p0_s50`;
   const globalLegacyCacheKey = tribeId ? `logs_tribe_${tribeId}` : 'logs_global';
-  const globalCached = getFromCache<WorkoutLog[]>(globalCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
+  const globalCached = getFromCache<WorkoutLog[]>(globalCacheKey) ||
+                       getFromCache<WorkoutLog[]>(tribeStandardCacheKey) ||
+                       getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
 
-  if (globalCached && !page) { // Only use global cache for unpaginated requests to avoid confusion
+  if (globalCached && (!page || page === 0)) { // Reuse cached tribe logs for first page requests
     const userLogs = globalCached.filter(l => l.user === user);
     setInCache(cacheKey, userLogs);
     return [...userLogs];
@@ -847,6 +850,28 @@ export const getUserLogsById = async (userId: string, displayName?: string, page
   const cacheKey = `logs_userid_${userId}_p${page || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   if (cached) return [...cached];
+
+  // BOLT: Check for standardized tribe logs cache if we have a displayName
+  if (displayName && (!page || page === 0)) {
+    // We try to find a tribe ID to check tribe-specific cache
+    let tribeId: string | null = null;
+    try {
+      const saved = localStorage.getItem('current_user_profile');
+      if (saved) {
+        const p = JSON.parse(saved);
+        tribeId = p.tribeId || p.tribe_id; // Support both camelCase and snake_case
+      }
+    } catch {}
+
+    const tribeStandardCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s50` : `logs_global_p0_s50`;
+    const globalCached = getFromCache<WorkoutLog[]>(tribeStandardCacheKey);
+
+    if (globalCached) {
+      const userLogs = globalCached.filter(l => l.user === displayName);
+      setInCache(cacheKey, userLogs);
+      return [...userLogs];
+    }
+  }
 
   // BOLT: Only select required columns
   let query = supabase

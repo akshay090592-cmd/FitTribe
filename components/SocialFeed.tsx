@@ -79,7 +79,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         }
 
         try {
-            const PAGE_SIZE = 20; // BOLT: Increased from 10 to 20 for better initial UX and mood accuracy
+            const PAGE_SIZE = 50; // BOLT: Standardized to 50 for cache alignment across dashboard
             const [initialLogs, initialGifts, allReactions, commentCounts, stats, gameState, members, tribe] = await Promise.all([
                 getLogs(profile.tribeId, 0, PAGE_SIZE),
                 getGiftTransactions(profile.tribeId, 0, PAGE_SIZE),
@@ -223,7 +223,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
         onFetching?.(true);
         const nextPage = page + 1;
-        const PAGE_SIZE = 20;
+        const PAGE_SIZE = 50;
 
         try {
             const [newLogs, newGifts] = await Promise.all([

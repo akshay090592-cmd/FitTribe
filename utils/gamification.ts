@@ -466,7 +466,7 @@ export const getTeamStats = async (tribeId?: string) => {
 
   // We still need userStats and teamStreak which require some log data
   // But we can limit it to only recent logs or only required fields
-  const rawLogs = await getLogs(tribeId, 0, 100); // Fetch last 100 logs for streak/user stats
+  const rawLogs = await getLogs(tribeId, 0, 50); // BOLT: Standardized to 50 for cache alignment
   const logs = rawLogs.filter(l => l.type !== WorkoutType.COMMITMENT);
   const validLogs = logs.filter(l => l.durationMinutes >= 30);
 

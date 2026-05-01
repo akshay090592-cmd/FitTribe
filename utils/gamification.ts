@@ -1,5 +1,5 @@
 import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, WorkoutType } from '../types';
-import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions } from './storage';
+import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions, getTribeMembers } from './storage';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export const BADGES_DB: Badge[] = [
@@ -403,6 +403,10 @@ export const getTeamStats = async (tribeId?: string) => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
+  // BOLT: Hoist member retrieval to the beginning of the function
+  const tribeMembers = tribeId ? await getTribeMembers(tribeId) : [];
+  const memberIds = tribeMembers.map(m => m.id);
+
   // BOLT: Use Supabase count queries to minimize data fetching
   // Optimized to use raw fetch when count is not directly supported by mock/client config
   const getCount = async (from: Date) => {
@@ -414,9 +418,8 @@ export const getTeamStats = async (tribeId?: string) => {
         .gte('date', from.toISOString());
 
       if (tribeId) {
-        const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
-        if (members && members.length > 0) {
-          query = query.in('user_id', members.map(m => m.id));
+        if (memberIds.length > 0) {
+          query = query.in('user_id', memberIds);
         } else {
           return 0;
         }
@@ -427,7 +430,8 @@ export const getTeamStats = async (tribeId?: string) => {
       return count || 0;
     } catch (e) {
       console.warn("Count query failed, falling back to client-side count", e);
-      const allLogs = await getLogs(tribeId);
+      // BOLT: Standardize log fetch size to 50 for cache alignment
+      const allLogs = await getLogs(tribeId, 0, 50);
       return allLogs.filter(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date) >= from).length;
     }
   };
@@ -442,9 +446,8 @@ export const getTeamStats = async (tribeId?: string) => {
         .gte('date', startOfWeek.toISOString());
 
       if (tribeId) {
-        const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
-        if (members && members.length > 0) {
-          query = query.in('user_id', members.map(m => m.id));
+        if (memberIds.length > 0) {
+          query = query.in('user_id', memberIds);
         } else {
           return 0;
         }
@@ -455,7 +458,8 @@ export const getTeamStats = async (tribeId?: string) => {
       return count || 0;
     } catch (e) {
       console.warn("Weekly count query failed, falling back", e);
-      const allLogs = await getLogs(tribeId);
+      // BOLT: Standardize log fetch size to 50 for cache alignment
+      const allLogs = await getLogs(tribeId, 0, 50);
       return allLogs.filter(l =>
         l.type !== WorkoutType.COMMITMENT &&
         (l.durationMinutes || 0) >= 30 &&
@@ -466,7 +470,8 @@ export const getTeamStats = async (tribeId?: string) => {
 
   // We still need userStats and teamStreak which require some log data
   // But we can limit it to only recent logs or only required fields
-  const rawLogs = await getLogs(tribeId, 0, 100); // Fetch last 100 logs for streak/user stats
+  // BOLT: Aligned with other tribe components for deduplication/caching (p0_s50)
+  const rawLogs = await getLogs(tribeId, 0, 50);
   const logs = rawLogs.filter(l => l.type !== WorkoutType.COMMITMENT);
   const validLogs = logs.filter(l => l.durationMinutes >= 30);
 

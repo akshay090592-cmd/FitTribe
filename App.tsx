@@ -437,12 +437,13 @@ const App: React.FC = () => {
       ];
 
       // 2. Warm up Data Cache (In-Memory)
+      // BOLT: Standardized all tribe-scoped fetches to 50 for aligned cache keys (p0_s50)
       const preloadData = [
-        getLogs(),                 // For Analytics & Feed
-        getAllReactions(),         // For Feed
-        getGiftTransactions(),     // For Feed
-        getGamificationState(),    // For Rewards
-        getTeamStats(),            // For Tribe/Rewards
+        getLogs(userProfile?.tribeId, 0, 50),
+        getAllReactions(userProfile?.tribeId),
+        getGiftTransactions(userProfile?.tribeId, 0, 50),
+        getGamificationState(userProfile?.tribeId),
+        getTeamStats(userProfile?.tribeId),
       ];
 
       try {

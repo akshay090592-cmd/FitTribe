@@ -73,14 +73,25 @@ function runOriginalTribeReview() {
 function runWeeklyReview(targetTribeIds = null) {
   Logger.log('Starting Weekly Review Process...');
 
-  const users = fetchAllUsers(targetTribeIds);
-  Logger.log(`Found ${users.length} users to process.`);
+  const allUsers = fetchAllProfiles();
+  Logger.log(`Fetched ${allUsers.length} total profiles from database.`);
 
-  users.forEach(user => {
+  let usersToProcess = allUsers;
+  if (targetTribeIds && targetTribeIds.length > 0) {
+    usersToProcess = allUsers.filter(u => targetTribeIds.includes(u.tribe_id));
+    Logger.log(`Filtered to ${usersToProcess.length} users in target tribes: ${targetTribeIds.join(', ')}`);
+  }
+
+  if (usersToProcess.length === 0) {
+    Logger.log('No users found to process. Please check if Tribe IDs match exactly.');
+    return;
+  }
+
+  usersToProcess.forEach(user => {
     try {
       processUserReview(user);
     } catch (e) {
-      Logger.log(`Error processing user ${user.id}: ${e.message}`);
+      Logger.log(`Error processing user ${user.id} (${user.display_name}): ${e.message}`);
     }
   });
 
@@ -88,23 +99,29 @@ function runWeeklyReview(targetTribeIds = null) {
 }
 
 /**
- * Fetches users from Supabase, optionally filtered by tribe.
+ * Fetches all user profiles from Supabase.
+ * Filtering is done in JavaScript to ensure robustness against URL encoding/PostgREST syntax issues.
  */
-function fetchAllUsers(targetTribeIds) {
-  let url = `${CONFIG.SUPABASE_URL}/rest/v1/profiles?select=id,email,display_name,tribe_id`;
-  if (targetTribeIds && targetTribeIds.length > 0) {
-    // PostgREST "in" filter for UUIDs works best without extra quotes inside the parens
-    url += `&tribe_id=in.(${targetTribeIds.join(',')})`;
-  }
+function fetchAllProfiles() {
+  const url = `${CONFIG.SUPABASE_URL}/rest/v1/profiles?select=id,email,display_name,tribe_id`;
 
   const response = UrlFetchApp.fetch(url, {
     headers: {
       'apikey': CONFIG.SUPABASE_KEY,
       'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
-    }
+    },
+    muteHttpExceptions: true
   });
 
-  return JSON.parse(response.getContentText());
+  const status = response.getResponseCode();
+  const content = response.getContentText();
+
+  if (status !== 200) {
+    Logger.log(`Error fetching profiles (Status ${status}): ${content}`);
+    return [];
+  }
+
+  return JSON.parse(content);
 }
 
 /**
@@ -162,8 +179,11 @@ function fetchUserLogs(userId, fromDate, toDate = null) {
     headers: {
       'apikey': CONFIG.SUPABASE_KEY,
       'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
-    }
+    },
+    muteHttpExceptions: true
   });
+
+  if (response.getResponseCode() !== 200) return [];
 
   const data = JSON.parse(response.getContentText());
   return data.map(row => ({
@@ -178,19 +198,28 @@ function fetchTribeMembers(tribeId) {
     headers: {
       'apikey': CONFIG.SUPABASE_KEY,
       'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
-    }
+    },
+    muteHttpExceptions: true
   });
+
+  if (response.getResponseCode() !== 200) return [];
   return JSON.parse(response.getContentText());
 }
 
 function fetchLogsByBatch(userIds, fromDate) {
-  const url = `${CONFIG.SUPABASE_URL}/rest/v1/workout_logs?user_id=in.(${userIds.join(',')})&date=gte.${fromDate}&select=display_name,log_data`;
+  // Limited batch size to avoid URL length issues
+  const batch = userIds.slice(0, 50);
+  const url = `${CONFIG.SUPABASE_URL}/rest/v1/workout_logs?user_id=in.(${batch.join(',')})&date=gte.${fromDate}&select=display_name,log_data`;
+
   const response = UrlFetchApp.fetch(url, {
     headers: {
       'apikey': CONFIG.SUPABASE_KEY,
       'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
-    }
+    },
+    muteHttpExceptions: true
   });
+
+  if (response.getResponseCode() !== 200) return [];
   return JSON.parse(response.getContentText());
 }
 

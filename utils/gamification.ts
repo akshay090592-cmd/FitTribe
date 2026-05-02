@@ -1,5 +1,5 @@
 import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, WorkoutType } from '../types';
-import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions } from './storage';
+import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions, getTribeMembers } from './storage';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export const BADGES_DB: Badge[] = [
@@ -403,6 +403,10 @@ export const getTeamStats = async (tribeId?: string) => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
+  // BOLT: Hoist member retrieval to leverage cache and avoid redundant queries
+  const members = tribeId ? await getTribeMembers(tribeId) : null;
+  const memberIds = (members && members.length > 0) ? members.map(m => m.id) : null;
+
   // BOLT: Use Supabase count queries to minimize data fetching
   // Optimized to use raw fetch when count is not directly supported by mock/client config
   const getCount = async (from: Date) => {
@@ -414,9 +418,8 @@ export const getTeamStats = async (tribeId?: string) => {
         .gte('date', from.toISOString());
 
       if (tribeId) {
-        const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
-        if (members && members.length > 0) {
-          query = query.in('user_id', members.map(m => m.id));
+        if (memberIds && memberIds.length > 0) {
+          query = query.in('user_id', memberIds);
         } else {
           return 0;
         }
@@ -442,9 +445,8 @@ export const getTeamStats = async (tribeId?: string) => {
         .gte('date', startOfWeek.toISOString());
 
       if (tribeId) {
-        const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
-        if (members && members.length > 0) {
-          query = query.in('user_id', members.map(m => m.id));
+        if (memberIds && memberIds.length > 0) {
+          query = query.in('user_id', memberIds);
         } else {
           return 0;
         }
@@ -466,7 +468,8 @@ export const getTeamStats = async (tribeId?: string) => {
 
   // We still need userStats and teamStreak which require some log data
   // But we can limit it to only recent logs or only required fields
-  const rawLogs = await getLogs(tribeId, 0, 100); // Fetch last 100 logs for streak/user stats
+  // BOLT: Reverted to 100 for team streak accuracy (streaks can exceed 50 days)
+  const rawLogs = await getLogs(tribeId, 0, 100);
   const logs = rawLogs.filter(l => l.type !== WorkoutType.COMMITMENT);
   const validLogs = logs.filter(l => l.durationMinutes >= 30);
 

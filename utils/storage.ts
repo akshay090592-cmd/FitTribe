@@ -504,7 +504,8 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
   let query = supabase.from('workout_logs').select('id, user_id, display_name, log_data, date').order('date', { ascending: false });
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use cached member retrieval to avoid redundant profile queries
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -795,10 +796,10 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
   if (cached) return [...cached];
 
-  // OPTIMIZATION: Check global cache first to avoid redundant network call
-  const globalCacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
+  // BOLT: Proactively check standardized tribe/global activity cache to fulfill specific user requests
+  const standardizedCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s50` : `logs_global_p0_s50`;
   const globalLegacyCacheKey = tribeId ? `logs_tribe_${tribeId}` : 'logs_global';
-  const globalCached = getFromCache<WorkoutLog[]>(globalCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
+  const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
 
   if (globalCached && !page) { // Only use global cache for unpaginated requests to avoid confusion
     const userLogs = globalCached.filter(l => l.user === user);
@@ -821,7 +822,8 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   }
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use cached member retrieval
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -847,6 +849,18 @@ export const getUserLogsById = async (userId: string, displayName?: string, page
   const cacheKey = `logs_userid_${userId}_p${page || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   if (cached) return [...cached];
+
+  // BOLT: Check standardized tribe activity cache if displayName is available
+  if (displayName && !page) {
+    const tribeProfile = getFromCache<UserProfile>(`profile_${userId}`);
+    const standardizedCacheKey = tribeProfile?.tribeId ? `logs_tribe_${tribeProfile.tribeId}_p0_s50` : `logs_global_p0_s50`;
+    const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey);
+    if (globalCached) {
+      const userLogs = globalCached.filter(l => l.user === displayName);
+      setInCache(cacheKey, userLogs);
+      return [...userLogs];
+    }
+  }
 
   // BOLT: Only select required columns
   let query = supabase
@@ -936,7 +950,8 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
   let query = supabase.from('reactions').select('log_id, user_name');
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use cached member retrieval
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -1092,7 +1107,8 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
   let query = supabase.from('gamification_state').select('user_id, display_name, badges, inventory, points, unlocked_themes, active_theme, lifetime_xp');
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use cached member retrieval
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('user_id', memberIds);
@@ -1197,7 +1213,8 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
     .order('created_at', { ascending: false });
 
   if (tribeId) {
-    const { data: members } = await supabase.from('profiles').select('id').eq('tribe_id', tribeId);
+    // BOLT: Use cached member retrieval
+    const members = await getTribeMembers(tribeId);
     if (members && members.length > 0) {
       const memberIds = members.map(m => m.id);
       query = query.in('from_user_id', memberIds);

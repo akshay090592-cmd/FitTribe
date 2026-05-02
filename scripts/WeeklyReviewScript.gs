@@ -7,9 +7,8 @@
  * 2. Create a new project and paste this code.
  * 3. Replace the placeholder values in the CONFIG object below with your actual credentials.
  * 4. Go to "Triggers" (alarm clock icon) and click "Add Trigger".
- * 5. Choose "runWeeklyReview" (for all) or "runOriginalTribeReview" (for specific tribe)
- *    as the function, "Time-driven" as the event source, "Week timer" as the type,
- *    and "Every Sunday" as the day.
+ * 5. Choose "runTargetedUserReviews" as the function, "Time-driven" as the event source,
+ *    "Week timer" as the type, and "Every Sunday" as the day.
  */
 
 const CONFIG = {
@@ -59,31 +58,40 @@ const CONFIG = {
 };
 
 /**
- * Trigger this function to run only for the "Original Tribe".
- * Use the Tribe ID: 00000000-0000-0000-0000-000000000001
+ * Trigger this function to run only for the specific users requested.
  */
-function runOriginalTribeReview() {
-  runWeeklyReview(["00000000-0000-0000-0000-000000000001"]);
+function runTargetedUserReviews() {
+  const targetUserIds = [
+    "4fd9f1f0-9fd5-4de4-8ff0-4962e6c67e08", // Shagun
+    "b3dac3be-ef11-4f26-9561-b418d6131aea", // Madhulika
+    "fdf7732a-7578-4aef-8354-66d7acecbae1"  // Akshay
+  ];
+  runWeeklyReview(null, targetUserIds);
 }
 
 /**
  * Main entry point.
  * @param {string[]} targetTribeIds Optional list of tribe IDs to process.
+ * @param {string[]} targetUserIds Optional list of user IDs to process.
  */
-function runWeeklyReview(targetTribeIds = null) {
+function runWeeklyReview(targetTribeIds = null, targetUserIds = null) {
   Logger.log('Starting Weekly Review Process...');
 
   const allUsers = fetchAllProfiles();
   Logger.log(`Fetched ${allUsers.length} total profiles from database.`);
 
   let usersToProcess = allUsers;
-  if (targetTribeIds && targetTribeIds.length > 0) {
+
+  if (targetUserIds && targetUserIds.length > 0) {
+    usersToProcess = allUsers.filter(u => targetUserIds.includes(u.id));
+    Logger.log(`Filtered to ${usersToProcess.length} targeted users.`);
+  } else if (targetTribeIds && targetTribeIds.length > 0) {
     usersToProcess = allUsers.filter(u => targetTribeIds.includes(u.tribe_id));
-    Logger.log(`Filtered to ${usersToProcess.length} users in target tribes: ${targetTribeIds.join(', ')}`);
+    Logger.log(`Filtered to ${usersToProcess.length} users in target tribes.`);
   }
 
   if (usersToProcess.length === 0) {
-    Logger.log('No users found to process. Please check if Tribe IDs match exactly.');
+    Logger.log('No users found to process. Please check if IDs match exactly.');
     return;
   }
 
@@ -100,7 +108,6 @@ function runWeeklyReview(targetTribeIds = null) {
 
 /**
  * Fetches all user profiles from Supabase.
- * Filtering is done in JavaScript to ensure robustness against URL encoding/PostgREST syntax issues.
  */
 function fetchAllProfiles() {
   const url = `${CONFIG.SUPABASE_URL}/rest/v1/profiles?select=id,email,display_name,tribe_id`;
@@ -300,9 +307,15 @@ function getNonFitnessActivities(logs) {
 function aggregateTribeActivity(logs) {
   const summary = {};
   logs.forEach(l => {
-    summary[l.display_name] = (summary[l.display_name] || 0) + 1;
+    const logData = typeof l.log_data === 'string' ? JSON.parse(l.log_data) : l.log_data;
+    // Count workouts that have actual exercises logged
+    const hasExercises = (logData?.exercises?.length || 0) > 0;
+    if (hasExercises) {
+      summary[l.display_name] = (summary[l.display_name] || 0) + 1;
+    }
   });
-  return Object.entries(summary).map(([name, count]) => `${name} did ${count} workouts`);
+  const activeTribe = Object.entries(summary).filter(([_, count]) => count > 0);
+  return activeTribe.map(([name, count]) => `${name} did ${count} workouts`);
 }
 
 function getGeminiAnalysis(input) {

@@ -7,8 +7,9 @@
  * 2. Create a new project and paste this code.
  * 3. Replace the placeholder values in the CONFIG object below with your actual credentials.
  * 4. Go to "Triggers" (alarm clock icon) and click "Add Trigger".
- * 5. Choose "runWeeklyReview" as the function, "Time-driven" as the event source,
- *    "Week timer" as the type, and "Every Sunday" as the day.
+ * 5. Choose "runWeeklyReview" (for all) or "runOriginalTribeReview" (for specific tribe)
+ *    as the function, "Time-driven" as the event source, "Week timer" as the type,
+ *    and "Every Sunday" as the day.
  */
 
 const CONFIG = {
@@ -58,6 +59,14 @@ const CONFIG = {
 };
 
 /**
+ * Trigger this function to run only for the "Original Tribe".
+ * Use the Tribe ID: 00000000-0000-0000-0000-000000000001
+ */
+function runOriginalTribeReview() {
+  runWeeklyReview(["00000000-0000-0000-0000-000000000001"]);
+}
+
+/**
  * Main entry point.
  * @param {string[]} targetTribeIds Optional list of tribe IDs to process.
  */
@@ -84,7 +93,8 @@ function runWeeklyReview(targetTribeIds = null) {
 function fetchAllUsers(targetTribeIds) {
   let url = `${CONFIG.SUPABASE_URL}/rest/v1/profiles?select=id,email,display_name,tribe_id`;
   if (targetTribeIds && targetTribeIds.length > 0) {
-    url += `&tribe_id=in.(${targetTribeIds.map(id => `"${id}"`).join(',')})`;
+    // PostgREST "in" filter for UUIDs works best without extra quotes inside the parens
+    url += `&tribe_id=in.(${targetTribeIds.join(',')})`;
   }
 
   const response = UrlFetchApp.fetch(url, {
@@ -128,7 +138,8 @@ function processUserReview(user) {
     weeklyGoal: 3, // Defaulting to 3 as it's primarily local in the app
     statsThisWeek: aggregateStats(recentLogs),
     statsLastWeek: aggregateStats(historicalLogs),
-    muscleFocus: calculateMuscleFocus(recentLogs),
+    muscleFocusThisWeek: calculateMuscleFocus(recentLogs),
+    muscleFocusLastWeek: calculateMuscleFocus(historicalLogs),
     prs: findImprovements(recentLogs, historicalLogs),
     nonFitnessActivities: getNonFitnessActivities(recentLogs),
     tribeMotivations: tribeMotivations
@@ -270,9 +281,8 @@ function getGeminiAnalysis(input) {
     As a fitness coach, analyze the following weekly performance data for ${input.userName} and provide a review.
 
     Weekly Goal: ${input.weeklyGoal} workouts.
-    This Week: ${JSON.stringify(input.statsThisWeek)}
-    Last Week: ${JSON.stringify(input.statsLastWeek)}
-    Muscle Group Focus (Sets): ${JSON.stringify(input.muscleFocus)}
+    Stats Comparison (Current vs Last Week): ${JSON.stringify(input.statsThisWeek)} vs ${JSON.stringify(input.statsLastWeek)}
+    Muscle Group Focus (Current vs Last Week): ${JSON.stringify(input.muscleFocusThisWeek)} vs ${JSON.stringify(input.muscleFocusLastWeek)}
     Improvements/PRs: ${JSON.stringify(input.prs)}
     Non-Fitness/Well-being Activities: ${JSON.stringify(input.nonFitnessActivities)}
     Tribe Activity: ${JSON.stringify(input.tribeMotivations)}

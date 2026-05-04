@@ -797,7 +797,7 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   if (cached) return [...cached];
 
   // BOLT: Proactively check standardized tribe/global activity cache to fulfill specific user requests
-  const standardizedCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s50` : `logs_global_p0_s50`;
+  const standardizedCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s100` : `logs_global_p0_s100`;
   const globalLegacyCacheKey = tribeId ? `logs_tribe_${tribeId}` : 'logs_global';
   const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
 
@@ -853,7 +853,7 @@ export const getUserLogsById = async (userId: string, displayName?: string, page
   // BOLT: Check standardized tribe activity cache if displayName is available
   if (displayName && !page) {
     const tribeProfile = getFromCache<UserProfile>(`profile_${userId}`);
-    const standardizedCacheKey = tribeProfile?.tribeId ? `logs_tribe_${tribeProfile.tribeId}_p0_s50` : `logs_global_p0_s50`;
+    const standardizedCacheKey = tribeProfile?.tribeId ? `logs_tribe_${tribeProfile.tribeId}_p0_s100` : `logs_global_p0_s100`;
     const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey);
     if (globalCached) {
       const userLogs = globalCached.filter(l => l.user === displayName);

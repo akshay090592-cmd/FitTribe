@@ -77,11 +77,16 @@ export const getRank = (level: number) => {
   return 'Legend';
 };
 
-export const calculateXP = (logs: WorkoutLog[]) => {
+export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolean } = {}) => {
   let xp = 0;
 
   // Sort logs by date ascending to calculate streaks correctly
-  const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  let sortedLogs: WorkoutLog[];
+  if (options.isSortedDesc) {
+    sortedLogs = [...logs].reverse();
+  } else {
+    sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  }
 
   let currentStreak = 0;
   let lastLogDate: Date | null = null;

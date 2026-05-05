@@ -110,12 +110,19 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
             setCommentsMap(commentCounts);
 
+            // Group logs by user for O(1) lookup during mood calculation
+            const logsByUser: Record<string, WorkoutLog[]> = {};
+            initialLogs.forEach(l => {
+                if (!logsByUser[l.user]) logsByUser[l.user] = [];
+                logsByUser[l.user].push(l);
+            });
+
             // Parallelize mood fetching using cached logs to avoid N+1 queries
             // BOLT: We pass the tribeId to getMood, which will leverage the cached initialLogs
-            // from the previous getLogs(tribeId, 0, 20) call, avoiding individual API calls.
+            // from the previous getLogs(tribeId, 0, 100) call, avoiding individual API calls.
             const moods: Record<string, any> = {};
             await Promise.all(memberNames.map(async (u) => {
-                const userLogsInPage = initialLogs.filter(l => l.user === u);
+                const userLogsInPage = logsByUser[u] || [];
                 moods[u] = await getMood(u, userLogsInPage.length > 0 ? userLogsInPage : profile.tribeId);
             }));
             setUserMoods(moods);

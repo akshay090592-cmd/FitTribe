@@ -57,7 +57,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                 const userState = gamificationState[user];
                 xp = userState?.lifetimeXp ?? userState?.points ?? 0;
             } else {
-                xp = calculateXP(userLogs);
+                xp = calculateXP(userLogs, { isSortedDesc: true });
             }
 
             stats[user] = {

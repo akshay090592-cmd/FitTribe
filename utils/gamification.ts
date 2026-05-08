@@ -77,11 +77,14 @@ export const getRank = (level: number) => {
   return 'Legend';
 };
 
-export const calculateXP = (logs: WorkoutLog[]) => {
+export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolean } = {}) => {
   let xp = 0;
 
   // Sort logs by date ascending to calculate streaks correctly
-  const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  // BOLT: Optimization - if already sorted desc, just reverse (O(N) vs O(N log N))
+  const sortedLogs = options.isSortedDesc
+    ? [...logs].reverse()
+    : [...logs].sort((a, b) => a.date.localeCompare(b.date));
 
   let currentStreak = 0;
   let lastLogDate: Date | null = null;
@@ -327,16 +330,14 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
   return diffDays >= 2;
 };
 
-export const getMood = async (user: User, tribeIdOrLogs?: string | WorkoutLog[]): Promise<'fire' | 'tired' | 'normal'> => {
-  let logs: WorkoutLog[];
-  if (Array.isArray(tribeIdOrLogs)) {
-    logs = tribeIdOrLogs;
-  } else {
-    logs = await getUserLogs(user, tribeIdOrLogs as string);
-  }
-
+/**
+ * BOLT: Synchronous mood calculation when logs are already available.
+ * Avoids async overhead and redundant cache/DB lookups.
+ */
+export const calculateMood = (logs: WorkoutLog[]): 'fire' | 'tired' | 'normal' => {
   if (logs.length === 0) return 'tired';
 
+  // Assumes logs are sorted descending (standard for the app)
   const lastLog = new Date(logs[0].date);
   const now = new Date();
   const diffDays = (now.getTime() - lastLog.getTime()) / (1000 * 3600 * 24);
@@ -350,6 +351,17 @@ export const getMood = async (user: User, tribeIdOrLogs?: string | WorkoutLog[])
   if (streak >= 3) return 'fire';
 
   return 'normal';
+};
+
+export const getMood = async (user: User, tribeIdOrLogs?: string | WorkoutLog[]): Promise<'fire' | 'tired' | 'normal'> => {
+  let logs: WorkoutLog[];
+  if (Array.isArray(tribeIdOrLogs)) {
+    logs = tribeIdOrLogs;
+  } else {
+    logs = await getUserLogs(user, tribeIdOrLogs as string);
+  }
+
+  return calculateMood(logs);
 };
 
 export const getTeamStats = async (tribeId?: string) => {

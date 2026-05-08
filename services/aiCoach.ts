@@ -1,10 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
-import { WorkoutPlan, UserProfile, WorkoutLog, WorkoutType, WeeklyPlan } from "../types";
+import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan } from "../types";
+import { geminiClient } from "./geminiClient";
 
 const GEMINI_MODEL = 'gemini-flash-lite-latest'; // or 'gemini-1.5-flash' depending on access
-
-// Helper to get API Key
-const getApiKey = () => import.meta.env.VITE_API_KEY || process.env.API_KEY;
 
 // Helper to parse JSON from Gemini response (handles code blocks)
 const parseJSON = (text: string) => {
@@ -47,11 +44,6 @@ export const AICoachService = {
         feedback: import('../types').WorkoutFeedback,
         userProfile: UserProfile
     ): Promise<WorkoutPlan | null> => {
-        const apiKey = getApiKey();
-        if (!apiKey) throw new Error("API Key missing");
-
-        const ai = new GoogleGenAI({ apiKey });
-
         const prompt = `
       You are an expert fitness coach. 
       Analyze the user's last workout and feedback to modify their NEXT workout plan (${currentPlan.id} - ${currentPlan.title}).
@@ -88,7 +80,7 @@ export const AICoachService = {
     `;
 
         try {
-            const result = await ai.models.generateContent({
+            const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
                 contents: prompt
             });
@@ -108,11 +100,6 @@ export const AICoachService = {
         allergies: string = "None",
         supplements: string = "None"
     ): Promise<any> => {
-        const apiKey = getApiKey();
-        if (!apiKey) throw new Error("API Key missing");
-
-        const ai = new GoogleGenAI({ apiKey });
-
         // Calculate BMR/TDEE rough estimate
         const height = userProfile.height || 170;
         const weight = userProfile.weight || 70;
@@ -150,7 +137,7 @@ export const AICoachService = {
     `;
 
         try {
-            const result = await ai.models.generateContent({
+            const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
                 contents: prompt
             });
@@ -170,11 +157,6 @@ export const AICoachService = {
         context?: string,
         lastLogs?: WorkoutLog[]
     ): Promise<{ text: string, action?: { type: 'SAVE_DIET' | 'SAVE_SCHEDULE' | 'SAVE_WORKOUT', payload: any } }> => {
-        const apiKey = getApiKey();
-        if (!apiKey) return { text: "Error: API Key missing" };
-
-        const ai = new GoogleGenAI({ apiKey });
-
         let logsContext = "";
         if (lastLogs && lastLogs.length > 0) {
             logsContext = `
@@ -229,7 +211,7 @@ ${lastLogs.map(l => {
         ];
 
         try {
-            const result = await ai.models.generateContent({
+            const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
                 contents: contents
             });
@@ -270,9 +252,9 @@ ${lastLogs.map(l => {
                 .replace(/<ACTION_SAVE_SCHEDULE>[\s\S]*?<\/ACTION_SAVE_SCHEDULE>/g, '*(Schedule Updated)*')
                 .replace(/<ACTION_SAVE_WORKOUT>[\s\S]*?<\/ACTION_SAVE_WORKOUT>/g, '*(Custom Workout Created)*');
 
-            // Debug Logs
-            console.log("🤖 Raw AI Response:", text);
-            console.log("📦 Parsed Action:", action);
+            // Debug Logs (Ensured safe by geminiClient results but we should be careful what we log)
+            // console.log("🤖 Raw AI Response:", text); // Already sanitized content if it came from geminiClient
+            // console.log("📦 Parsed Action:", action);
 
             return { text: cleanText, action: action as any };
 
@@ -319,10 +301,6 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
      * Analyzes the conversation to extract goals and constraints.
      */
     analyzeUserContext: async (history: { role: 'user' | 'model', text: string }[]) => {
-        const apiKey = getApiKey();
-        if (!apiKey) return null;
-        const ai = new GoogleGenAI({ apiKey });
-
         const prompt = `
         Analyze this conversation between a Fitness Coach and a User.
         Extract the user's CURRENT state for this upcoming week:
@@ -343,7 +321,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         try {
             // Combine history into string
             const conversationText = history.map(m => `${m.role}: ${m.text}`).join('\n');
-            const result = await ai.models.generateContent({
+            const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
                 contents: `${prompt}\n\nConversation:\n${conversationText}`
             });
@@ -363,10 +341,6 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         previousPlan?: WeeklyPlan,
         history?: { role: 'user' | 'model', text: string }[]
     ): Promise<WeeklyPlan | null> => {
-        const apiKey = getApiKey();
-        if (!apiKey) return null;
-        const ai = new GoogleGenAI({ apiKey });
-
         // Determine start date based on current time
         const now = new Date();
         const currentHour = now.getHours();
@@ -438,7 +412,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         `;
 
         try {
-            const result = await ai.models.generateContent({
+            const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
                 contents: prompt
             });

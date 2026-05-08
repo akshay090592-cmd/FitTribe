@@ -16,7 +16,7 @@ import { calculateCalories } from '../utils/calorieUtils';
 import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera } from 'lucide-react';
 import { compressImage } from '../utils/imageUtils';
 import { saveTribePhoto } from '../utils/storage';
-import { GoogleGenAI, Type } from "@google/genai";
+import { geminiClient, Type } from '../services/geminiClient';
 import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
@@ -521,52 +521,44 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       setShowCelebration(true);
 
       // ... AI analysis ...
-      const apiKey = import.meta.env.VITE_API_KEY || process.env.API_KEY;
-
-      if (apiKey) {
-        try {
-          setStep('analysis');
-          const ai = new GoogleGenAI({ apiKey: apiKey });
-          const summarize = (l: WorkoutLog) => l.exercises.map(e => ({
-            name: e.name,
-            bestSet: e.sets.filter(s => s.completed).reduce((max, curr) => curr.weight > max.weight ? curr : max, { weight: 0, reps: 0 })
-          }));
-          const prompt = `
-                    Compare the Current Workout vs Previous Workout (Type ${plan.id}).
-                    Current: ${JSON.stringify(summarize(currentLog))}
-                    Previous: ${previousLog ? JSON.stringify(summarize(previousLog)) : 'None (First workout)'}
-                    Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app:
-                    1. Celebration: Specific improvement.
-                    2. Insight: Pattern spotted.
-                    3. Nudge: What to focus on next.
-                `;
-          const response = await ai.models.generateContent({
-            model: 'gemini-flash-lite-latest',
-            contents: prompt,
-            config: {
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  celebration: { type: Type.STRING },
-                  insight: { type: Type.STRING },
-                  nudge: { type: Type.STRING },
-                }
+      try {
+        setStep('analysis');
+        const summarize = (l: WorkoutLog) => l.exercises.map(e => ({
+          name: e.name,
+          bestSet: e.sets.filter(s => s.completed).reduce((max, curr) => curr.weight > max.weight ? curr : max, { weight: 0, reps: 0 })
+        }));
+        const prompt = `
+                  Compare the Current Workout vs Previous Workout (Type ${plan.id}).
+                  Current: ${JSON.stringify(summarize(currentLog))}
+                  Previous: ${previousLog ? JSON.stringify(summarize(previousLog)) : 'None (First workout)'}
+                  Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app:
+                  1. Celebration: Specific improvement.
+                  2. Insight: Pattern spotted.
+                  3. Nudge: What to focus on next.
+              `;
+        const response = await geminiClient.generateContent({
+          model: 'gemini-flash-lite-latest',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                celebration: { type: Type.STRING },
+                insight: { type: Type.STRING },
+                nudge: { type: Type.STRING },
               }
             }
-          });
-          if (response.text) {
-            const result = JSON.parse(response.text) as AnalysisResult;
-            setAnalysis(result);
           }
-        } catch (error) {
-          console.error("AI Analysis failed", error);
-          // Don't auto-close, let them see the points at least
-          setAnalysis({ celebration: "Training Complete!", insight: "You did great today.", nudge: "Keep it up!" });
+        });
+        if (response.text) {
+          const result = JSON.parse(response.text) as AnalysisResult;
+          setAnalysis(result);
         }
-      } else {
-        setStep('analysis');
-        setAnalysis({ celebration: "Bamboo-tiful Workout!", insight: "You're getting stronger every day.", nudge: "Eat some bamboo and rest well!" });
+      } catch (error) {
+        console.error("AI Analysis failed", error);
+        // Don't auto-close, let them see the points at least
+        setAnalysis({ celebration: "Training Complete!", insight: "You did great today.", nudge: "Keep it up!" });
       }
     } catch (err) {
       console.error("Critical error in finishWorkout", err);

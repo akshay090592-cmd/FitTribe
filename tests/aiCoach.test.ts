@@ -2,20 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AICoachService } from '../services/aiCoach';
 import { WorkoutType, UserProfile, WorkoutLog, WeeklyPlan } from '../types';
 
-// Mock GoogleGenAI class properly
-const mockGenerateContent = vi.fn();
-
-vi.mock('@google/genai', () => ({
-    GoogleGenAI: class {
-        models = {
-            generateContent: mockGenerateContent
-        };
-        // Mock getGenerativeModel if needed, but the service uses ai.models.generateContent or ai.getGenerativeModel()...
-        // Let's check the service usage again. Service uses `ai.models.generateContent({ model: ..., contents: ... })`
-        // So the mock above is correct for the current implementation.
-    }
+vi.mock('../services/geminiClient', () => ({
+    geminiClient: {
+        generateContent: vi.fn()
+    },
+    Type: { OBJECT: 'OBJECT', STRING: 'STRING' }
 }));
 
+import { geminiClient } from '../services/geminiClient';
 
 describe('AICoachService', () => {
     // Mock Data
@@ -67,11 +61,11 @@ describe('AICoachService', () => {
             schedule: [{ day: 'Monday', activity: 'Walking', type: 'CARDIO', date: '2023-10-30', status: null, notes: '' }]
         };
 
-        mockGenerateContent.mockResolvedValue({ text: JSON.stringify(mockWeeklyPlan) });
+        (geminiClient.generateContent as any).mockResolvedValue({ text: JSON.stringify(mockWeeklyPlan) });
 
         const result = await AICoachService.generatePlanFromContext(mockProfile, assessment, previousPlan);
 
-        expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+        expect(geminiClient.generateContent).toHaveBeenCalledWith(expect.objectContaining({
             contents: expect.stringContaining('PREVIOUS PLAN ADHERENCE')
         }));
         expect(result).toEqual(mockWeeklyPlan);
@@ -90,7 +84,7 @@ describe('AICoachService', () => {
             physical: 'Tired'
         };
 
-        mockGenerateContent.mockResolvedValue({ text: JSON.stringify(mockAnalysis) });
+        (geminiClient.generateContent as any).mockResolvedValue({ text: JSON.stringify(mockAnalysis) });
 
         const result = await AICoachService.analyzeUserContext(history);
 
@@ -102,7 +96,7 @@ describe('AICoachService', () => {
         const dietAction = { type: 'SAVE_DIET', payload: { days: [] } };
         const aiResponse = `Here is your plan. <ACTION_SAVE_DIET>${JSON.stringify(dietAction.payload)}</ACTION_SAVE_DIET>`;
 
-        mockGenerateContent.mockResolvedValue({ text: aiResponse });
+        (geminiClient.generateContent as any).mockResolvedValue({ text: aiResponse });
 
         const result = await AICoachService.chatWithCoach([], 'Make me a diet plan');
 
@@ -114,7 +108,7 @@ describe('AICoachService', () => {
         const workoutAction = { type: 'SAVE_WORKOUT', payload: { id: 'Custom', exercises: [] } };
         const aiResponse = `Here is your workout. <ACTION_SAVE_WORKOUT>${JSON.stringify(workoutAction.payload)}</ACTION_SAVE_WORKOUT>`;
 
-        mockGenerateContent.mockResolvedValue({ text: aiResponse });
+        (geminiClient.generateContent as any).mockResolvedValue({ text: aiResponse });
 
         const result = await AICoachService.chatWithCoach([], 'Make me a workout');
 
@@ -123,12 +117,12 @@ describe('AICoachService', () => {
     });
 
     it('should include last logs in system prompt', async () => {
-        mockGenerateContent.mockResolvedValue({ text: 'Response' });
+        (geminiClient.generateContent as any).mockResolvedValue({ text: 'Response' });
 
         const logs = [mockLog];
         await AICoachService.chatWithCoach([], 'Hi', undefined, logs);
 
-        expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+        expect(geminiClient.generateContent).toHaveBeenCalledWith(expect.objectContaining({
             contents: expect.arrayContaining([
                 expect.objectContaining({
                     parts: expect.arrayContaining([

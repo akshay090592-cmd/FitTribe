@@ -57,7 +57,9 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                 const userState = gamificationState[user];
                 xp = userState?.lifetimeXp ?? userState?.points ?? 0;
             } else {
-                xp = calculateXP(userLogs);
+                // BOLT: Optimize by using O(N) reversal instead of O(N log N) sorting
+                // since logs are already provided in descending order from the feed.
+                xp = calculateXP(userLogs, { isSortedDesc: true });
             }
 
             stats[user] = {

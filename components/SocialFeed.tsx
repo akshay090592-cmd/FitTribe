@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { User, WorkoutLog, GiftTransaction, UserProfile, WorkoutType, Tribe } from '../types';
 import { getLogs, getAllReactions, toggleReaction, getGiftTransactions, getCommentCounts, deleteLog, getTribeMembers, getTribe } from '../utils/storage';
-import { getTeamStats, GIFT_ITEMS, getMood, calculateLogXPBreakdown } from '../utils/gamification';
+import { getTeamStats, GIFT_ITEMS, calculateMood, calculateLogXPBreakdown } from '../utils/gamification';
 import { getGamificationState } from '../utils/storage';
 import { updateQuestProgress } from '../utils/questUtils';
 import { notifyNudge } from '../services/notificationService';
@@ -110,14 +110,20 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
 
             setCommentsMap(commentCounts);
 
-            // Parallelize mood fetching using cached logs to avoid N+1 queries
-            // BOLT: We pass the tribeId to getMood, which will leverage the cached initialLogs
-            // from the previous getLogs(tribeId, 0, 20) call, avoiding individual API calls.
-            const moods: Record<string, any> = {};
-            await Promise.all(memberNames.map(async (u) => {
-                const userLogsInPage = initialLogs.filter(l => l.user === u);
-                moods[u] = await getMood(u, userLogsInPage.length > 0 ? userLogsInPage : profile.tribeId);
-            }));
+            // BOLT: Optimize mood calculation.
+            // Single-pass over initialLogs to group them by user (O(L)),
+            // then synchronous calculateMood for each member (O(M)).
+            // Total complexity O(L + M) vs previous O(L * M) + async overhead.
+            const logsByUser: Record<string, WorkoutLog[]> = {};
+            memberNames.forEach(u => logsByUser[u] = []);
+            initialLogs.forEach(l => {
+                if (logsByUser[l.user]) logsByUser[l.user].push(l);
+            });
+
+            const moods: Record<string, 'fire' | 'tired' | 'normal'> = {};
+            memberNames.forEach(u => {
+                moods[u] = calculateMood(logsByUser[u]);
+            });
             setUserMoods(moods);
 
             setFeedItems(combined);

@@ -8,6 +8,14 @@ import { getMuscleGroup, MUSCLE_GROUPS } from '../utils/muscleMapping';
 
 import { Calendar } from './Calendar';
 
+/**
+ * BOLT: Pre-instantiating formatters outside the render loop/processing function
+ * avoids the high overhead of repeatedly creating Intl objects and improves
+ * performance of label generation during data processing.
+ */
+const monthYearFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' });
+const monthDayFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+
 interface Props {
   user: User;
   userProfile: UserProfile | null;
@@ -89,7 +97,7 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
 
         if (currentViewMode === 'monthly') {
           key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          label = date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+          label = monthYearFormatter.format(date);
           sortKey = key;
         } else {
           // Weekly grouping
@@ -102,7 +110,7 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
           key = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
           const weekStart = new Date(d);
           weekStart.setUTCDate(d.getUTCDate() - 3); // Back to Monday
-          label = weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          label = monthDayFormatter.format(weekStart);
           sortKey = key;
         }
 

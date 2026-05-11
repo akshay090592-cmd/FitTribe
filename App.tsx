@@ -30,30 +30,6 @@ import { Plus } from 'lucide-react';
 import { WorkoutLibraryModal } from './components/WorkoutLibraryModal';
 import { DesktopNavigation } from './components/DesktopNavigation';
 import { LandingPage } from './components/LandingPage';
-import { AboutUs } from './components/AboutUs';
-import { PrivacyPolicy } from './components/PrivacyPolicy';
-import { TermsOfService } from './components/TermsOfService';
-import { ContactUs } from './components/ContactUs';
-import { Leaderboard } from './components/Leaderboard';
-import { Calendar } from './components/Calendar';
-import { TribeStatusCard } from './components/TribeStatusCard';
-import { Blog1 } from './components/blogs/Blog1';
-import { Blog2 } from './components/blogs/Blog2';
-import { Blog3 } from './components/blogs/Blog3';
-import { Blog4 } from './components/blogs/Blog4';
-import { Blog5 } from './components/blogs/Blog5';
-import { Blog6 } from './components/blogs/Blog6';
-import { Blog7 } from './components/blogs/Blog7';
-import { Blog8 } from './components/blogs/Blog8';
-import { Blog9 } from './components/blogs/Blog9';
-import { Blog10 } from './components/blogs/Blog10';
-import { Blog11 } from './components/blogs/Blog11';
-import { Blog12 } from './components/blogs/Blog12';
-import { Blog13 } from './components/blogs/Blog13';
-import { Blog14 } from './components/blogs/Blog14';
-import { Blog15 } from './components/blogs/Blog15';
-import { Blog16 } from './components/blogs/Blog16';
-
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -64,6 +40,31 @@ const ProfilePage = React.lazy(() => import('./components/ProfilePage').then(mod
 const ActivityTrackerModal = React.lazy(() => import('./components/ActivityTrackerModal').then(module => ({ default: module.ActivityTrackerModal })));
 const UserProfilePopup = React.lazy(() => import('./components/UserProfilePopup').then(module => ({ default: module.UserProfilePopup })));
 const CoachView = React.lazy(() => import('./components/CoachView').then(module => ({ default: module.CoachView })));
+
+const AboutUs = React.lazy(() => import('./components/AboutUs').then(module => ({ default: module.AboutUs })));
+const PrivacyPolicy = React.lazy(() => import('./components/PrivacyPolicy').then(module => ({ default: module.PrivacyPolicy })));
+const TermsOfService = React.lazy(() => import('./components/TermsOfService').then(module => ({ default: module.TermsOfService })));
+const ContactUs = React.lazy(() => import('./components/ContactUs').then(module => ({ default: module.ContactUs })));
+const Leaderboard = React.lazy(() => import('./components/Leaderboard').then(module => ({ default: module.Leaderboard })));
+const Calendar = React.lazy(() => import('./components/Calendar').then(module => ({ default: module.Calendar })));
+const TribeStatusCard = React.lazy(() => import('./components/TribeStatusCard').then(module => ({ default: module.TribeStatusCard })));
+
+const Blog1 = React.lazy(() => import('./components/blogs/Blog1').then(module => ({ default: module.Blog1 })));
+const Blog2 = React.lazy(() => import('./components/blogs/Blog2').then(module => ({ default: module.Blog2 })));
+const Blog3 = React.lazy(() => import('./components/blogs/Blog3').then(module => ({ default: module.Blog3 })));
+const Blog4 = React.lazy(() => import('./components/blogs/Blog4').then(module => ({ default: module.Blog4 })));
+const Blog5 = React.lazy(() => import('./components/blogs/Blog5').then(module => ({ default: module.Blog5 })));
+const Blog6 = React.lazy(() => import('./components/blogs/Blog6').then(module => ({ default: module.Blog6 })));
+const Blog7 = React.lazy(() => import('./components/blogs/Blog7').then(module => ({ default: module.Blog7 })));
+const Blog8 = React.lazy(() => import('./components/blogs/Blog8').then(module => ({ default: module.Blog8 })));
+const Blog9 = React.lazy(() => import('./components/blogs/Blog9').then(module => ({ default: module.Blog9 })));
+const Blog10 = React.lazy(() => import('./components/blogs/Blog10').then(module => ({ default: module.Blog10 })));
+const Blog11 = React.lazy(() => import('./components/blogs/Blog11').then(module => ({ default: module.Blog11 })));
+const Blog12 = React.lazy(() => import('./components/blogs/Blog12').then(module => ({ default: module.Blog12 })));
+const Blog13 = React.lazy(() => import('./components/blogs/Blog13').then(module => ({ default: module.Blog13 })));
+const Blog14 = React.lazy(() => import('./components/blogs/Blog14').then(module => ({ default: module.Blog14 })));
+const Blog15 = React.lazy(() => import('./components/blogs/Blog15').then(module => ({ default: module.Blog15 })));
+const Blog16 = React.lazy(() => import('./components/blogs/Blog16').then(module => ({ default: module.Blog16 })));
 
 const VIEW_PATHS: Record<string, string> = {
   dashboard: '/',
@@ -933,27 +934,33 @@ const App: React.FC = () => {
   };
 
   // 1. Footer Pages (Public/Accessible always)
-  if (view === 'about') return <AboutUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'privacy') return <PrivacyPolicy onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'terms') return <TermsOfService onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'contact') return <ContactUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+  if (view === 'about' || view === 'privacy' || view === 'terms' || view === 'contact' || view.startsWith('blog')) {
+    return (
+      <React.Suspense fallback={<LoadingSpinner fullScreen />}>
+        {view === 'about' && <AboutUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'privacy' && <PrivacyPolicy onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'terms' && <TermsOfService onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'contact' && <ContactUs onBack={() => setView('dashboard')} onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
 
-  if (view === 'blog1') return <Blog1 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog2') return <Blog2 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog3') return <Blog3 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog4') return <Blog4 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog5') return <Blog5 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog6') return <Blog6 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog7') return <Blog7 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog8') return <Blog8 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog9') return <Blog9 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog10') return <Blog10 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog11') return <Blog11 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog12') return <Blog12 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog13') return <Blog13 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog14') return <Blog14 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog15') return <Blog15 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
-  if (view === 'blog16') return <Blog16 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />;
+        {view === 'blog1' && <Blog1 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog2' && <Blog2 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog3' && <Blog3 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog4' && <Blog4 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog5' && <Blog5 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog6' && <Blog6 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog7' && <Blog7 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog8' && <Blog8 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog9' && <Blog9 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog10' && <Blog10 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog11' && <Blog11 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog12' && <Blog12 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog13' && <Blog13 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog14' && <Blog14 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog15' && <Blog15 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+        {view === 'blog16' && <Blog16 onNavigate={(v) => setView(v as any)} onScrollToAuth={scrollToAuth} />}
+      </React.Suspense>
+    );
+  }
 
   // Landing Page (when user explicitly navigates to it or not logged in)
   if (view === 'landing' || (!session && !userProfile)) {
@@ -1685,23 +1692,25 @@ const App: React.FC = () => {
             />
 
             {/* View Specific Widgets */}
-            {view === 'social' && allGamificationState && (
-              <Leaderboard
-                logs={allLogs.filter(l => l.type !== WorkoutType.COMMITMENT)}
-                gamificationState={allGamificationState}
-                members={tribeMembers}
-                avatarMap={avatarMap}
-                onUserClick={setSelectedPulseUser}
-              />
-            )}
+            <React.Suspense fallback={null}>
+              {view === 'social' && allGamificationState && (
+                <Leaderboard
+                  logs={allLogs.filter(l => l.type !== WorkoutType.COMMITMENT)}
+                  gamificationState={allGamificationState}
+                  members={tribeMembers}
+                  avatarMap={avatarMap}
+                  onUserClick={setSelectedPulseUser}
+                />
+              )}
 
-            {view === 'analytics' && (
-              <Calendar logs={allLogs} />
-            )}
+              {view === 'analytics' && (
+                <Calendar logs={allLogs} />
+              )}
 
-            {view === 'rewards' && teamStats && (
-              <TribeStatusCard teamStats={teamStats} />
-            )}
+              {view === 'rewards' && teamStats && (
+                <TribeStatusCard teamStats={teamStats} />
+              )}
+            </React.Suspense>
 
             {/* Daily Wisdom Card */}
             <div className="bg-white/80 backdrop-blur-sm rounded-[24px] p-6 shadow-lg border border-emerald-100">

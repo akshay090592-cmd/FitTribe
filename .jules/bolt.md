@@ -13,3 +13,7 @@
 ## 2026-05-10 - Expensive Date Formatting in Loops
 **Learning:** Using `toLocaleDateString()` or instantiating `Intl.DateTimeFormat` inside high-frequency loops (like data processing for charts) creates significant performance overhead due to repeated locale parsing and object creation.
 **Action:** Always lift `Intl.DateTimeFormat` instantiations to the module level or memoize them when used in render-critical paths or data processing utilities.
+
+## 2026-05-11 - Lazy Loading Auxiliary Components
+**Learning:** Statically importing heavy auxiliary components (like 16+ blog pages and legal documents) into the main `App.tsx` creates a massive initial bundle that delays Time to Interactive (TTI) for the dashboard, even if those pages are never visited. Code-splitting these into separate chunks via `React.lazy` significantly reduces the entry payload.
+**Action:** Always lazy-load components that are not part of the critical initial render path (e.g., blogs, secondary info pages, and even desktop-only widgets if they are heavy). Use `React.Suspense` to provide a smooth loading state for these asynchronous chunks.

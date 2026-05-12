@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Check, X } from 'lucide-react';
 import { Notification } from '../types';
+import { shortDateFormatter } from '../utils/dateUtils';
 
 interface Props {
     notifications: Notification[];
@@ -30,7 +31,7 @@ export const NotificationCenter: React.FC<Props> = ({
         if (diff < 60000) return 'Just now';
         if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
         if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        return date.toLocaleDateString();
+        return shortDateFormatter.format(date);
     };
 
     return (

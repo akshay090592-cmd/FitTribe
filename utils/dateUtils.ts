@@ -1,6 +1,18 @@
 import { differenceInCalendarDays } from 'date-fns';
 
 /**
+ * BOLT: Pre-instantiate formatters to avoid high overhead of repeated locale parsing
+ * and object creation in high-frequency loops.
+ */
+export const monthDayFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+export const monthYearFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' });
+export const monthLongFormatter = new Intl.DateTimeFormat(undefined, { month: 'long' });
+export const monthLongYearFormatter = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+export const weekdayShortFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+export const weekdayLongFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'long' });
+export const shortDateFormatter = new Intl.DateTimeFormat(undefined); // Default toLocaleDateString behavior
+
+/**
  * Formats a date string into a relative time string (e.g., "Just now", "2h ago", "Yesterday", "2d ago").
  * Uses calendar days for "Yesterday" and "Xd ago" to ensure consistency with the calendar view
  * and avoid timezone/time-of-day confusion.

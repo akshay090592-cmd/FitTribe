@@ -1,6 +1,7 @@
 import React from 'react';
 import { FooterPageLayout } from './FooterPageLayout';
 import { SEO } from './SEO';
+import { shortDateFormatter } from '../utils/dateUtils';
 
 interface PrivacyPolicyProps {
     onBack: () => void;
@@ -73,7 +74,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, onNavigate
                 }}
             />
             <section className="space-y-6">
-                <p>Last updated: {new Date().toLocaleDateString()}</p>
+                <p>Last updated: {shortDateFormatter.format(new Date())}</p>
 
                 <p>At FitTribe, your privacy is a top priority. This Privacy Policy explains how we collect, use, and protect your information when you use our application.</p>
 

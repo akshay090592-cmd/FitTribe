@@ -1,5 +1,6 @@
 import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan } from "../types";
 import { geminiClient } from "./geminiClient";
+import { monthLongFormatter, weekdayLongFormatter, shortDateFormatter } from "../utils/dateUtils";
 
 const GEMINI_MODEL = 'gemini-flash-lite-latest'; // or 'gemini-1.5-flash' depending on access
 
@@ -17,7 +18,7 @@ const parseJSON = (text: string) => {
 // Helper for long date format (e.g., 10th March 2026)
 const getLongDate = (date: Date) => {
     const day = date.getDate();
-    const month = date.toLocaleDateString(undefined, { month: 'long' });
+    const month = monthLongFormatter.format(date);
     const year = date.getFullYear();
 
     const getOrdinal = (n: number) => {
@@ -173,11 +174,11 @@ ${lastLogs.map(l => {
 
         const now = new Date();
         const todayStr = getLongDate(now);
-        const todayWeekday = now.toLocaleDateString(undefined, { weekday: 'long' });
+        const todayWeekday = weekdayLongFormatter.format(now);
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = getLongDate(tomorrow);
-        const tomorrowWeekday = tomorrow.toLocaleDateString(undefined, { weekday: 'long' });
+        const tomorrowWeekday = weekdayLongFormatter.format(tomorrow);
 
         const systemPrompt = `You are Sage Panda, a wise, friendly, and motivating fitness coach. 
     You help users with workouts, diet, and lifestyle.
@@ -271,7 +272,7 @@ ${lastLogs.map(l => {
         const goals = userProfile.goals || {};
         const lastGoal = goals.primary_goal ? `Your main goal is: ${goals.primary_goal}.` : '';
         const lastWorkoutContext = lastWorkout
-            ? `I see your last workout was ${lastWorkout.customActivity || `Plan ${lastWorkout.type}`} on ${new Date(lastWorkout.date).toLocaleDateString()}.`
+            ? `I see your last workout was ${lastWorkout.customActivity || `Plan ${lastWorkout.type}`} on ${shortDateFormatter.format(new Date(lastWorkout.date))}.`
             : '';
 
         let planContext = '';
@@ -290,7 +291,7 @@ ${lastLogs.map(l => {
 
         return {
             role: 'model',
-            text: `Happy ${new Date().toLocaleDateString(undefined, { weekday: 'long' })}! 🐼
+            text: `Happy ${weekdayLongFormatter.format(new Date())}! 🐼
             
 ${lastGoal} ${lastWorkoutContext}${planContext} Let's plan your week starting today (${getLongDate(new Date())}).
 First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed, exhausted, energized)${periodQuestion}`
@@ -347,13 +348,13 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         const timeOfDay = currentHour < 12 ? 'morning' : currentHour < 17 ? 'afternoon' : 'evening';
 
         const todayStr = getLongDate(now);
-        const todayDayName = now.toLocaleDateString(undefined, { weekday: 'long' });
+        const todayDayName = weekdayLongFormatter.format(now);
         const todayISO = getISODate(now);
 
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = getLongDate(tomorrow);
-        const tomorrowDayName = tomorrow.toLocaleDateString(undefined, { weekday: 'long' });
+        const tomorrowDayName = weekdayLongFormatter.format(tomorrow);
         const tomorrowISO = getISODate(tomorrow);
 
         // Generate the 7 dates for the AI to use
@@ -361,7 +362,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
             const d = new Date(now);
             d.setDate(d.getDate() + i);
             return {
-                day: d.toLocaleDateString(undefined, { weekday: 'long' }),
+                day: weekdayLongFormatter.format(d),
                 date: getISODate(d)
             };
         });

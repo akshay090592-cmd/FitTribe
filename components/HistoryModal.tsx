@@ -3,6 +3,7 @@ import { WorkoutLog, WorkoutType } from '../types';
 import { X, Dumbbell, Search, Filter, Download } from 'lucide-react';
 import { convertToCSV, downloadCSV } from '../utils/exportUtils';
 import { HistoryLogItem, ProcessedLog } from './HistoryLogItem';
+import { monthDayFormatter } from '../utils/dateUtils';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, log
         ...log,
         // Optimization: Pre-calculate failed status and date string to avoid Date allocation in render loop
         isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
-        formattedDate: new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        formattedDate: monthDayFormatter.format(new Date(log.date))
       }));
   }, [logs, filterType, searchTerm]);
 

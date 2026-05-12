@@ -1,4 +1,5 @@
 import { WorkoutLog } from '../types';
+import { shortDateFormatter } from './dateUtils';
 
 export const convertToCSV = (logs: WorkoutLog[]): string => {
   if (!logs || logs.length === 0) {
@@ -7,7 +8,7 @@ export const convertToCSV = (logs: WorkoutLog[]): string => {
 
   const headers = ['Date', 'Type', 'Duration (min)', 'Calories', 'Exercises Count', 'Notes'];
   const rows = logs.map(log => {
-    const date = new Date(log.date).toLocaleDateString();
+    const date = shortDateFormatter.format(new Date(log.date));
     const type = log.type;
     const duration = log.durationMinutes;
     const calories = log.calories || 0;

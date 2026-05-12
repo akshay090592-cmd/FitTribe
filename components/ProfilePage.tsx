@@ -10,6 +10,7 @@ import { BadgeModal } from './BadgeModal';
 import { StatsDetailPopup } from './StatsDetailPopup';
 import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank } from '../utils/gamification';
 import { getAvatarPath } from '../utils/avatar';
+import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
 
 interface Props {
@@ -509,7 +510,7 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
                                                 </span>
                                                 <span className="text-xs text-slate-400 flex items-center">
                                                     <Calendar size={10} className="mr-1" />
-                                                    Ends {new Date(challenge.endDate).toLocaleDateString()}
+                                                    Ends {shortDateFormatter.format(new Date(challenge.endDate))}
                                                 </span>
                                             </div>
                                             <div className="font-bold text-slate-800">{challenge.title}</div>

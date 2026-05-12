@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { WorkoutLog } from '../types';
+import { monthLongYearFormatter } from '../utils/dateUtils';
 
 interface Props {
     logs: WorkoutLog[];
@@ -19,7 +20,7 @@ export const Calendar: React.FC<Props> = ({ logs }) => {
         // Day of week the month starts on (0 = Sunday)
         const startDay = new Date(year, month, 1).getDay();
 
-        const monthLabel = currentDate.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+        const monthLabel = monthLongYearFormatter.format(currentDate);
 
         // Identify days with workouts
         const workoutDays = new Set<number>();

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { WorkoutLog, WorkoutType, XPLog, PointLog } from '../types';
 import { X, Calendar, Activity, Zap, TrendingUp, CheckCircle, XCircle, Star, ShoppingBag, Flame, Trophy, Lock, Heart } from 'lucide-react';
 import { XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculatePoints } from '../utils/gamification';
+import { monthDayFormatter } from '../utils/dateUtils';
 
 interface Props {
     isOpen: boolean;
@@ -128,7 +129,7 @@ export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs,
                                     const logDate = 'created_at' in log ? (log as any).created_at : (log as any).date;
 
                                     const { xp, bonus, streak, isValidForGoal, points, activityName, iconType, vibes } = getRowData(log);
-                                    const dateStr = new Date(logDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                    const dateStr = monthDayFormatter.format(new Date(logDate));
 
                                     const isShop = iconType === 'shop';
                                     const isNegative = points < 0;

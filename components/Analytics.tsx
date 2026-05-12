@@ -5,13 +5,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroup, MUSCLE_GROUPS } from '../utils/muscleMapping';
+import { monthDayFormatter, monthYearFormatter } from '../utils/dateUtils';
 
 import { Calendar } from './Calendar';
-
-// BOLT: Pre-instantiate formatters at module level to avoid high overhead of toLocaleDateString
-// and repeated formatter creation in data processing loops.
-const monthYearFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' });
-const monthDayFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
 
 interface Props {
   user: User;

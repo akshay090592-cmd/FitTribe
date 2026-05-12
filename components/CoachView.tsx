@@ -3,6 +3,7 @@ import { UserProfile, WeeklyPlan, PlanStatus } from '../types';
 import { AICoachService } from '../services/aiCoach';
 import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
 import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info } from 'lucide-react';
+import { monthDayFormatter, weekdayShortFormatter } from '../utils/dateUtils';
 
 import { WorkoutLog } from '../types';
 
@@ -44,8 +45,7 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return '';
         try {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+            return monthDayFormatter.format(new Date(dateStr));
         } catch (e) {
             return '';
         }
@@ -72,7 +72,7 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
                         </div>
                     )}
                     <div className="w-16 text-xs font-bold text-slate-400 uppercase flex flex-col leading-tight">
-                        <span>{day.day?.substring(0, 3) || (day.date ? new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' }) : '???')}</span>
+                        <span>{day.day?.substring(0, 3) || (day.date ? weekdayShortFormatter.format(new Date(day.date)) : '???')}</span>
                         <span className="text-[9px] opacity-70 font-medium">{formatDate(day.date)}</span>
                     </div>
                     <div className="flex-1">

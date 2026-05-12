@@ -17,3 +17,7 @@
 ## 2026-05-11 - Lazy Loading Auxiliary Components
 **Learning:** Statically importing heavy auxiliary components (like 16+ blog pages and legal documents) into the main `App.tsx` creates a massive initial bundle that delays Time to Interactive (TTI) for the dashboard, even if those pages are never visited. Code-splitting these into separate chunks via `React.lazy` significantly reduces the entry payload.
 **Action:** Always lazy-load components that are not part of the critical initial render path (e.g., blogs, secondary info pages, and even desktop-only widgets if they are heavy). Use `React.Suspense` to provide a smooth loading state for these asynchronous chunks.
+
+## 2026-05-12 - App-wide Date Formatting Optimization
+**Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
+**Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.

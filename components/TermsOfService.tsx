@@ -1,6 +1,7 @@
 import React from 'react';
 import { FooterPageLayout } from './FooterPageLayout';
 import { SEO } from './SEO';
+import { shortDateFormatter } from '../utils/dateUtils';
 
 interface TermsOfServiceProps {
     onBack: () => void;
@@ -73,7 +74,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack, onNaviga
                 }}
             />
             <section className="space-y-6">
-                <p>Last updated: {new Date().toLocaleDateString()}</p>
+                <p>Last updated: {shortDateFormatter.format(new Date())}</p>
 
                 <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mt-8">1. Agreement to Terms</h2>
                 <p>By accessing or using FitTribe, you agree to be bound by these Terms of Service. If you do not agree to all of these terms, do not use the application.</p>

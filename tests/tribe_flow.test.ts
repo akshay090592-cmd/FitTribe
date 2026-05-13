@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createTribe, joinTribe, getTribeMembers } from '../utils/storage';
+import { createTribe, joinTribe, getTribeMembers, invalidateCache } from '../utils/storage';
 import { supabase } from '../utils/supabaseClient';
 
 // Mock Supabase
@@ -19,6 +19,7 @@ vi.mock('../utils/supabaseClient', () => ({
 describe('Tribe Flow', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        invalidateCache(''); // BOLT: Clear cache between tests to avoid cross-test contamination
     });
 
     describe('createTribe', () => {

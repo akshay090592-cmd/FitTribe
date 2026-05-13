@@ -357,6 +357,9 @@ export const getTribe = async (tribeId: string): Promise<Tribe | null> => {
 export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> => {
   const cacheKey = `tribe_members_${tribeId}`;
   return deduplicateRequest(cacheKey, async () => {
+    const cached = getFromCache<UserProfile[]>(cacheKey);
+    if (cached) return cached;
+
     // Security: Only select non-sensitive fields for tribe members
     const { data, error } = await supabase
     .from('profiles')
@@ -368,7 +371,7 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
     return [];
   }
 
-  return data.map((d: any) => ({
+  const members = data.map((d: any) => ({
     id: d.id,
     email: '', // Hidden
     displayName: d.display_name,
@@ -380,6 +383,9 @@ export const getTribeMembers = async (tribeId: string): Promise<UserProfile[]> =
     completedChallenges: d.completed_challenges || [],
     workoutTemplates: [] // Excluded for privacy
   }));
+
+  setInCache(cacheKey, members);
+  return members;
   });
 };
 
@@ -424,6 +430,7 @@ export const createProfile = async (
 
   invalidateCache(`profile_${userId}`);
   invalidateCache('gamification');
+  invalidateCache(`tribe_members_${tribeId}`);
 };
 
 export const updateProfile = async (profile: UserProfile) => {
@@ -461,6 +468,8 @@ export const updateProfile = async (profile: UserProfile) => {
   if (error) {
     console.error("Error updating profile", error);
     // Revert cache if needed or just let it fail silently and retry next load
+  } else {
+    invalidateCache('tribe_members');
   }
 };
 
@@ -1099,7 +1108,7 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
   return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<Record<User, UserGamificationState>>(cacheKey);
 
-  if (!navigator.onLine && cached) {
+  if (cached) {
     return cached;
   }
 
@@ -1186,7 +1195,7 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
     lifetime_xp: state.lifetimeXp // Save to DB
   }).eq('user_id', profile.id);
 
-  invalidateCache('gamification_all');
+  invalidateCache('gamification');
 };
 
 export const updateUserCommitment = async (profile: UserProfile, date: Date | null) => {
@@ -1204,7 +1213,7 @@ export const getGiftTransactions = async (tribeId?: string, page?: number, pageS
   return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<GiftTransaction[]>(cacheKey);
 
-  if (!navigator.onLine && cached) return cached;
+  if (cached) return cached;
 
   // BOLT: Only select required columns and support pagination
   // Include created_at for chronological sorting in the social feed
@@ -1285,8 +1294,8 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
     message: sanitizedMessage
   });
 
-  invalidateCache('gifts_all');
-  invalidateCache('gamification_all'); // Sending a gift changes inventory
+  invalidateCache('gifts');
+  invalidateCache('gamification'); // Sending a gift changes inventory
 };
 
 export const deleteLog = async (logId: string, userProfile: UserProfile) => {

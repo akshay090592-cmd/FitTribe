@@ -12,7 +12,7 @@ import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
 import { getMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
-import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
+import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers, getCommentCounts, getTribe } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
 import { TribePulse } from './components/TribePulse';
@@ -147,33 +147,22 @@ const App: React.FC = () => {
   /* Helper to check if Env Vars are loaded - Defined early for use in useEffect */
   const supabaseReady = isSupabaseConfigured();
 
+  // BOLT: Consolidate optimistic profile load to avoid redundant localStorage hits and parsing
+  const initialProfile = React.useMemo(() => {
+    const saved = localStorage.getItem('current_user_profile');
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved) as UserProfile;
+    } catch (e) {
+      console.error("Failed to parse cached profile", e);
+      return null;
+    }
+  }, []);
+
   const randomQuote = React.useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    // Optimistic Load
-    const saved = localStorage.getItem('current_user_profile');
-    if (saved) {
-      try {
-        const profile = JSON.parse(saved);
-        return profile.displayName;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return null;
-  });
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
-    // Optimistic Load
-    const saved = localStorage.getItem('current_user_profile');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return null;
-  });
-  const [loading, setLoading] = useState(() => !localStorage.getItem('current_user_profile'));
+  const [currentUser, setCurrentUser] = useState<User | null>(initialProfile?.displayName || null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfile);
+  const [loading, setLoading] = useState(!initialProfile);
   const [fetchingCount, setFetchingCount] = useState(0);
   const isFetching = fetchingCount > 0;
   const [session, setSession] = useState<any>(null);
@@ -438,12 +427,16 @@ const App: React.FC = () => {
       ];
 
       // 2. Warm up Data Cache (In-Memory)
+      // BOLT: Align parameters with SocialFeed for 100% cache hit rate
       const preloadData = [
-        getLogs(),                 // For Analytics & Feed
-        getAllReactions(),         // For Feed
-        getGiftTransactions(),     // For Feed
-        getGamificationState(),    // For Rewards
-        getTeamStats(),            // For Tribe/Rewards
+        getLogs(userProfile.tribeId, 0, 100),       // For Analytics & Feed
+        getGiftTransactions(userProfile.tribeId, 0, 100), // For Feed
+        getAllReactions(userProfile.tribeId),      // For Feed
+        getGamificationState(userProfile.tribeId), // For Rewards
+        getTeamStats(userProfile.tribeId),         // For Tribe/Rewards
+        getTribeMembers(userProfile.tribeId),      // For Tribe/Feed
+        getCommentCounts(),                        // For Feed
+        getTribe(userProfile.tribeId)              // For Feed
       ];
 
       try {

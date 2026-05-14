@@ -1208,7 +1208,7 @@ export const updateUserCommitment = async (profile: UserProfile, date: Date | nu
 };
 
 export const getGiftTransactions = async (tribeId?: string, page?: number, pageSize?: number): Promise<GiftTransaction[]> => {
-  const cacheKey = tribeId ? `gifts_tribe_${tribeId}_p${page || 0}` : `gifts_global_p${page || 0}`;
+  const cacheKey = tribeId ? `gifts_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `gifts_global_p${page || 0}_s${pageSize || 0}`;
 
   return deduplicateRequest(cacheKey, async () => {
   const cached = getFromCache<GiftTransaction[]>(cacheKey);

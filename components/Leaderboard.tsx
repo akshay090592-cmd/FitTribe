@@ -71,14 +71,14 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
         return stats;
     }, [logs, timeframe, gamificationState, members]);
 
-    const sortedUsers = [...members].sort((a, b) => {
+    const sortedUsers = useMemo(() => [...members].sort((a, b) => {
         // Sort by XP first, then count
         const statA = filteredStats[a] || { xp: 0, count: 0 };
         const statB = filteredStats[b] || { xp: 0, count: 0 };
 
         if (statB.xp !== statA.xp) return statB.xp - statA.xp;
         return statB.count - statA.count;
-    });
+    }), [members, filteredStats]);
 
     return (
         <div className="bg-white rounded-[32px] overflow-hidden shadow-lg shadow-emerald-900/5 border border-emerald-50 mb-6 font-sans">

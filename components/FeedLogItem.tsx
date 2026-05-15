@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { User, WorkoutLog, UserProfile } from '../types';
 import { Flame, MessageCircle, Trash2, TrendingUp, Heart } from 'lucide-react';
 import { CommentSection } from './CommentSection';
@@ -34,17 +34,19 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
 
-    const totalVolume = log.exercises.reduce((acc, ex) =>
+    const totalVolume = useMemo(() => log.exercises.reduce((acc, ex) =>
         acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
+        , 0), [log.exercises]);
 
     const displayedExercises = isExpanded ? log.exercises : log.exercises.slice(0, 3);
     const remainingCount = log.exercises.length - 3;
 
     // Optimization: Calculate date objects once to avoid multiple instantiations in render
-    const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
-    const isFailedCommitment = new Date(log.date) < todayMidnight;
+    const isFailedCommitment = useMemo(() => {
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        return new Date(log.date) < todayMidnight;
+    }, [log.date]);
 
     // Avatar Logic: Use provided ID, else fallback to 'male' (or legacy name match if we wanted)
     const avatarImg = getAvatarPath(props.avatarId);

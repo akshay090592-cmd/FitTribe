@@ -21,3 +21,7 @@
 ## 2026-05-12 - App-wide Date Formatting Optimization
 **Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
 **Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.
+
+## 2026-05-17 - Memoizing List Item Metrics
+**Learning:** Derived metrics in high-frequency list components (like `FeedLogItem` and `Leaderboard`) cause cumulative CPU overhead during frequent re-renders (e.g., when toggling comments or reacting). Even "simple" reductions or date comparisons add up when multiplied by hundreds of items.
+**Action:** Always use `useMemo` for any derived data in list items (total volume, status flags, sorting) to ensure that `React.memo` can effectively skip re-renders when unrelated props (like `isCommentsOpen`) change.

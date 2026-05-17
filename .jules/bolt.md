@@ -21,3 +21,7 @@
 ## 2026-05-12 - App-wide Date Formatting Optimization
 **Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
 **Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.
+
+## 2026-05-18 - Cascade Re-render Prevention in Social Feed
+**Learning:** Re-creating a heavy data loading function like `loadData` on every render of a parent component (`SocialFeed`) causes a cascade of re-renders across all children (`FeedLogItem`) if those children are memoized but depend on that function (e.g., via a `handleDelete` prop).
+**Action:** Always memoize functions that are passed deep into component trees with `useCallback`. Ensure dependency arrays are complete but minimal to maximize the benefits of `React.memo` in the children.

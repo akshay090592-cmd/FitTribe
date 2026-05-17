@@ -25,7 +25,11 @@ type FeedItem = { type: 'log', data: WorkoutLog; date: string } | { type: 'gift'
 
 const EMPTY_REACTIONS: string[] = [];
 
-export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = true, onFetching }) => {
+/**
+ * BOLT: Memoize SocialFeed to prevent redundant re-renders when parent (App) state changes
+ * (e.g., during toast notifications or background data fetching).
+ */
+export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, isVisible = true, onFetching }) => {
     const [feedItems, setFeedItems] = useState<FeedItem[]>(() => {
         try {
             const saved = localStorage.getItem('cache_feed_items');
@@ -68,7 +72,11 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         }
     }, [isVisible]);
 
-    const loadData = async (silent = false) => {
+    /**
+     * BOLT: Memoize loadData to prevent redundant re-creations.
+     * Re-creating this function triggers cascades of re-renders in children like FeedLogItem.
+     */
+    const loadData = useCallback(async (silent = false) => {
         if (!silent && !hasLoaded) setLoading(true);
         else onFetching?.(true);
 
@@ -141,7 +149,7 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
         } finally {
             onFetching?.(false);
         }
-    };
+    }, [profile.tribeId, hasLoaded, onFetching]);
 
     // Memoized Callbacks
     const handleReaction = useCallback(async (logId: string) => {
@@ -207,12 +215,15 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
     }, [hasMoreLogs, hasMoreGifts, showMyWorkouts]);
 
 
-    const handleNudge = async (targetUser: string) => {
+    /**
+     * BOLT: Memoize handleNudge to prevent unnecessary prop changes for Tribe Status items.
+     */
+    const handleNudge = useCallback(async (targetUser: string) => {
         if (nudgedUsers.includes(targetUser)) return;
         setNudgedUsers(prev => [...prev, targetUser]);
         await notifyNudge(currentUser, targetUser as User);
         // alert(`🔔 You roared at ${targetUser} to wake them up!`);
-    };
+    }, [currentUser, nudgedUsers]);
 
     const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
         e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda';
@@ -535,4 +546,4 @@ export const SocialFeed: React.FC<Props> = ({ currentUser, profile, isVisible = 
             </div>
         </div >
     );
-};
+});

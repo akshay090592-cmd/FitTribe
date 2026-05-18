@@ -3,7 +3,7 @@ import { User, WorkoutType, UserProfile, WorkoutPlan, WorkoutTemplate } from './
 import { STARTER_PLANS } from './constants';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { InfoTooltip } from './components/InfoTooltip';
-import { getUserLogs, getCurrentProfile, createProfile, saveLog, updateLog, createTribe, joinTribe } from './utils/storage';
+import { getUserLogs, getCurrentProfile, createProfile, saveLog, updateLog, createTribe, joinTribe, getTribe, getCommentCounts } from './utils/storage';
 import { notifyTribeOnActivity, notifyTribeOnCommitment } from './services/notificationService';
 import { supabase, isSupabaseConfigured } from './utils/supabaseClient';
 import { initSyncListener } from './utils/sync';
@@ -11,7 +11,7 @@ import { useNotifications } from './hooks/useNotifications';
 import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
-import { getMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
+import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
@@ -148,59 +148,55 @@ const App: React.FC = () => {
   const supabaseReady = isSupabaseConfigured();
 
   const randomQuote = React.useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    // Optimistic Load
+
+  // BOLT: Optimize initialization by consolidating redundant localStorage.getItem and JSON.parse calls
+  const initialProfileData = React.useMemo(() => {
     const saved = localStorage.getItem('current_user_profile');
-    if (saved) {
-      try {
-        const profile = JSON.parse(saved);
-        return profile.displayName;
-      } catch (e) {
-        console.error(e);
-      }
+    if (!saved) return { user: null, profile: null, loading: true };
+    try {
+      const profile = JSON.parse(saved);
+      return { user: profile.displayName as User, profile: profile as UserProfile, loading: false };
+    } catch (e) {
+      console.error("Failed to parse optimistic profile", e);
+      return { user: null, profile: null, loading: true };
     }
-    return null;
-  });
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
-    // Optimistic Load
-    const saved = localStorage.getItem('current_user_profile');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return null;
-  });
-  const [loading, setLoading] = useState(() => !localStorage.getItem('current_user_profile'));
+  }, []);
+
+  const [currentUser, setCurrentUser] = useState<User | null>(initialProfileData.user);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfileData.profile);
+  const [loading, setLoading] = useState(initialProfileData.loading);
   const [fetchingCount, setFetchingCount] = useState(0);
   const isFetching = fetchingCount > 0;
   const [session, setSession] = useState<any>(null);
   const isAppReady = React.useRef(false);
   const { showToast } = useToast();
 
-  const hasActiveWorkoutSession = useCallback(() => {
-    try {
-      const sessionA = localStorage.getItem(`workout_session_${WorkoutType.A}`);
-      const sessionB = localStorage.getItem(`workout_session_${WorkoutType.B}`);
-      const sessionCustom = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM}`);
-      const sessionCustomTemplate = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM_TEMPLATE}`);
-      const now = Date.now();
-
-      if (sessionA && (now - JSON.parse(sessionA).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
-      if (sessionB && (now - JSON.parse(sessionB).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
-      if (sessionCustom && (now - JSON.parse(sessionCustom).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
-      if (sessionCustomTemplate && (now - JSON.parse(sessionCustomTemplate).lastUpdated < SESSION_RESTORE_WINDOW)) return true;
-    } catch (e) {
-      console.error("Error checking sessions", e);
-    }
-    return false;
+  // BOLT: Consolidate session retrieval to avoid redundant localStorage hits during init
+  const workoutSessions = React.useMemo(() => {
+    const types = [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE];
+    const sessions: Record<string, any> = {};
+    const now = Date.now();
+    types.forEach(type => {
+      const saved = localStorage.getItem(`workout_session_${type}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (now - data.lastUpdated < SESSION_RESTORE_WINDOW) {
+            sessions[type] = data;
+          }
+        } catch (e) {}
+      }
+    });
+    return sessions;
   }, []);
+
+  const hasActiveWorkoutSession = useCallback(() => {
+    return Object.keys(workoutSessions).length > 0;
+  }, [workoutSessions]);
 
   const [view, setView] = useState<AppView>(() => {
     // 1. Check for active workout session (Highest Priority for Resuming)
-    if (hasActiveWorkoutSession()) return 'workout';
+    if (Object.keys(workoutSessions).length > 0) return 'workout';
 
     // 2. Check URL path
     const path = window.location.pathname.replace(/\/$/, "") || "/";
@@ -218,34 +214,10 @@ const App: React.FC = () => {
   const [selectedWorkoutType, setSelectedWorkoutType] = useState<WorkoutType>(() => {
     try {
       // 1. Check for active sessions first (Highest Priority for Resuming)
-      const sessionA = localStorage.getItem(`workout_session_${WorkoutType.A}`);
-      const sessionB = localStorage.getItem(`workout_session_${WorkoutType.B}`);
-      const sessionCustom = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM}`);
-      const sessionCustomTemplate = localStorage.getItem(`workout_session_${WorkoutType.CUSTOM_TEMPLATE}`);
+      const activeTypes = Object.entries(workoutSessions)
+        .sort(([, a], [, b]) => (b as any).lastUpdated - (a as any).lastUpdated);
 
-      let timestampA = 0;
-      let timestampB = 0;
-      let timestampCustom = 0;
-      let timestampCustomTemplate = 0;
-
-      if (sessionA) timestampA = JSON.parse(sessionA).lastUpdated || 0;
-      if (sessionB) timestampB = JSON.parse(sessionB).lastUpdated || 0;
-      if (sessionCustom) timestampCustom = JSON.parse(sessionCustom).lastUpdated || 0;
-      if (sessionCustomTemplate) timestampCustomTemplate = JSON.parse(sessionCustomTemplate).lastUpdated || 0;
-
-      // If we have recent sessions, prioritize them
-      const now = Date.now();
-
-      // Find the most recent session among A, B, Custom, and Custom Template
-      const timestamps = [
-        { type: WorkoutType.A, ts: timestampA },
-        { type: WorkoutType.B, ts: timestampB },
-        { type: WorkoutType.CUSTOM, ts: timestampCustom },
-        { type: WorkoutType.CUSTOM_TEMPLATE, ts: timestampCustomTemplate }
-      ].filter(t => t.ts > 0 && (now - t.ts < SESSION_RESTORE_WINDOW))
-        .sort((a, b) => b.ts - a.ts);
-
-      if (timestamps.length > 0) return timestamps[0].type;
+      if (activeTypes.length > 0) return activeTypes[0][0] as WorkoutType;
 
       // 2. Check saved preference (Next Plan)
       const saved = localStorage.getItem('preferred_workout_type');
@@ -422,10 +394,14 @@ const App: React.FC = () => {
     }
 
     const preloadAppResources = async () => {
+      if (!userProfile) return;
       preloadedUserRef.current = userProfile.displayName;
 
       // Delay preloading to prioritize Main Thread for Homepage
       await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // BOLT: Re-verify profile existence after delay to avoid race conditions during logout/switch
+      if (!userProfile) return;
 
       console.log("Starting background preloading...");
 
@@ -438,12 +414,18 @@ const App: React.FC = () => {
       ];
 
       // 2. Warm up Data Cache (In-Memory)
+      // BOLT: Align parameters with SocialFeed/TribePulse (tribeId + pageSize 100) to ensure 100% cache hits
+      const tribeId = userProfile.tribeId;
+      const PAGE_SIZE = 100;
       const preloadData = [
-        getLogs(),                 // For Analytics & Feed
-        getAllReactions(),         // For Feed
-        getGiftTransactions(),     // For Feed
-        getGamificationState(),    // For Rewards
-        getTeamStats(),            // For Tribe/Rewards
+        getLogs(tribeId, 0, PAGE_SIZE),
+        getGiftTransactions(tribeId, 0, PAGE_SIZE),
+        getAllReactions(tribeId),
+        getCommentCounts(),
+        getTeamStats(tribeId),
+        getGamificationState(tribeId),
+        getTribeMembers(tribeId),
+        getTribe(tribeId)
       ];
 
       try {
@@ -484,7 +466,8 @@ const App: React.FC = () => {
         setAllLogs(logs);
 
         // 2. Process Mood (Reusing logs)
-        const m = await getMood(profile.displayName, logs);
+        // BOLT: Use synchronous calculateMood directly to avoid redundant lookups in getMood
+        const m = calculateMood(logs);
         setMood(m);
 
         // 3. Process Stats
@@ -540,16 +523,20 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      // BOLT: Cleanup expired or invalid sessions on mount
+      // BOLT: Cleanup expired or invalid sessions on mount using consolidated data
       const now = Date.now();
+      const types = [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE];
 
-      [WorkoutType.A, WorkoutType.B, WorkoutType.CUSTOM, WorkoutType.CUSTOM_TEMPLATE].forEach(type => {
+      types.forEach(type => {
         const key = `workout_session_${type}`;
-        const saved = localStorage.getItem(key);
-        if (saved) {
+        const sessionData = workoutSessions[type];
+
+        // If session was invalid (too old or finished), we handle it here
+        // Note: workoutSessions only contains sessions within SESSION_RESTORE_WINDOW
+        const rawSaved = localStorage.getItem(key);
+        if (rawSaved) {
           try {
-            const data = JSON.parse(saved);
-            // If session is older than window OR has invalid step (analysis means it's finished but didn't clear)
+            const data = JSON.parse(rawSaved);
             if (now - data.lastUpdated >= SESSION_RESTORE_WINDOW || data.step === 'analysis') {
               localStorage.removeItem(key);
               sessionStorage.removeItem(`workoutStep_${type}`);
@@ -558,7 +545,6 @@ const App: React.FC = () => {
               }
             }
           } catch (e) {
-            // If parsing fails, it's corrupted, remove it
             localStorage.removeItem(key);
           }
         }
@@ -566,7 +552,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Error cleaning up sessions in useEffect", e);
     }
-  }, []);
+  }, [workoutSessions]);
 
 
   useEffect(() => {

@@ -497,7 +497,6 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
 
   // If tribeId is provided, filter offline logs broadly (we can't easily check tribe of offline logs without profile data, but usually it matches current user)
 
-  const cacheKey = (tribeId && isSupabaseConfigured()) ? `logs_tribe_${tribeId}_p${page || 0}_s${pageSize || 0}` : `logs_global_p${page || 0}_s${pageSize || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
 
   if (cached) {
@@ -548,16 +547,17 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
 
     // Merge offline logs with database logs and sort by date descending
     // This ensures that logs created offline are visible even after a successful online fetch
+    // BOLT: Avoid O(N log N) sort if no offline logs are present (DB query already handles DESC order)
+    if (offlineLogs.length === 0) return dbLogs;
+
     const allLogs = [...dbLogs];
 
-    if (offlineLogs.length > 0) {
-      offlineLogs.forEach(offLog => {
-        // Avoid duplicates if a log with same ID exists (though offline IDs usually prefixed)
-        if (!allLogs.some(l => l.id === offLog.id)) {
-          allLogs.push(offLog);
-        }
-      });
-    }
+    offlineLogs.forEach(offLog => {
+      // Avoid duplicates if a log with same ID exists (though offline IDs usually prefixed)
+      if (!allLogs.some(l => l.id === offLog.id)) {
+        allLogs.push(offLog);
+      }
+    });
 
     return allLogs.sort((a, b) => b.date.localeCompare(a.date));
   });

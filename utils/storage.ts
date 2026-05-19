@@ -1056,28 +1056,35 @@ export const getCommentCounts = async (): Promise<Record<string, number>> => {
 export const getComments = async (logId: string): Promise<SocialComment[]> => {
   // Helper to safely handle ID
   const recordId = /^\d+$/.test(String(logId)) ? parseInt(String(logId)) : logId;
-  const { data, error } = await supabase
-    .from('comments')
-    .select('id, log_id, user_id, user_name, text, date')
-    .eq('log_id', recordId)
-    .order('date', { ascending: true }); // Order by 'date'
+  const cacheKey = `comments_log_${recordId}`;
 
-  if (error) {
-    console.error(`Error fetching comments for log ${logId}:`, error);
-    return [];
-  }
+  return deduplicateRequest(cacheKey, async () => {
+    const cached = getFromCache<SocialComment[]>(cacheKey);
+    if (cached) return [...cached];
 
-  if (data) {
-    return data.map((d: any) => ({
+    const { data, error } = await supabase
+      .from('comments')
+      .select('id, log_id, user_id, user_name, text, date')
+      .eq('log_id', recordId)
+      .order('date', { ascending: true }); // Order by 'date'
+
+    if (error) {
+      console.error(`Error fetching comments for log ${logId}:`, error);
+      return [];
+    }
+
+    const comments = data ? data.map((d: any) => ({
       id: d.id,
       logId: String(d.log_id),
       userId: d.user_id,
       userName: d.user_name as User,
       text: d.text,
       date: d.date // Map from 'date' column
-    }));
-  }
-  return [];
+    })) : [];
+
+    setInCache(cacheKey, comments);
+    return comments;
+  });
 };
 
 export const addComment = async (logId: string, text: string, profile: UserProfile) => {
@@ -1098,6 +1105,8 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
     user_name: profile.displayName,
     text: sanitizedText
   });
+
+  invalidateCache('comments_log_' + recordId);
 };
 
 // --- GAMIFICATION ---

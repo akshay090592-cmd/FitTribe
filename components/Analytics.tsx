@@ -63,11 +63,12 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
   }, [versusUser, freqVersusUser]);
 
 
-  // Helper for data processing
+  // BOLT: Refactor getChartData to minimize redundant operations and support optional exercise filtering
   const getChartData = (
     currentViewMode: 'weekly' | 'monthly',
     currentVersusUser: User | null,
-    currentRivalLogs: any[]
+    currentRivalLogs: any[],
+    targetExercise?: string
   ) => {
     if (!logs.length && (!currentVersusUser || !currentRivalLogs.length)) return [];
 
@@ -82,18 +83,17 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
     }> = {};
 
     const processLogs = (logList: any[], isRival: boolean) => {
-      logList.forEach(log => {
+      for (let i = 0; i < logList.length; i++) {
+        const log = logList[i];
         const date = new Date(log.date);
         let key = '';
         let label = '';
-        let sortKey = '';
 
         if (currentViewMode === 'monthly') {
           key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
           label = monthYearFormatter.format(date);
-          sortKey = key;
         } else {
-          // Weekly grouping
+          // Weekly grouping: Use UTC for consistency in week calculation
           const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
           const dayNum = d.getUTCDay() || 7;
           d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -104,16 +104,22 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
           const weekStart = new Date(d);
           weekStart.setUTCDate(d.getUTCDate() - 3); // Back to Monday
           label = monthDayFormatter.format(weekStart);
-          sortKey = key;
         }
 
         if (!grouped[key]) {
-          grouped[key] = { label, totalVolume: 0, workoutCount: 0, rivalTotalVolume: 0, rivalWorkoutCount: 0, exerciseStats: {}, sortKey };
+          grouped[key] = { label, totalVolume: 0, workoutCount: 0, rivalTotalVolume: 0, rivalWorkoutCount: 0, exerciseStats: {}, sortKey: key };
         }
 
-        const logVolume = log.exercises.reduce((acc: number, ex: any) => {
-          return acc + ex.sets.reduce((sAcc: number, s: any) => sAcc + (s.completed ? s.weight * s.reps : 0), 0);
-        }, 0);
+        let logVolume = 0;
+        const exercises = log.exercises || [];
+        for (let j = 0; j < exercises.length; j++) {
+          const ex = exercises[j];
+          const sets = ex.sets || [];
+          for (let k = 0; k < sets.length; k++) {
+            const s = sets[k];
+            if (s.completed) logVolume += (s.weight * s.reps);
+          }
+        }
 
         if (isRival) {
           grouped[key].rivalTotalVolume += logVolume;
@@ -122,19 +128,33 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
           grouped[key].totalVolume += logVolume;
           grouped[key].workoutCount += 1;
 
-          log.exercises.forEach((ex: any) => {
-            const completedSets = ex.sets.filter((s: any) => s.completed);
-            if (completedSets.length > 0) {
-              const maxWeight = Math.max(...completedSets.map((s: any) => s.weight));
-              if (!grouped[key].exerciseStats[ex.name]) {
-                grouped[key].exerciseStats[ex.name] = { totalMaxWeight: 0, count: 0 };
+          if (targetExercise) {
+            for (let j = 0; j < exercises.length; j++) {
+              const ex = exercises[j];
+              if (ex.name !== targetExercise) continue;
+
+              let maxWeight = 0;
+              let foundCompleted = false;
+              const sets = ex.sets || [];
+              for (let k = 0; k < sets.length; k++) {
+                const s = sets[k];
+                if (s.completed) {
+                  if (s.weight > maxWeight) maxWeight = s.weight;
+                  foundCompleted = true;
+                }
               }
-              grouped[key].exerciseStats[ex.name].totalMaxWeight += maxWeight;
-              grouped[key].exerciseStats[ex.name].count += 1;
+
+              if (foundCompleted) {
+                if (!grouped[key].exerciseStats[ex.name]) {
+                  grouped[key].exerciseStats[ex.name] = { totalMaxWeight: 0, count: 0 };
+                }
+                grouped[key].exerciseStats[ex.name].totalMaxWeight += maxWeight;
+                grouped[key].exerciseStats[ex.name].count += 1;
+              }
             }
-          });
+          }
         }
-      });
+      }
     };
 
     processLogs(logs, false);
@@ -149,15 +169,17 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
         rivalAvgVolume: data.rivalWorkoutCount > 0 ? Math.round(data.rivalTotalVolume / data.rivalWorkoutCount) : 0,
         workoutCount: data.workoutCount,
         rivalWorkoutCount: data.rivalWorkoutCount,
-        exerciseAvg: data.exerciseStats[selectedExercise]
-          ? Math.round(data.exerciseStats[selectedExercise].totalMaxWeight / data.exerciseStats[selectedExercise].count)
+        exerciseAvg: targetExercise && data.exerciseStats[targetExercise]
+          ? Math.round(data.exerciseStats[targetExercise].totalMaxWeight / data.exerciseStats[targetExercise].count)
           : 0
       };
     });
   };
 
-  const chartData = useMemo(() => getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : []), [logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
-  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : []), [logs, rivalLogsCache, selectedExercise, freqViewMode, freqVersusUser]);
+  const chartData = useMemo(() => getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : [], selectedExercise), [logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
+  // BOLT: Remove selectedExercise from dependency array because frequency chart doesn't use it.
+  // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
+  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : []), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
 
   const muscleData = useMemo(() => {
     if (!logs.length) return [];
@@ -203,20 +225,24 @@ export const Analytics: React.FC<Props> = ({ user, userProfile, isVisible = true
       else onFetching?.(true);
 
       try {
-        const l = await getUserLogs(user);
+        // BOLT: Parallelize independent data fetches to reduce loading time
+        const [l, s, members] = await Promise.all([
+          getUserLogs(user),
+          calculateStats(user),
+          userProfile?.tribeId ? getTribeMembers(userProfile.tribeId) : Promise.resolve([])
+        ]);
+
         if (mounted) {
           setLogs(l);
           localStorage.setItem(`cache_logs_${user}`, JSON.stringify(l));
-          const s = await calculateStats(user);
-          if (userProfile?.tribeId) {
-            const members = await getTribeMembers(userProfile.tribeId);
+          setStats(s);
+          localStorage.setItem(`cache_stats_${user}`, JSON.stringify(s));
+
+          if (members.length > 0) {
             setTribeMembers(members.map(m => m.displayName));
           }
-          if (mounted) {
-            setStats(s);
-            localStorage.setItem(`cache_stats_${user}`, JSON.stringify(s));
-            setHasLoaded(true);
-          }
+
+          setHasLoaded(true);
         }
       } catch (error) {
         console.error("Failed to load analytics data", error);

@@ -70,16 +70,6 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
     // Leaderboard Interaction State
     const [selectedLeaderboardUser, setSelectedLeaderboardUser] = useState<string | null>(null);
 
-    useEffect(() => {
-        const now = Date.now();
-        // Load if visible and (never loaded OR stale > 1 minute)
-        if (isVisible) {
-            if (!hasLoaded || (now - lastLoaded > 60000)) {
-                loadData(hasLoaded);
-            }
-        }
-    }, [isVisible, hasLoaded, lastLoaded, loadData]);
-
     // BOLT: Memoize loadData to prevent recreation and downstream re-renders of list items
     const loadData = useCallback(async (silent = false) => {
         if (!silent && !hasLoaded) setLoading(true);
@@ -155,6 +145,16 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
             onFetching?.(false);
         }
     }, [hasLoaded, onFetching, profile.tribeId]);
+
+    useEffect(() => {
+        const now = Date.now();
+        // Load if visible and (never loaded OR stale > 1 minute)
+        if (isVisible) {
+            if (!hasLoaded || (now - lastLoaded > 60000)) {
+                loadData(hasLoaded);
+            }
+        }
+    }, [isVisible, hasLoaded, lastLoaded, loadData]);
 
     // Memoized Callbacks
     const handleReaction = useCallback(async (logId: string) => {

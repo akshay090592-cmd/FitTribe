@@ -17,35 +17,43 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, log
   const [filterType, setFilterType] = useState<string>('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const filteredLogs = useMemo(() => {
+  /**
+   * BOLT: Optimize HistoryModal by pre-processing logs once per data update.
+   * This hoists expensive date formatting and searchable text generation out of the
+   * filtering loop that runs on every keystroke.
+   */
+  const processedLogs = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
 
-    return logs
-      .filter(log => {
-        // Filter by Type
-        if (filterType !== 'ALL' && log.type !== filterType) return false;
+    return logs.map((log): ProcessedLog & { searchableText: string } => {
+      const activityName = log.customActivity?.toLowerCase() || '';
+      const typeName = log.type?.toLowerCase() || '';
 
-        // Filter by Search (Custom Activity Name or Type)
-        if (searchTerm) {
-          const term = searchTerm.toLowerCase();
-          const activityName = log.customActivity?.toLowerCase() || '';
-          const typeName = log.type?.toLowerCase() || '';
-          return activityName.includes(term) || typeName.includes(term);
-        }
-
-        return true;
-      })
-      // Optimization: Use string comparison for ISO dates to avoid Date object creation
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .map((log): ProcessedLog => ({
+      return {
         ...log,
-        // Optimization: Pre-calculate failed status and date string to avoid Date allocation in render loop
         isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
-        formattedDate: monthDayFormatter.format(new Date(log.date))
-      }));
-  }, [logs, filterType, searchTerm]);
+        formattedDate: monthDayFormatter.format(new Date(log.date)),
+        searchableText: `${activityName} ${typeName}`
+      };
+    });
+    // NOTE: Removal of .sort() as logs are already provided in descending order from storage/parent.
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+
+    return processedLogs.filter(log => {
+      // Filter by Type
+      if (filterType !== 'ALL' && log.type !== filterType) return false;
+
+      // Filter by Search (using pre-generated searchableText)
+      if (term && !log.searchableText.includes(term)) return false;
+
+      return true;
+    });
+  }, [processedLogs, filterType, searchTerm]);
 
   const handleExport = () => {
     if (filteredLogs.length === 0) return;

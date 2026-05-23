@@ -1035,21 +1035,32 @@ export const toggleReaction = async (logId: string, profile: UserProfile) => {
 };
 
 export const getCommentCounts = async (): Promise<Record<string, number>> => {
-  const { data, error } = await supabase
-    .from('comments')
-    .select('log_id');
+  const cacheKey = 'comment_counts_global';
 
-  if (error) {
-    console.error("Error fetching comment counts:", error);
-    return {};
-  }
+  return deduplicateRequest(cacheKey, async () => {
+    const cached = getFromCache<Record<string, number>>(cacheKey, 60 * 1000); // 1-minute TTL
+    if (cached) return cached;
 
-  const counts: Record<string, number> = {};
-  data?.forEach((row: any) => {
-    const id = String(row.log_id);
-    counts[id] = (counts[id] || 0) + 1;
+    if (!isSupabaseConfigured()) return {};
+
+    const { data, error } = await supabase
+      .from('comments')
+      .select('log_id');
+
+    if (error) {
+      console.error("Error fetching comment counts:", error);
+      return {};
+    }
+
+    const counts: Record<string, number> = {};
+    data?.forEach((row: any) => {
+      const id = String(row.log_id);
+      counts[id] = (counts[id] || 0) + 1;
+    });
+
+    setInCache(cacheKey, counts);
+    return counts;
   });
-  return counts;
 };
 
 
@@ -1107,6 +1118,7 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
   });
 
   invalidateCache('comments_log_' + recordId);
+  invalidateCache('comment_counts_global');
 };
 
 // --- GAMIFICATION ---

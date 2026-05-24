@@ -21,3 +21,7 @@
 ## 2026-05-12 - App-wide Date Formatting Optimization
 **Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
 **Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.
+
+## 2026-05-24 - Stable Callbacks for Dashboard Widgets
+**Learning:** In a hub-and-spoke state architecture like this App.tsx, dashboard widgets (e.g., QuestBoard) that receive action handlers (e.g., onManualComplete) will re-render on every global state update (fetching, notifications, tribe pulse) unless those handlers are wrapped in useCallback. Memoizing the component alone is insufficient if the props include unstable function references.
+**Action:** Always wrap action handlers passed from App.tsx to dashboard widgets in useCallback. Pair this with React.memo on the receiving component to ensure dashboard stability during background data refreshes.

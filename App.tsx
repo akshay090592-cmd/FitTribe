@@ -279,6 +279,16 @@ const App: React.FC = () => {
     setFetchingCount(prev => Math.max(0, prev + (fetching ? 1 : -1)));
   }, []);
 
+  // BOLT: Memoize manual quest completion to prevent QuestBoard re-renders
+  const handleManualQuestComplete = useCallback(async (qid: string) => {
+    if (currentUser && userProfile) {
+      const res = await completeManualQuest(currentUser, userProfile, qid);
+      if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
+        showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
+      }
+    }
+  }, [currentUser, userProfile, showToast]);
+
   // Reset scroll and update URL on view change
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -1398,14 +1408,7 @@ const App: React.FC = () => {
                     onboardingQuests={onboardingQuests}
                     loading={loading}
                     hasLoggedWorkouts={allLogs.length > 0}
-                    onManualComplete={async (qid) => {
-                      if (currentUser && userProfile) {
-                        const res = await completeManualQuest(currentUser, userProfile, qid);
-                        if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
-                          showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
-                        }
-                      }
-                    }}
+                    onManualComplete={handleManualQuestComplete}
                   />
                 </div>
               </div>
@@ -1667,14 +1670,7 @@ const App: React.FC = () => {
               onboardingQuests={onboardingQuests}
               loading={loading}
               hasLoggedWorkouts={allLogs.length > 0}
-              onManualComplete={async (qid) => {
-                if (currentUser && userProfile) {
-                  const res = await completeManualQuest(currentUser, userProfile, qid);
-                  if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
-                    showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
-                  }
-                }
-              }}
+              onManualComplete={handleManualQuestComplete}
             />
 
             {/* View Specific Widgets */}

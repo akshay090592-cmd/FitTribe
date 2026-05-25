@@ -902,6 +902,15 @@ const App: React.FC = () => {
     loadProfile(true);
   };
 
+  const handleManualQuestComplete = useCallback(async (qid: string) => {
+    if (currentUser && userProfile) {
+      const res = await completeManualQuest(currentUser, userProfile, qid);
+      if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
+        showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
+      }
+    }
+  }, [currentUser, userProfile, showToast]);
+
   const lastWorkout = React.useMemo(() => allLogs.find(l => l.type !== WorkoutType.COMMITMENT), [allLogs]);
 
   if (loading) {
@@ -1398,14 +1407,7 @@ const App: React.FC = () => {
                     onboardingQuests={onboardingQuests}
                     loading={loading}
                     hasLoggedWorkouts={allLogs.length > 0}
-                    onManualComplete={async (qid) => {
-                      if (currentUser && userProfile) {
-                        const res = await completeManualQuest(currentUser, userProfile, qid);
-                        if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
-                          showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
-                        }
-                      }
-                    }}
+                    onManualComplete={handleManualQuestComplete}
                   />
                 </div>
               </div>
@@ -1667,14 +1669,7 @@ const App: React.FC = () => {
               onboardingQuests={onboardingQuests}
               loading={loading}
               hasLoggedWorkouts={allLogs.length > 0}
-              onManualComplete={async (qid) => {
-                if (currentUser && userProfile) {
-                  const res = await completeManualQuest(currentUser, userProfile, qid);
-                  if (res && (res.earnedPoints > 0 || res.earnedXp > 0)) {
-                    showToast(`Quest Complete! +${res.earnedPoints} Pts, +${res.earnedXp} XP`, 'success');
-                  }
-                }
-              }}
+              onManualComplete={handleManualQuestComplete}
             />
 
             {/* View Specific Widgets */}

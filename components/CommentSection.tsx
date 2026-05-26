@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { User, SocialComment, UserProfile } from '../types';
 import { getComments, addComment, getCurrentProfile } from '../utils/storage';
 import { MessageCircle, Send } from 'lucide-react';
@@ -12,7 +12,7 @@ interface Props {
     logOwner: string;
 }
 
-export const CommentSection: React.FC<Props> = ({ logId, currentUser, logOwner }) => {
+export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOwner }) => {
     const [comments, setComments] = useState<SocialComment[]>([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -112,4 +112,4 @@ export const CommentSection: React.FC<Props> = ({ logId, currentUser, logOwner }
             </form>
         </div>
     );
-};
+});

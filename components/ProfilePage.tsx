@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutLog, UserGamificationState, Badge } from '../types';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
-import { Save, User as UserIcon, LogOut, FileText, Download, Trash2, History, Target, Calendar, Zap, Trophy, Star, Crown, MessageCircle, Edit, ArrowLeft, CheckCircle, TrendingUp, Map, AlertCircle, ChevronRight } from 'lucide-react';
+import { Save, User as UserIcon, LogOut, FileText, Download, Trash2, History, Target, Calendar, Zap, Trophy, Star, Crown, MessageCircle, Edit, ArrowLeft, CheckCircle, TrendingUp, Map, AlertCircle, ChevronRight, Activity, RefreshCw } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
-import { getUserLogs, deleteLog, updateProfile, getGamificationState, getPointLogs } from '../utils/storage';
+import { getUserLogs, deleteLog, updateProfile, getGamificationState, getPointLogs, syncGoogleMetrics } from '../utils/storage';
+import { connectGoogleHealth } from '../services/googleHealthService';
 import { convertToCSV, downloadCSV } from '../utils/exportUtils';
 import { HistoryModal } from './HistoryModal';
 import { BadgeModal } from './BadgeModal';
@@ -30,6 +31,7 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
     // Form State
     const [height, setHeight] = useState<number | string>(userProfile.height || '');
     const [weight, setWeight] = useState<number | string>(userProfile.weight || '');
+    const [fatPercentage, setFatPercentage] = useState<number | string>(userProfile.fatPercentage || '');
     const [gender, setGender] = useState<string>(userProfile.gender || 'male');
     const [dob, setDob] = useState<string>(userProfile.dob || '');
     const [weeklyGoal, setWeeklyGoal] = useState<number | string>(userProfile.weeklyGoal || 3);
@@ -115,11 +117,51 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
             ...userProfile,
             height: Number(height),
             weight: Number(weight),
+            fatPercentage: Number(fatPercentage),
             gender: gender as any,
             dob,
             weeklyGoal: Number(weeklyGoal),
         });
         setViewMode('passport'); // Switch back after save
+    };
+
+    const [syncingGoogle, setSyncingGoogle] = useState(false);
+
+    const handleConnectGoogle = () => {
+        connectGoogleHealth((token) => {
+            const updatedProfile: UserProfile = {
+                ...userProfile,
+                googleSyncConfig: {
+                    enabled: true,
+                    accessToken: token.access_token,
+                    expiry: Date.now() + (token.expires_in * 1000)
+                }
+            };
+            onSave(updatedProfile);
+            alert("Google Fit connected successfully!");
+        }, (err) => {
+            console.error(err);
+            alert("Failed to connect Google Fit");
+        });
+    };
+
+    const handleSyncGoogleMetrics = async () => {
+        setSyncingGoogle(true);
+        try {
+            const updated = await syncGoogleMetrics(userProfile);
+            if (updated) {
+                setWeight(updated.weight || '');
+                setFatPercentage(updated.fatPercentage || '');
+                onSave(updated);
+                alert("Body metrics synced from Google Fit!");
+            } else {
+                alert("No new metrics found or Google Fit not connected.");
+            }
+        } catch (e) {
+            alert("Sync failed");
+        } finally {
+            setSyncingGoogle(false);
+        }
     };
 
     const handleExport = () => {
@@ -396,6 +438,17 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
                             </div>
 
                             <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Body Fat (%)</label>
+                                <input
+                                    type="number"
+                                    value={fatPercentage}
+                                    onChange={(e) => setFatPercentage(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                                    placeholder="e.g. 15"
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Weight (kg)</label>
                                 <input
                                     type="number"
@@ -463,6 +516,34 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
                                 <InfoTooltip text="Calculated from your Date of Birth." color="text-white/70" />
                             </div>
                             <div className="text-3xl font-['Fredoka'] font-bold">{age || '--'}</div>
+                        </div>
+                    </div>
+
+                    {/* Google Health Sync Section */}
+                    <div className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-200 mb-6 relative overflow-hidden">
+                        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center mb-4">
+                            <Activity size={18} className="mr-2 text-emerald-500" /> Google Fit Sync
+                        </h3>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-500">Status: {userProfile.googleSyncConfig?.enabled ? 'Connected' : 'Not Connected'}</span>
+                                <button
+                                    onClick={handleConnectGoogle}
+                                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-all ${userProfile.googleSyncConfig?.enabled ? 'bg-slate-100 text-slate-600' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'}`}
+                                >
+                                    {userProfile.googleSyncConfig?.enabled ? 'Reconnect' : 'Connect Google Fit'}
+                                </button>
+                            </div>
+                            {userProfile.googleSyncConfig?.enabled && (
+                                <button
+                                    onClick={handleSyncGoogleMetrics}
+                                    disabled={syncingGoogle}
+                                    className="w-full bg-emerald-50 border border-emerald-100 text-emerald-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {syncingGoogle ? <RefreshCw className="mr-2 animate-spin" size={16} /> : <RefreshCw className="mr-2" size={16} />}
+                                    Sync Weight & Fat %
+                                </button>
+                            )}
                         </div>
                     </div>
 

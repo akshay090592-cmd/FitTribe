@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import { ExerciseSet, ProgressionSuggestion } from '../types';
 import { ChevronDown, ChevronUp, Trash2, Lightbulb, Sparkles, ArrowUpCircle, Info, X, Play, Square } from 'lucide-react';
 
@@ -103,7 +103,7 @@ const SwipeableSetRow: React.FC<{ children: React.ReactNode; onDelete: () => voi
     );
 };
 
-export const ExerciseCard: React.FC<Props> = ({
+export const ExerciseCard: React.FC<Props> = memo(({
     name,
     notes,
     sets,
@@ -488,4 +488,4 @@ export const ExerciseCard: React.FC<Props> = ({
             )}
         </>
     );
-};
+});

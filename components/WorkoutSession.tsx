@@ -41,6 +41,48 @@ interface AnalysisResult {
   nudge: string;
 }
 
+// BOLT: Memoized wrapper for ExerciseCard to prevent re-renders of all exercises
+// when the parent component's timer state updates.
+const WorkoutExerciseItem = React.memo(({
+  exercise,
+  record,
+  index,
+  isExpanded,
+  onToggle,
+  onChange,
+  onSetComplete
+}: {
+  exercise: any;
+  record: ExerciseRecord;
+  index: number;
+  isExpanded: boolean;
+  onToggle: (name: string) => void;
+  onChange: (index: number, sets: ExerciseSet[]) => void;
+  onSetComplete: (index: number, setIndex: number) => void;
+}) => {
+  const handleToggle = useCallback(() => onToggle(record.name), [onToggle, record.name]);
+  const handleChange = useCallback((sets: ExerciseSet[]) => onChange(index, sets), [onChange, index]);
+  const handleSetCompleteLocal = useCallback((setIndex: number) => onSetComplete(index, setIndex), [onSetComplete, index]);
+
+  return (
+    <ExerciseCard
+      name={record.name}
+      notes={exercise.notes}
+      sets={record.sets}
+      isExpanded={isExpanded}
+      onToggle={handleToggle}
+      defaultSets={exercise.defaultSets}
+      defaultRepsStr={exercise.defaultReps}
+      onChange={handleChange}
+      onSetComplete={handleSetCompleteLocal}
+      suggestion={record.suggestion}
+      image={exercise.image}
+      cues={exercise.cues}
+      trackingType={record.trackingType}
+    />
+  );
+});
+
 export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFinish, onCancel }) => {
   // --- Synchronous State Initialization Helpers ---
   const getSavedSession = () => {
@@ -296,9 +338,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   }, [step, plan.exercises]);
 
 
-  // ... (handleSetChange, handleSetComplete, toggleAccordion)
-
-  const handleSetChange = (index: number, sets: ExerciseSet[]) => {
+  const handleSetChange = useCallback((index: number, sets: ExerciseSet[]) => {
     setRecords(prev => {
       if (!prev || index < 0 || index >= prev.length) return prev;
       const newRecords = [...prev];
@@ -307,9 +347,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       }
       return newRecords;
     });
-  };
+  }, []);
 
-  const handleSetComplete = (exerciseIndex: number, setIndex: number) => {
+  const handleSetComplete = useCallback((exerciseIndex: number, setIndex: number) => {
     const currentEx = plan.exercises[exerciseIndex];
     let nextRest = currentEx.restSeconds || 60;
 
@@ -354,11 +394,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     // Explicitly reset and start the timer
     restTimer.reset(nextRest, true);
     setShowRestTimer(true);
-  };
+  }, [plan.exercises, restTimer, records]);
 
-  const toggleAccordion = (name: string) => {
+  const toggleAccordion = useCallback((name: string) => {
     setExpandedExerciseId(prev => prev === name ? null : name);
-  };
+  }, []);
 
   const clearAllWorkoutSessions = useCallback(() => {
     // BOLT: Robustly clear all workout-related storage to prevent stuck states
@@ -598,20 +638,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 if (!records[idx]) return null;
                 return (
                   <div key={records[idx].name} id={`exercise-${records[idx].name}`}>
-                    <ExerciseCard
-                      name={records[idx].name}
-                      notes={plan.exercises[idx].notes}
-                      sets={records[idx].sets}
+                    <WorkoutExerciseItem
+                      exercise={plan.exercises[idx]}
+                      record={records[idx]}
+                      index={idx}
                       isExpanded={expandedExerciseId === records[idx].name}
-                      onToggle={() => toggleAccordion(records[idx].name)}
-                      defaultSets={plan.exercises[idx].defaultSets}
-                      defaultRepsStr={plan.exercises[idx].defaultReps}
-                      onChange={(s) => handleSetChange(idx, s)}
-                      onSetComplete={(setIndex) => handleSetComplete(idx, setIndex)}
-                      suggestion={records[idx].suggestion}
-                      image={plan.exercises[idx].image}
-                      cues={plan.exercises[idx].cues}
-                      trackingType={records[idx].trackingType}
+                      onToggle={toggleAccordion}
+                      onChange={handleSetChange}
+                      onSetComplete={handleSetComplete}
                     />
                   </div>
                 );
@@ -623,20 +657,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       } else {
         elements.push(
           <div key={records[currentIndex].name} id={`exercise-${records[currentIndex].name}`}>
-            <ExerciseCard
-              name={records[currentIndex].name}
-              notes={plan.exercises[currentIndex].notes}
-              sets={records[currentIndex].sets}
+            <WorkoutExerciseItem
+              exercise={plan.exercises[currentIndex]}
+              record={records[currentIndex]}
+              index={currentIndex}
               isExpanded={expandedExerciseId === records[currentIndex].name}
-              onToggle={() => toggleAccordion(records[currentIndex].name)}
-              defaultSets={plan.exercises[currentIndex].defaultSets}
-              defaultRepsStr={plan.exercises[currentIndex].defaultReps}
-              onChange={(s) => handleSetChange(currentIndex, s)}
-              onSetComplete={(setIndex) => handleSetComplete(currentIndex, setIndex)}
-              suggestion={records[currentIndex].suggestion}
-              image={plan.exercises[currentIndex].image}
-              cues={plan.exercises[currentIndex].cues}
-              trackingType={records[currentIndex].trackingType}
+              onToggle={toggleAccordion}
+              onChange={handleSetChange}
+              onSetComplete={handleSetComplete}
             />
           </div>
         );

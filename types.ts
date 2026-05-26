@@ -20,9 +20,15 @@ export interface UserProfile {
   commitmentTime?: string; // ISO string
   height?: number; // cm
   weight?: number; // kg
+  fatPercentage?: number; // %
   gender?: 'male' | 'female' | 'other';
 
   dob?: string; // ISO string
+  googleSyncConfig?: {
+    enabled: boolean;
+    accessToken: string | null;
+    expiry: number | null;
+  };
   weeklyGoal?: number;
   customChallenges?: CustomChallenge[]; // Array of active challenges (one per type)
   completedChallenges?: CustomChallenge[];

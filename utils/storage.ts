@@ -1,6 +1,7 @@
 import { ExerciseSet, User, WorkoutLog, PRStats, UserGamificationState, GiftTransaction, UserProfile, SocialComment, TribePhoto, Tribe, WorkoutPlan, WorkoutTemplate } from '../types';
 import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './gamification';
 import { supabase, isSupabaseConfigured, isSessionValid } from './supabaseClient';
+import { sendWorkoutToGoogleFit, fetchBodyMetricsFromGoogleFit } from '../services/googleHealthService';
 
 // --- SECURITY & VALIDATION ---
 
@@ -220,7 +221,7 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, avatar_id, workout_templates, custom_challenge, completed_challenges')
+    .select('id, email, display_name, height, weight, fat_percentage, gender, dob, tribe_id, fitness_level, avatar_id, workout_templates, custom_challenge, completed_challenges, google_sync_config')
     .eq('id', userId)
     .single();
 
@@ -238,6 +239,8 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
     weight: data.weight,
     gender: data.gender,
     dob: data.dob,
+    fatPercentage: data.fat_percentage,
+    googleSyncConfig: data.google_sync_config,
     weeklyGoal: parseInt(localStorage.getItem(`weekly_goal_${data.id}`) || '0') || 3,
     customChallenges: Array.isArray(data.custom_challenge) ? data.custom_challenge : (data.custom_challenge ? [data.custom_challenge] : []),
     completedChallenges: data.completed_challenges || [],
@@ -458,8 +461,10 @@ export const updateProfile = async (profile: UserProfile) => {
   const { error } = await supabase.from('profiles').update({
     height: profile.height,
     weight: profile.weight,
+    fat_percentage: profile.fatPercentage,
     gender: profile.gender,
     dob: profile.dob,
+    google_sync_config: profile.googleSyncConfig,
     custom_challenge: profile.customChallenges,
     completed_challenges: profile.completedChallenges,
     workout_templates: profile.workoutTemplates
@@ -698,6 +703,11 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       return log.id;
     }
 
+    // Sync to Google Health if enabled
+    if (userProfile.googleSyncConfig?.enabled) {
+      await sendWorkoutToGoogleFit(log, userProfile);
+    }
+
     // Invalidate caches dependent on logs
     invalidateCache('logs'); // Clears logs_global and logs_user_...
     const logDateKey = log.date.split('T')[0];
@@ -779,7 +789,14 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
         payload: { log, userProfile }
       });
       return log.id;
-    } else if (!data || data.length === 0) {
+    } else {
+      // Sync to Google Health if enabled
+      if (userProfile.googleSyncConfig?.enabled) {
+        await sendWorkoutToGoogleFit(log, userProfile);
+      }
+    }
+
+    if (!data || data.length === 0) {
       console.warn("Log to update not found, falling back to INSERT new log", recordId);
       // If update found 0 rows, it means the ID doesn't exist (maybe deleted or RLS).
       // Fallback to inserting a new log.
@@ -932,6 +949,24 @@ export const calculateStats = async (user: User): Promise<PRStats> => {
 
   setInCache(cacheKey, stats);
   return stats;
+};
+
+// --- GOOGLE HEALTH SYNC ---
+
+export const syncGoogleMetrics = async (profile: UserProfile): Promise<UserProfile | null> => {
+  if (!profile.googleSyncConfig?.enabled) return null;
+
+  const metrics = await fetchBodyMetricsFromGoogleFit(profile);
+  if (!metrics) return null;
+
+  const updatedProfile = {
+    ...profile,
+    weight: metrics.weight ?? profile.weight,
+    fatPercentage: metrics.fatPercentage ?? profile.fatPercentage
+  };
+
+  await updateProfile(updatedProfile);
+  return updatedProfile;
 };
 
 // --- SOCIAL ---

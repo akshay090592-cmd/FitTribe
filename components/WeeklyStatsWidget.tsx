@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { WorkoutLog, UserProfile, WorkoutType } from '../types';
 import { Activity, Clock, Flame, Dumbbell } from 'lucide-react';
 import { startOfWeek } from 'date-fns';
@@ -10,7 +10,7 @@ interface Props {
   weeklyProgress: number;
 }
 
-export const WeeklyStatsWidget: React.FC<Props> = ({ logs, userProfile, onClick, weeklyProgress }) => {
+export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onClick, weeklyProgress }) => {
   const stats = useMemo(() => {
     const now = new Date();
     // Get start of week (Sunday) to match getTeamStats logic in gamification.ts
@@ -105,4 +105,4 @@ export const WeeklyStatsWidget: React.FC<Props> = ({ logs, userProfile, onClick,
       </div>
     </div>
   );
-};
+});

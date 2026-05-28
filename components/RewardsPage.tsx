@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { User, UserGamificationState, GiftItem, UserProfile, Badge, Theme } from '../types';
 import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs } from '../utils/storage';
 import { notifyOnGiftReceived } from '../services/notificationService';
@@ -20,7 +20,7 @@ interface Props {
   onFetching?: (fetching: boolean) => void;
 }
 
-export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible = true, onFetching }) => {
+export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisible = true, onFetching }) => {
   const [gameState, setGameState] = useState<Record<User, UserGamificationState> | null>(() => {
     try {
       const saved = localStorage.getItem('cache_gamification_state');
@@ -54,13 +54,15 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
     else onFetching?.(true);
 
     try {
-      const state = await getGamificationState();
-      const stats = await getTeamStats();
-      const str = await getStreaks(currentUser);
-      if (profile.tribeId) {
-        const members = await getTribeMembers(profile.tribeId);
-        setTribeMembers(members);
-      }
+      // BOLT: Parallelize independent data fetches and ensure cache alignment by passing tribeId
+      const [state, stats, str, members] = await Promise.all([
+        getGamificationState(profile.tribeId),
+        getTeamStats(profile.tribeId),
+        getStreaks(currentUser, profile.tribeId),
+        profile.tribeId ? getTribeMembers(profile.tribeId) : Promise.resolve([])
+      ]);
+
+      setTribeMembers(members);
 
       setGameState(state);
       localStorage.setItem('cache_gamification_state', JSON.stringify(state));
@@ -145,10 +147,8 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
     // Fetch real Point Logs from DB
     const logs = await getPointLogs(profile.id);
 
-    // Sort descending by date (DB usually does this but good to ensure)
-    const sortedLogs = logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    setPointsLogs(sortedLogs);
+    // BOLT: Removed redundant client-side sort as DB already returns DESC order
+    setPointsLogs(logs);
     setActivePointsPopup(true);
   };
 
@@ -457,4 +457,4 @@ export const RewardsPage: React.FC<Props> = ({ currentUser, profile, isVisible =
       />
     </div>
   );
-};
+});

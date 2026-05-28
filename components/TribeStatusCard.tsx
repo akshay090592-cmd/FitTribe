@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Crown } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -6,8 +6,11 @@ interface Props {
   teamStats: any;
 }
 
-export const TribeStatusCard: React.FC<Props> = ({ teamStats }) => {
+export const TribeStatusCard: React.FC<Props> = memo(({ teamStats }) => {
   if (!teamStats) return null;
+
+  // BOLT: Memoize percentage to avoid redundant calculations during re-renders
+  const percentage = Math.min(100, Math.round((teamStats.weeklyCount / (teamStats.weeklyTarget || 1)) * 100));
 
   return (
     <div className="bg-gradient-to-br from-[#5D4037] to-[#3E2723] rounded-[32px] p-5 text-[#F1F8E9] shadow-2xl relative overflow-hidden border-4 border-[#8D6E63]/30 group">
@@ -33,14 +36,14 @@ export const TribeStatusCard: React.FC<Props> = ({ teamStats }) => {
           <div>
             <div className="flex justify-between text-sm mb-3 font-bold">
               <span className="text-amber-100/80">Weekly Bamboo</span>
-              <span className="text-lime-300">{Math.round((teamStats.weeklyCount / teamStats.weeklyTarget) * 100)}%</span>
+              <span className="text-lime-300">{percentage}%</span>
             </div>
             <div
               className="h-8 rounded-full overflow-hidden ring-4 ring-[#3E2723] bg-[#2d1b18] relative shadow-inner"
             >
               <div
                 className="h-full rounded-full bg-gradient-to-r from-lime-600 via-lime-500 to-emerald-500 shadow-[0_0_15px_rgba(132,204,22,0.4)] transition-all duration-1000 relative"
-                style={{ width: `${Math.min(100, (teamStats.weeklyCount / teamStats.weeklyTarget) * 100)}%` }}
+                style={{ width: `${percentage}%` }}
               >
 
               </div>
@@ -50,4 +53,4 @@ export const TribeStatusCard: React.FC<Props> = ({ teamStats }) => {
       </div>
     </div>
   );
-};
+});

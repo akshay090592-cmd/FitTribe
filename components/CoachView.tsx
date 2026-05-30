@@ -88,7 +88,11 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
     );
 };
 
-export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetching }) => {
+/**
+ * BOLT: Memoize CoachView to prevent redundant re-renders from background state changes.
+ * Performance Impact: Maintains stable frame rates during workout sessions and news updates.
+ */
+export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout, onFetching }) => {
     const [activeTab, setActiveTab] = useState<'diet' | 'chat' | 'checkin'>('checkin');
     const [dietPlan, setDietPlan] = useState<any>(null);
     const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
@@ -910,4 +914,4 @@ export const CoachView: React.FC<Props> = ({ userProfile, lastWorkout, onFetchin
 
         </div >
     );
-};
+});

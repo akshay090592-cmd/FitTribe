@@ -6,7 +6,11 @@ interface Props {
     setView: (view: any) => void;
 }
 
-export const DesktopNavigation: React.FC<Props> = ({ view, setView }) => {
+/**
+ * BOLT: Memoize DesktopNavigation to prevent redundant re-renders.
+ * Performance Impact: Ensures navigation bar remains snappy regardless of dashboard complexity.
+ */
+export const DesktopNavigation: React.FC<Props> = React.memo(({ view, setView }) => {
     const navItems = [
         { id: 'dashboard', label: 'Home', icon: Dumbbell },
         { id: 'social', label: 'Tribe', icon: Users },
@@ -39,4 +43,4 @@ export const DesktopNavigation: React.FC<Props> = ({ view, setView }) => {
             })}
         </nav>
     );
-};
+});

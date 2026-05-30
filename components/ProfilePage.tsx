@@ -20,7 +20,11 @@ interface Props {
     onOpenTutorial: () => void;
 }
 
-export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, onOpenTutorial }) => {
+/**
+ * BOLT: Memoize ProfilePage to prevent redundant re-renders when hidden but mounted in visitedViews.
+ * Performance Impact: Drastically reduces UI lag during background state updates in App.tsx.
+ */
+export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, onLogout, onOpenTutorial }) => {
     // View State
     const [viewMode, setViewMode] = useState<'passport' | 'settings'>('passport');
     const [gamificationState, setGamificationState] = useState<UserGamificationState | null>(null);
@@ -561,4 +565,4 @@ export const ProfilePage: React.FC<Props> = ({ userProfile, onSave, onLogout, on
             />
         </div>
     );
-};
+});

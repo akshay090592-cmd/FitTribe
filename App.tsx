@@ -249,6 +249,12 @@ const App: React.FC = () => {
 
   const [activeStatsPopup, setActiveStatsPopup] = useState<{ type: 'workouts' | 'streak' | 'weekly', isOpen: boolean, xpBreakdown?: Map<string, any> }>({ type: 'workouts', isOpen: false });
   const [allLogs, setAllLogs] = useState<any[]>([]); // Cache logs for popups
+
+  // BOLT: Stabilize filtered logs for the Leaderboard widget to prevent redundant re-renders
+  const leaderboardLogs = React.useMemo(() =>
+    allLogs.filter(l => l.type !== WorkoutType.COMMITMENT),
+    [allLogs]
+  );
   const [quests, setQuests] = useState<any[]>([]);
   const [onboardingQuests, setOnboardingQuests] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -1676,7 +1682,7 @@ const App: React.FC = () => {
             <React.Suspense fallback={null}>
               {view === 'social' && allGamificationState && (
                 <Leaderboard
-                  logs={allLogs.filter(l => l.type !== WorkoutType.COMMITMENT)}
+                  logs={leaderboardLogs}
                   gamificationState={allGamificationState}
                   members={tribeMembers}
                   avatarMap={avatarMap}

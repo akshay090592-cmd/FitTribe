@@ -37,6 +37,40 @@ const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda';
 };
 
+/**
+ * BOLT: O(N) merge of two pre-sorted feed item arrays.
+ * Since logs and gifts are already sorted DESC by the database,
+ * we can avoid O(N log N) sorting and intermediate allocations.
+ */
+const mergeFeedItems = (arr1: FeedItem[], arr2: FeedItem[]): FeedItem[] => {
+    const result: FeedItem[] = [];
+    let i = 0;
+    let j = 0;
+
+    while (i < arr1.length && j < arr2.length) {
+        // Compare ISO strings directly for DESC order
+        if (arr1[i].date.localeCompare(arr2[j].date) >= 0) {
+            result.push(arr1[i]);
+            i++;
+        } else {
+            result.push(arr2[j]);
+            j++;
+        }
+    }
+
+    // Append remaining items
+    while (i < arr1.length) {
+        result.push(arr1[i]);
+        i++;
+    }
+    while (j < arr2.length) {
+        result.push(arr2[j]);
+        j++;
+    }
+
+    return result;
+};
+
 export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, isVisible = true, onFetching }) => {
     const [feedItems, setFeedItems] = useState<FeedItem[]>(() => {
         try {
@@ -106,10 +140,11 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
             });
             setAvatarMap(avatars);
 
-            const combined: FeedItem[] = [
-                ...initialLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
-                ...initialGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
-            ].sort((a, b) => b.date.localeCompare(a.date));
+            // BOLT: Optimize merging of pre-sorted logs and gifts using O(N) merge logic
+            const combined = mergeFeedItems(
+                initialLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
+                initialGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
+            );
 
             setCommentsMap(commentCounts);
 
@@ -247,17 +282,19 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                 hasMoreGifts ? getGiftTransactions(profile.tribeId, nextPage, PAGE_SIZE) : Promise.resolve([])
             ]);
 
-            const newItems: FeedItem[] = [
-                ...newLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
-                ...newGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
-            ];
+            if (newLogs.length > 0 || newGifts.length > 0) {
+                // BOLT: Optimize merging of pre-sorted lists during pagination
+                const newSortedItems = mergeFeedItems(
+                    newLogs.map(l => ({ type: 'log' as const, data: l, date: l.date })),
+                    newGifts.map(g => ({ type: 'gift' as const, data: g, date: g.date }))
+                );
 
-            if (newItems.length > 0) {
                 setFeedItems(prev => {
-                    const combined = [...prev, ...newItems].sort((a, b) => b.date.localeCompare(a.date));
+                    const combined = mergeFeedItems(prev, newSortedItems);
                     const seen = new Set();
+                    // O(N) deduplication
                     return combined.filter(item => {
-                        const id = item.type === 'log' ? item.data.id : item.data.id;
+                        const id = item.data.id;
                         const key = `${item.type}-${id}`;
                         if (seen.has(key)) return false;
                         seen.add(key);
@@ -290,14 +327,24 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
         return { logs: userLogs, breakdown };
     }, [selectedLeaderboardUser, feedItems]);
 
-    // Optimize Leaderboard Logs: Memoize to prevent re-calculations on every render (e.g. reactions)
-    const leaderboardLogs = useMemo(() =>
-        feedItems
-            .filter(i => i.type === 'log')
-            // Leaderboard should NOT count any commitments (active or failed)
-            .filter(i => (i.data as WorkoutLog).type !== WorkoutType.COMMITMENT)
-            .map(i => ({ ...i.data, parsedDate: new Date(i.date) }) as WorkoutLog & { parsedDate?: Date }),
-        [feedItems]);
+    // BOLT: Optimize leaderboard log processing using a single-pass loop
+    // Reduces array iterations and allocations from O(3N) to O(N).
+    const leaderboardLogs = useMemo(() => {
+        const result: (WorkoutLog & { parsedDate?: Date })[] = [];
+        for (let i = 0; i < feedItems.length; i++) {
+            const item = feedItems[i];
+            if (item.type === 'log') {
+                const log = item.data as WorkoutLog;
+                if (log.type !== WorkoutType.COMMITMENT) {
+                    result.push({
+                        ...log,
+                        parsedDate: new Date(log.date)
+                    });
+                }
+            }
+        }
+        return result;
+    }, [feedItems]);
 
     if (loading) return <div className="p-10 text-center text-emerald-500 font-bold animate-pulse">Loading Jungle News...</div>;
 

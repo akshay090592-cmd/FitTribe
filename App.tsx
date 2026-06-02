@@ -21,6 +21,7 @@ import { getDailyQuests, getOnboardingQuests, completeManualQuest } from './util
 import { NotificationPopup } from './components/NotificationPopup';
 import { getAvatarPath } from './utils/avatar';
 import { StatsDetailPopup } from './components/StatsDetailPopup';
+import { formatTimeAgo, compareISODates } from './utils/dateUtils';
 import { TutorialPage } from './components/TutorialPage';
 import { HistoryModal } from './components/HistoryModal';
 import { formatDistanceToNow } from 'date-fns';
@@ -890,8 +891,8 @@ const App: React.FC = () => {
           logsToUse = await getStreakLogs(currentUser, userProfile?.tribeId);
         } else {
           const logs = await getUserLogs(currentUser, userProfile?.tribeId);
-          // Optimization: Use localeCompare for sorting ISO date strings
-          logsToUse = logs.sort((a, b) => b.date.localeCompare(a.date));
+          // Optimization: Use compareISODates for sorting ISO date strings
+          logsToUse = logs.sort((a, b) => compareISODates(b.date, a.date));
         }
 
         const breakdown = calculateLogXPBreakdown(logsToUse);

@@ -13,6 +13,17 @@ export const weekdayLongFormatter = new Intl.DateTimeFormat(undefined, { weekday
 export const shortDateFormatter = new Intl.DateTimeFormat(undefined); // Default toLocaleDateString behavior
 
 /**
+ * BOLT: High-performance string-based comparison for ISO-8601 date strings.
+ * Significantly faster than localeCompare for sorting and range checks.
+ * Returns: 1 if a > b, -1 if a < b, 0 if equal.
+ */
+export const compareISODates = (a: string, b: string): number => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+};
+
+/**
  * Formats a date string into a relative time string (e.g., "Just now", "2h ago", "Yesterday", "2d ago").
  * Uses calendar days for "Yesterday" and "Xd ago" to ensure consistency with the calendar view
  * and avoid timezone/time-of-day confusion.

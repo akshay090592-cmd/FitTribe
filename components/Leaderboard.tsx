@@ -6,7 +6,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { getAvatarPath } from '../utils/avatar';
 
 interface Props {
-    logs: (WorkoutLog & { parsedDate?: Date })[];
+    logs: WorkoutLog[];
     gamificationState: Record<string, UserGamificationState>;
     members: string[];
     avatarMap?: Record<string, string>;
@@ -23,11 +23,14 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
         startOfWeek.setHours(0, 0, 0, 0);
+        const startOfWeekISO = startOfWeek.toISOString();
 
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const startOfMonthISO = startOfMonth.toISOString();
 
         // Intermediate storage to group logs by user
-        const groupedLogs: Record<string, (WorkoutLog & { parsedDate?: Date })[]> = {};
+        const groupedLogs: Record<string, WorkoutLog[]> = {};
         members.forEach(user => {
             groupedLogs[user] = [];
         });
@@ -37,10 +40,9 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
             // Skip if user not in our known list (safety)
             if (!groupedLogs[l.user]) return;
 
-            const date = l.parsedDate || new Date(l.date);
-
-            if (timeframe === 'weekly' && date < startOfWeek) return;
-            if (timeframe === 'monthly' && date < startOfMonth) return;
+            // BOLT: Use ISO string comparisons to avoid repeated Date object allocation in filtering loop
+            if (timeframe === 'weekly' && l.date < startOfWeekISO) return;
+            if (timeframe === 'monthly' && l.date < startOfMonthISO) return;
             // Lifetime includes all
 
             groupedLogs[l.user].push(l);

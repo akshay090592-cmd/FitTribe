@@ -1,6 +1,7 @@
 import { ExerciseSet, User, WorkoutLog, PRStats, UserGamificationState, GiftTransaction, UserProfile, SocialComment, TribePhoto, Tribe, WorkoutPlan, WorkoutTemplate } from '../types';
 import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './gamification';
 import { supabase, isSupabaseConfigured, isSessionValid } from './supabaseClient';
+import { compareISODates } from './dateUtils';
 
 // --- SECURITY & VALIDATION ---
 
@@ -501,7 +502,7 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
 
   if (cached) {
     if (offlineLogs.length === 0) return [...cached];
-    return [...offlineLogs, ...cached].sort((a, b) => b.date.localeCompare(a.date));
+    return [...offlineLogs, ...cached].sort((a, b) => compareISODates(b.date, a.date));
   }
 
   if (!navigator.onLine) {
@@ -559,7 +560,7 @@ export const getLogs = async (tribeId?: string, page?: number, pageSize?: number
       }
     });
 
-    return allLogs.sort((a, b) => b.date.localeCompare(a.date));
+    return allLogs.sort((a, b) => compareISODates(b.date, a.date));
   });
 };
 
@@ -568,6 +569,9 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayISO = today.toISOString();
+  const tomorrowISO = tomorrow.toISOString();
 
   // 1. Offline logs (filtered)
   const offlineQueue = getOfflineQueue();
@@ -579,32 +583,25 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
       user: item.payload.userProfile.displayName,
       isOffline: true
     }))
-    .filter(log => {
-      const logDate = new Date(log.date);
-      return logDate >= today && logDate < tomorrow;
-    });
+    .filter(log => log.date >= todayISO && log.date < tomorrowISO);
 
-  const cacheKey = `logs_date_${today.toISOString().split('T')[0]}`;
+  const cacheKey = `logs_date_${todayISO.split('T')[0]}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
 
   if (cached) {
     if (offlineLogs.length === 0) return [...cached];
-    return [...offlineLogs, ...cached].sort((a, b) => b.date.localeCompare(a.date));
+    return [...offlineLogs, ...cached].sort((a, b) => compareISODates(b.date, a.date));
   }
 
   // OPTIMIZATION: Check global cache first
   const globalCached = getFromCache<WorkoutLog[]>('logs_global');
   if (globalCached) {
-    const todaysGlobal = globalCached.filter(log => {
-      const logDate = new Date(log.date);
-      return logDate >= today && logDate < tomorrow;
-    });
+    const todaysGlobal = globalCached.filter(log => log.date >= todayISO && log.date < tomorrowISO);
 
     setInCache(cacheKey, todaysGlobal);
 
     if (offlineLogs.length === 0) return [...todaysGlobal];
-    // Optimization: Use localeCompare on ISO strings to avoid O(N) Date object allocation
-    return [...offlineLogs, ...todaysGlobal].sort((a, b) => b.date.localeCompare(a.date));
+    return [...offlineLogs, ...todaysGlobal].sort((a, b) => compareISODates(b.date, a.date));
   }
 
   if (!navigator.onLine) {
@@ -614,8 +611,8 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
   const { data, error } = await supabase
     .from('workout_logs')
     .select('id, user_id, display_name, log_data, date')
-    .gte('date', today.toISOString())
-    .lt('date', tomorrow.toISOString())
+    .gte('date', todayISO)
+    .lt('date', tomorrowISO)
     .order('date', { ascending: false });
 
   if (error) {
@@ -631,7 +628,7 @@ export const getTodaysLogs = async (): Promise<WorkoutLog[]> => {
 
   setInCache(cacheKey, logs);
 
-  return [...offlineLogs, ...logs].sort((a, b) => b.date.localeCompare(a.date));
+  return [...offlineLogs, ...logs].sort((a, b) => compareISODates(b.date, a.date));
 };
 
 export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promise<string | number | undefined> => {

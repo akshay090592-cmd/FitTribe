@@ -1,6 +1,7 @@
 import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, WorkoutType } from '../types';
 import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions, getTribeMembers } from './storage';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { compareISODates } from './dateUtils';
 
 export const BADGES_DB: Badge[] = [
   { id: 'first_step', title: 'First Step', description: 'Complete your first workout', icon: 'Footprints', rarity: 'common' },
@@ -84,7 +85,7 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
   // BOLT: Optimization - if already sorted desc, just reverse (O(N) vs O(N log N))
   const sortedLogs = options.isSortedDesc
     ? [...logs].reverse()
-    : [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
   let lastLogDate: Date | null = null;
@@ -148,7 +149,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
   if (options.isSortedDesc) {
     sortedLogs = [...logs].reverse();
   } else {
-    sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    sortedLogs = [...logs].sort((a, b) => compareISODates(a.date, b.date));
   }
 
   let currentStreak = 0;
@@ -239,7 +240,7 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
   });
 
   if (!isSorted) {
-    validLogs.sort((a, b) => b.date.localeCompare(a.date));
+    validLogs.sort((a, b) => compareISODates(b.date, a.date));
   }
 
   if (validLogs.length === 0) return returnLogs ? [] : 0;
@@ -739,7 +740,7 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
   // Sort by date ascending to replay history, excluding commitments for stats calculation
   const sortedLogs = allLogs
     .filter(l => l.type !== WorkoutType.COMMITMENT)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareISODates(a.date, b.date));
 
   // Reset State
   const userState: UserGamificationState = {
@@ -920,7 +921,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   const remainingLogs = await getUserLogs(userProfile.displayName as User);
   const sortedLogs = remainingLogs
     .filter(l => l.type !== WorkoutType.COMMITMENT)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareISODates(a.date, b.date));
 
   const keptBadges: string[] = [];
 

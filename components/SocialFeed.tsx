@@ -3,6 +3,7 @@ import { User, WorkoutLog, GiftTransaction, UserProfile, WorkoutType, Tribe } fr
 import { getLogs, getAllReactions, toggleReaction, getGiftTransactions, getCommentCounts, deleteLog, getTribeMembers, getTribe } from '../utils/storage';
 import { getTeamStats, GIFT_ITEMS, calculateMood, calculateLogXPBreakdown } from '../utils/gamification';
 import { getGamificationState } from '../utils/storage';
+import { compareISODates } from '../utils/dateUtils';
 import { updateQuestProgress } from '../utils/questUtils';
 import { notifyNudge } from '../services/notificationService';
 import { Bell, MessageCircle, Trash2, Users, Activity, Filter, ChevronDown, Repeat, Copy, Share2 } from 'lucide-react';
@@ -49,7 +50,7 @@ const mergeFeedItems = (arr1: FeedItem[], arr2: FeedItem[]): FeedItem[] => {
 
     while (i < arr1.length && j < arr2.length) {
         // Compare ISO strings directly for DESC order
-        if (arr1[i].date.localeCompare(arr2[j].date) >= 0) {
+        if (compareISODates(arr1[i].date, arr2[j].date) >= 0) {
             result.push(arr1[i]);
             i++;
         } else {
@@ -330,16 +331,13 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
     // BOLT: Optimize leaderboard log processing using a single-pass loop
     // Reduces array iterations and allocations from O(3N) to O(N).
     const leaderboardLogs = useMemo(() => {
-        const result: (WorkoutLog & { parsedDate?: Date })[] = [];
+        const result: WorkoutLog[] = [];
         for (let i = 0; i < feedItems.length; i++) {
             const item = feedItems[i];
             if (item.type === 'log') {
                 const log = item.data as WorkoutLog;
                 if (log.type !== WorkoutType.COMMITMENT) {
-                    result.push({
-                        ...log,
-                        parsedDate: new Date(log.date)
-                    });
+                    result.push(log);
                 }
             }
         }

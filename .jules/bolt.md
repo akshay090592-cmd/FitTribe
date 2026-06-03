@@ -21,3 +21,7 @@
 ## 2026-05-12 - App-wide Date Formatting Optimization
 **Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
 **Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.
+
+## 2026-06-03 - Timezone-Safe Early Exit in Hot Loops
+**Learning:** Implementing an early exit in log processing loops based on `new Date().toISOString()` can be dangerous if not buffered. Since `toISOString()` includes the current time, a naive check against "yesterday" (e.g., `new Date(now - 24h).toISOString()`) will skip any logs from yesterday morning if it is currently afternoon.
+**Action:** Always use a generous buffer (e.g., 48 hours) when implementing early breaks for "recent" activity checks, or normalize both operands to midnight UTC to ensure no data is lost across timezone boundaries or time-of-day shifts.

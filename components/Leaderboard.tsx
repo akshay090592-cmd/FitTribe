@@ -35,18 +35,20 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
             groupedLogs[user] = [];
         });
 
-        // Single pass filtering O(N) instead of O(U*N)
-        logs.forEach(l => {
-            // Skip if user not in our known list (safety)
-            if (!groupedLogs[l.user]) return;
+        // BOLT: Optimize filtering by using an early break.
+        // Since logs are sorted DESC, we can stop processing once they are older than the timeframe cutoff.
+        const cutoffISO = timeframe === 'weekly' ? startOfWeekISO : (timeframe === 'monthly' ? startOfMonthISO : null);
 
-            // BOLT: Use ISO string comparisons to avoid repeated Date object allocation in filtering loop
-            if (timeframe === 'weekly' && l.date < startOfWeekISO) return;
-            if (timeframe === 'monthly' && l.date < startOfMonthISO) return;
-            // Lifetime includes all
+        // Single pass filtering O(N) instead of O(U*N)
+        for (const l of logs) {
+            // Early exit if logs are older than the timeframe
+            if (cutoffISO && l.date < cutoffISO) break;
+
+            // Skip if user not in our known list (safety)
+            if (!groupedLogs[l.user]) continue;
 
             groupedLogs[l.user].push(l);
-        });
+        }
 
         const stats: Record<string, { xp: number, count: number }> = {};
 

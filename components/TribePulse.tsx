@@ -58,11 +58,18 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
             memberFlags[m] = { workedToday: false, committedToday: false, committedTomorrow: false, committedYesterday: false, workedYesterday: false };
         });
 
-        // Single pass over logs to populate flags for all tribe members
-        allLogs.forEach(log => {
-            if (!memberSet.has(log.user)) return;
+        // BOLT Optimization: Early exit for old logs.
+        // Since allLogs are sorted DESC, we stop processing once we hit logs older than 48h ago.
+        // This ensures we catch all "yesterday" logs across timezones while skipping years of history.
+        const cutoff = new Date(now.getTime() - (48 * 60 * 60 * 1000)).toISOString();
 
-            const logDateStr = new Date(log.date).toDateString();
+        // Single pass over logs to populate flags for all tribe members
+        for (const log of allLogs) {
+            if (log.date < cutoff) break;
+            if (!memberSet.has(log.user)) continue;
+
+            const logDate = new Date(log.date);
+            const logDateStr = logDate.toDateString();
             const isCommitment = log.type === WorkoutType.COMMITMENT;
             const flags = memberFlags[log.user];
 
@@ -75,7 +82,7 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
                 if (isCommitment) flags.committedYesterday = true;
                 else flags.workedYesterday = true;
             }
-        });
+        }
 
         const pulseStatus: Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'> = {};
 

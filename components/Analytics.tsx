@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroup, MUSCLE_GROUPS } from '../utils/muscleMapping';
-import { monthDayFormatter, monthYearFormatter } from '../utils/dateUtils';
+import { monthDayFormatter, monthYearFormatter, compareISODates } from '../utils/dateUtils';
 
 import { Calendar } from './Calendar';
 
@@ -68,11 +68,13 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
 
   // BOLT: Refactor getChartData to minimize redundant operations and support optional exercise filtering
+  // BOLT: Added isFrequencyOnly to skip expensive volume and PR calculations when not needed
   const getChartData = (
     currentViewMode: 'weekly' | 'monthly',
     currentVersusUser: User | null,
     currentRivalLogs: any[],
-    targetExercise?: string
+    targetExercise?: string,
+    isFrequencyOnly: boolean = false
   ) => {
     if (!logs.length && (!currentVersusUser || !currentRivalLogs.length)) return [];
 
@@ -116,12 +118,16 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
         let logVolume = 0;
         const exercises = log.exercises || [];
-        for (let j = 0; j < exercises.length; j++) {
-          const ex = exercises[j];
-          const sets = ex.sets || [];
-          for (let k = 0; k < sets.length; k++) {
-            const s = sets[k];
-            if (s.completed) logVolume += (s.weight * s.reps);
+
+        // BOLT: Skip volume calculations if only frequency is needed
+        if (!isFrequencyOnly) {
+          for (let j = 0; j < exercises.length; j++) {
+            const ex = exercises[j];
+            const sets = ex.sets || [];
+            for (let k = 0; k < sets.length; k++) {
+              const s = sets[k];
+              if (s.completed) logVolume += (s.weight * s.reps);
+            }
           }
         }
 
@@ -132,7 +138,8 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           grouped[key].totalVolume += logVolume;
           grouped[key].workoutCount += 1;
 
-          if (targetExercise) {
+          // BOLT: Skip PR trend calculations if only frequency is needed
+          if (targetExercise && !isFrequencyOnly) {
             for (let j = 0; j < exercises.length; j++) {
               const ex = exercises[j];
               if (ex.name !== targetExercise) continue;
@@ -166,7 +173,8 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       processLogs(currentRivalLogs, true);
     }
 
-    return Object.values(grouped).sort((a, b) => a.sortKey.localeCompare(b.sortKey)).map(data => {
+    // BOLT: Use high-performance string comparison instead of localeCompare
+    return Object.values(grouped).sort((a, b) => compareISODates(a.sortKey, b.sortKey)).map(data => {
       return {
         label: data.label,
         avgVolume: data.workoutCount > 0 ? Math.round(data.totalVolume / data.workoutCount) : 0,
@@ -181,9 +189,9 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   };
 
   const chartData = useMemo(() => getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : [], selectedExercise), [logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
-  // BOLT: Remove selectedExercise from dependency array because frequency chart doesn't use it.
-  // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
-  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : []), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
+  // BOLT: Pass isFrequencyOnly=true to skip expensive volume math for the frequency chart.
+  // This ensures the frequency bar chart does not perform redundant per-exercise volume/PR calculations.
+  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
 
   const muscleData = useMemo(() => {
     if (!logs.length) return [];

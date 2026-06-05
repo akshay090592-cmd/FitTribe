@@ -287,7 +287,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   // Persistence Effect
   useEffect(() => {
-    if (!loading && records.length > 0 && step !== 'analysis') {
+    if (!loading && records.length > 0 && step !== 'analysis' && !isFinishing) {
       const stateToSave = {
         records,
         step,
@@ -302,7 +302,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       };
       localStorage.setItem(`workout_session_${plan.id}`, JSON.stringify(stateToSave));
     }
-  }, [records, step, warmupDone, cooldownDone, workoutTimer.seconds, loading, plan.id, showRestTimer, restDuration, restTimer.seconds, expandedExerciseId]);
+  }, [records, step, warmupDone, cooldownDone, workoutTimer.seconds, loading, plan.id, showRestTimer, restDuration, restTimer.seconds, expandedExerciseId, isFinishing]);
 
   useEffect(() => {
     if (step !== 'analysis') {
@@ -476,6 +476,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const finishWorkout = async (feedback?: WorkoutFeedback) => {
     setIsFinishing(true);
     workoutTimer.pause();
+    restTimer.pause();
     // Update local preference for next workout to be the alternate one
     if (plan.id === WorkoutType.A) {
       localStorage.setItem('preferred_workout_type', WorkoutType.B);

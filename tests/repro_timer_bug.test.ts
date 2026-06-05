@@ -58,4 +58,19 @@ describe('useTimer Bug Reproduction', () => {
         // It should be 101.
         expect(result.current.seconds).toBe(101);
     });
+
+    it('should correctly initialize stopwatch with initialSeconds and count up', () => {
+        const { result } = renderHook(() => useTimer({ timerId: 'bug-repro-initial', initialSeconds: 1200, autoStart: true, type: 'stopwatch' }));
+
+        // Initially it should be 1200
+        expect(result.current.seconds).toBe(1200);
+
+        // Advance time by 1 second
+        act(() => {
+            vi.advanceTimersByTime(1000);
+        });
+
+        // It should be 1201, NOT 1
+        expect(result.current.seconds).toBe(1201);
+    });
 });

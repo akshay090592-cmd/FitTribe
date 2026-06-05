@@ -47,7 +47,7 @@ export const useTimer = ({
         return {
             seconds: initialSeconds,
             isActive: autoStart,
-            startTime: autoStart ? Date.now() : null,
+            startTime: autoStart ? (type === 'stopwatch' ? Date.now() - (initialSeconds * 1000) : Date.now()) : null,
             pauseTime: null,
         };
     });
@@ -158,7 +158,11 @@ export const useTimer = ({
     const start = useCallback(() => {
         if (!state.isActive) {
             const elapsedSincePause = state.pauseTime ? Date.now() - state.pauseTime : 0;
-            const newStartTime = state.startTime ? state.startTime + elapsedSincePause : Date.now();
+            let newStartTime = state.startTime ? state.startTime + elapsedSincePause : Date.now();
+            
+            if (!state.startTime && type === 'stopwatch') {
+                newStartTime = Date.now() - (state.seconds * 1000);
+            }
 
             setState(prev => ({
                 ...prev,
@@ -167,7 +171,7 @@ export const useTimer = ({
                 pauseTime: null
             }));
         }
-    }, [state.isActive, state.pauseTime, state.startTime]);
+    }, [state.isActive, state.pauseTime, state.startTime, type, state.seconds]);
 
     const pause = useCallback(() => {
         if (state.isActive) {

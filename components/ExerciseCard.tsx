@@ -309,7 +309,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                             )}
                         </div>
 
-                        <div className="flex-shrink-0 text-emerald-300 bg-emerald-50 p-2 rounded-full mt-0.5">
+                        <div className="flex-shrink-0 text-emerald-300 bg-emerald-50/30 p-2 rounded-full mt-0.5">
                             {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                         </div>
                     </div>
@@ -338,7 +338,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                     </div>
                                     <button
                                         onClick={applySuggestion}
-                                        className="bg-white text-emerald-600 p-2 rounded-xl shadow-sm hover:bg-emerald-50 transition-colors active:scale-95 flex flex-col items-center justify-center ml-3 min-w-[60px]"
+                                        className="bg-white text-emerald-600 p-2 rounded-xl shadow-sm hover:bg-emerald-50/30 transition-colors active:scale-95 flex flex-col items-center justify-center ml-3 min-w-[60px]"
                                         aria-label="Apply suggested progression"
                                     >
                                         <ArrowUpCircle size={20} className="mb-0.5" />
@@ -375,7 +375,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
 
                                         {/* Inputs */}
                                         <div className={`flex-grow grid ${trackingType === 'duration' ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
-                                            <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                            <div className="flex items-center bg-emerald-50/30 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
                                                 <input
                                                     type="number"
                                                     inputMode="decimal"
@@ -391,7 +391,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
 
                                             {trackingType === 'duration' ? (
                                                 <div className="flex-grow grid grid-cols-[1fr_auto] gap-2 items-center col-span-2">
-                                                    <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                                    <div className="flex items-center bg-emerald-50/30 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
                                                         <input
                                                             type="text"
                                                             className="w-full bg-transparent font-bold text-emerald-800 text-center text-xl outline-none font-['Fredoka']"
@@ -411,7 +411,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center bg-emerald-50/50 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
+                                                <div className="flex items-center bg-emerald-50/30 rounded-xl px-2 py-2 relative border border-emerald-100 focus-within:ring-2 focus-within:ring-emerald-200 transition-shadow">
                                                     <input
                                                         type="number"
                                                         inputMode="decimal"
@@ -433,7 +433,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
 
                         <button
                             onClick={handleAddSet}
-                            className="w-full mt-4 py-3 border-2 border-dashed border-emerald-200 text-emerald-400 rounded-2xl text-sm font-bold hover:bg-emerald-50 hover:border-emerald-300 transition-colors flex items-center justify-center"
+                            className="w-full mt-4 py-3 border-2 border-dashed border-emerald-200 text-emerald-400 rounded-2xl text-sm font-bold hover:bg-emerald-50/30 hover:border-emerald-300 transition-colors flex items-center justify-center"
                         >
                             <span className="mr-2 text-lg">+</span> Add another set
                         </button>
@@ -469,7 +469,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                             </h4>
                             <ul className="space-y-2">
                                 {cues?.map((cue, i) => (
-                                    <li key={i} className="flex items-start text-sm text-slate-600 bg-emerald-50/50 p-3 rounded-xl">
+                                    <li key={i} className="flex items-start text-sm text-slate-600 bg-emerald-50/30 p-3 rounded-xl">
                                         <span className="mr-2 font-bold text-emerald-600 bg-emerald-200 w-5 h-5 flex items-center justify-center rounded-full text-xs flex-shrink-0 mt-0.5 shadow-sm">{i + 1}</span>
                                         <span>{cue}</span>
                                     </li>

@@ -182,7 +182,7 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                             Community fitness replaces motivation with <strong>momentum and accountability</strong>. When your tribe is active, when challenges are live, when your streak is visible—you don't need motivation. You have structure, expectations, and social pull.
                         </p>
 
-                        <div className="bg-emerald-50 rounded-2xl p-6 my-6">
+                        <div className="bg-emerald-50/30 rounded-2xl p-6 my-6">
                             <h4 className="text-lg font-bold text-emerald-900 mb-3">The FitTribe Solution</h4>
                             <ul className="space-y-3 text-emerald-800">
                                 <li className="flex items-start">
@@ -246,7 +246,7 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                                     <li>❌ Specific location/hours</li>
                                 </ul>
                             </div>
-                            <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-6">
+                            <div className="bg-emerald-50/30 border-2 border-emerald-500 rounded-2xl p-6">
                                 <h4 className="font-bold text-emerald-900 mb-2">FitTribe Community</h4>
                                 <ul className="text-sm text-emerald-800 space-y-1">
                                     <li>✓ Work out anywhere, anytime</li>
@@ -287,7 +287,7 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                             Community fitness transforms exercise from a solo chore into a <strong>social game</strong>. With challenges, leaderboards, badges, XP systems, and varied workout types, every session feels different.
                         </p>
 
-                        <div className="bg-emerald-50 rounded-2xl p-6 my-6">
+                        <div className="bg-emerald-50/30 rounded-2xl p-6 my-6">
                             <h4 className="text-lg font-bold text-emerald-900 mb-4">Gamification Elements That Fight Boredom</h4>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div>
@@ -338,7 +338,7 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                             Community platforms like FitTribe provide <strong>guided pathways</strong> that remove decision fatigue. Instead of needing to design your own perfect program, you follow structured plans (Plan A, Plan B) or get AI-generated custom workouts based on your level.
                         </p>
 
-                        <div className="bg-emerald-50 rounded-2xl p-6 my-6">
+                        <div className="bg-emerald-50/30 rounded-2xl p-6 my-6">
                             <h4 className="text-lg font-bold text-emerald-900 mb-3">The Beginner-Friendly Approach</h4>
                             <ol className="space-y-3 text-emerald-800">
                                 <li className="flex items-start">
@@ -389,7 +389,7 @@ export const Blog5: React.FC<Blog5Props> = ({ onNavigate, onScrollToAuth }) => {
                             This is perhaps the most powerful barrier that community fitness destroys: <strong>you're never alone</strong>. Your tribe is there on the hard days, the victory days, and every day in between.
                         </p>
 
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">💚 Real Impact</p>
                             <p className="text-emerald-800 italic">
                                 "The difference between quitting and continuing often comes down to one encouraging comment from a tribe member. Knowing people care about your progress—even if you've never met them in person—changes everything." - Sarah M., Tribe Leader

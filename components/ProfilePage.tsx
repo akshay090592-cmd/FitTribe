@@ -195,14 +195,14 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                 <>
                     {/* Passport View */}
                     <div className="relative mb-6 text-center">
-                        <h2 className="text-2xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
+                        <h2 className="text-2xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
                             Jungle Passport
                         </h2>
-                        <p className="text-[#5D4037] font-bold text-[10px] uppercase tracking-widest mt-0.5">Your Identity Card</p>
+                        <p className="text-emerald-600/60 font-extrabold text-[10px] uppercase tracking-[0.2em] mt-0.5">Your Identity Card</p>
                     </div>
 
                     {/* Identity Card */}
-                    <div className="bg-white rounded-[32px] shadow-2xl overflow-hidden mb-6 relative border-4 border-white">
+                    <div className="glass-panel rounded-[32px] shadow-2xl overflow-hidden mb-6 relative border-4 border-white" style={{ background: 'hsla(140,50%,98%,0.9)' }}>
                         {/* Header Background */}
                         <div className="h-32 relative bg-cover bg-center" style={headerStyle}>
                             <div className="absolute inset-0 bg-black/20"></div>
@@ -231,21 +231,21 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                     </div>
                                 </div>
                                 <div className="text-right flex-1 ml-4 pt-14">
-                                    <h3 className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{userProfile.displayName}</h3>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{getRank(xpData?.level || 1)}</div>
+                                    <h3 className="text-2xl font-bold text-emerald-950 font-['Fredoka'] leading-none mb-1">{userProfile.displayName}</h3>
+                                    <div className="text-xs font-black text-emerald-600/60 uppercase tracking-[0.2em]">{getRank(xpData?.level || 1)}</div>
                                 </div>
                             </div>
 
                             {/* XP Progress */}
                             {xpData && (
                                 <div className="mb-6">
-                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                        <span>XP Progress</span>
+                                    <div className="flex justify-between text-[10px] font-black text-emerald-600/60 uppercase tracking-widest mb-2">
+                                        <span>Bamboo Growth</span>
                                         <span>{Math.round(xpData.currentXp)} / {Math.round(xpData.neededXp)} XP</span>
                                     </div>
-                                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="bamboo-bar-track">
                                         <div
-                                            className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm"
+                                            className="bamboo-bar-fill"
                                             style={{ width: `${xpData.progress}%` }}
                                         ></div>
                                     </div>
@@ -254,34 +254,34 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
 
                             {/* Key Stats Grid */}
                             <div className="grid grid-cols-3 gap-3 mb-6">
-                                <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-slate-800 font-['Fredoka']">{logs.length}</div>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Workouts</div>
+                                <div className="bg-white/40 backdrop-blur-sm rounded-2xl p-3 text-center border border-emerald-100/50">
+                                    <div className="text-xl font-bold text-emerald-950 font-['Fredoka']">{logs.length}</div>
+                                    <div className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest">Logs</div>
                                 </div>
-                                <div className="bg-orange-50 rounded-2xl p-3 text-center border border-orange-100">
+                                <div className="bg-white/40 backdrop-blur-sm rounded-2xl p-3 text-center border border-emerald-100/50">
                                     <div className="text-xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center">
                                         {streaks} <Zap size={14} className="ml-0.5 fill-current" />
                                     </div>
-                                    <div className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">Streak</div>
+                                    <div className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest">Streak</div>
                                 </div>
                                 <div
-                                    className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors active:scale-95"
+                                    className="bg-white/40 backdrop-blur-sm rounded-2xl p-3 text-center border border-emerald-100/50 cursor-pointer hover:bg-white/60 transition-colors active:scale-95"
                                     onClick={() => setShowPointsHistory(true)}
                                 >
                                     <div className="text-xl font-bold text-blue-600 font-['Fredoka']">{gamificationState?.points || 0}</div>
-                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Points</div>
+                                    <div className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest">Points</div>
                                 </div>
                             </div>
 
                             {/* Trophy Case */}
                             <div className="mb-2">
                                 <div className="flex justify-between items-center mb-3">
-                                    <h4 className="text-sm font-bold text-slate-700 flex items-center">
-                                        <Trophy size={16} className="mr-2 text-yellow-500" /> Trophy Case
+                                    <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest flex items-center">
+                                        <Trophy size={16} className="mr-2 text-yellow-500 fill-yellow-200" /> Collection
                                     </h4>
                                     <button
                                         onClick={() => setIsBadgeModalOpen(true)}
-                                        className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors border border-slate-200"
+                                        className="text-[10px] font-black text-emerald-700/60 hover:text-emerald-900 bg-white/50 hover:bg-white px-3 py-1.5 rounded-xl transition-all border border-emerald-100/50"
                                     >
                                         View All
                                     </button>

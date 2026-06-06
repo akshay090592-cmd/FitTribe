@@ -94,7 +94,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBack, onNavigate, onScrollTo
                     Research shows that people are 45% more likely to stick to their fitness goals when working out in groups. FitTribe leverages this biological reality by creating "digital tribes" where every rep counts, every milestone is celebrated, and no one is left behind.
                 </p>
 
-                <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 my-8">
+                <div className="bg-emerald-50/30 rounded-2xl p-6 border border-emerald-100 my-8">
                     <h3 className="text-lg font-bold text-emerald-900 mb-2">Built for the Jungle</h3>
                     <p className="text-emerald-800 text-sm">
                         Whether you're a beginner starting your first "quest" or a seasoned athlete leading your pack, FitTribe provides the tools, gamification, and accountability you need to thrive.

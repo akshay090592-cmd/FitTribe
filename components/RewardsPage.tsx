@@ -207,7 +207,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
         </div>
       </div>
 
-      <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-center">
+      <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-center">
         <p className="text-xs text-emerald-700 font-bold mr-2">💡 Tip: Plan workouts earn 10 Points. Long custom workouts earn points too!</p>
         <InfoTooltip text="Plan A/B: 10 Pts. Custom (<30m): 0 Pts. Custom (>30m): 1 Pt per 10 mins (Max 6 Pts)." iconSize={14} color="text-emerald-500" />
       </div>
@@ -410,7 +410,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                   <button
                     key={m.displayName}
                     onClick={() => handleSendGift(m.displayName)}
-                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
+                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50/30 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
                   >
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 group-hover:border-emerald-300 transition-colors">
                       <img src={getAvatarPath(m.avatarId)} onError={handleImgError} className="w-full h-full object-cover" />

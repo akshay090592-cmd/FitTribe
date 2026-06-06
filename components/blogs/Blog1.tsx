@@ -125,7 +125,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                     <div className="flex flex-col md:flex-row items-center">
                         <div className="md:w-3/5 mb-8 md:mb-0 md:pr-8">
                             <div className="mb-6">
-                                <span className="bg-emerald-500/30 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
+                                <span className="bg-emerald-500 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
                                     Community Fitness
                                 </span>
                             </div>
@@ -171,7 +171,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                             <h2 className="text-3xl font-bold text-slate-900 font-['Fredoka'] m-0">The Köhler Effect: Your Secret Performance Booster</h2>
                         </div>
 
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">Research Highlight</p>
                             <p className="text-emerald-800 mb-2">
                                 Studies show that individuals working in groups persist <strong>58-200% longer</strong> on physically demanding tasks compared to working alone.
@@ -310,7 +310,7 @@ export const Blog1: React.FC<Blog1Props> = ({ onNavigate, onScrollToAuth }) => {
                         </p>
                         <button
                             onClick={handleJoinNow}
-                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50 transition-all transform hover:scale-105 shadow-xl"
+                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50/30 transition-all transform hover:scale-105 shadow-xl"
                         >
                             Join FitTribe Now →
                         </button>

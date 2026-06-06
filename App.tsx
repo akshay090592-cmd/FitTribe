@@ -1054,7 +1054,7 @@ const App: React.FC = () => {
     };
 
     return (
-      <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[var(--color-bg-page)] flex flex-col items-center justify-center p-6">
         <div className="flex items-center justify-center space-x-3 mb-8">
           <button onClick={handleLogout} className="absolute top-6 right-6 text-emerald-400 hover:text-emerald-600 font-bold text-sm flex items-center">
             <LogOut size={16} className="mr-1" /> Logout
@@ -1123,7 +1123,7 @@ const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSetupGender('male')}
-                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'male' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
+                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'male' ? 'border-emerald-500 bg-emerald-50/30 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
                       >
                         <div className="text-xl mb-1">👨</div>
                         <div className="text-sm font-medium">Male</div>
@@ -1131,7 +1131,7 @@ const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSetupGender('female')}
-                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'female' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
+                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'female' ? 'border-emerald-500 bg-emerald-50/30 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
                       >
                         <div className="text-xl mb-1">👩</div>
                         <div className="text-sm font-medium">Female</div>
@@ -1162,7 +1162,7 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => setSetupFitness('beginner')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'beginner' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:border-emerald-200'}`}
+                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'beginner' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-100 hover:border-emerald-200'}`}
                   >
                     <div className="text-3xl mb-2">🌱</div>
                     <div className="font-bold text-emerald-900">Beginner</div>
@@ -1170,7 +1170,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setSetupFitness('advanced')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'advanced' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:border-emerald-200'}`}
+                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'advanced' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-100 hover:border-emerald-200'}`}
                   >
                     <div className="text-3xl mb-2">🔥</div>
                     <div className="font-bold text-emerald-900">Advanced</div>
@@ -1211,7 +1211,7 @@ const App: React.FC = () => {
             <button
               onClick={handleWizardSubmit}
               disabled={authLoading}
-              className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 hover:brightness-110 active:scale-95 transition-all text-lg"
+              className="w-full bg-emerald-600 text-white font-extrabold uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-emerald-200 hover:brightness-110 active:scale-95 transition-all text-sm"
             >
               {authLoading ? <LoadingSpinner /> : (wizardStep === 4 ? (isCreatingTribe ? 'Create & Start' : 'Join & Start') : 'Next')}
             </button>
@@ -1287,7 +1287,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-0 font-sans selection:bg-emerald-200 selection:text-emerald-900" style={{ backgroundColor: 'var(--color-bg-page)' }}>
+    <div className="min-h-screen pb-28 md:pb-0 font-sans bg-[var(--color-bg-page)] selection:bg-emerald-200 selection:text-emerald-900">
 
       {/* Header */}
       <div
@@ -1311,9 +1311,9 @@ const App: React.FC = () => {
                 <div className="flex items-center space-x-2 mt-1">
                   {xpData && (
                     <div className="flex flex-col">
-                      <div className="flex items-center text-xs text-white/90 font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
-                        <span className="mr-2 text-lime-300">Lvl {xpData.level}</span>
-                        <div className="w-16 h-2 bg-black/30 rounded-full overflow-hidden">
+                      <div className="flex items-center text-[10px] text-white/90 font-black uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
+                        <span className="mr-2 text-lime-300">Level {xpData.level}</span>
+                        <div className="w-20 h-2 bg-black/40 rounded-full overflow-hidden">
                           <div className="h-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.5)]" style={{ width: `${xpData.progress}%` }}></div>
                         </div>
                       </div>
@@ -1440,7 +1440,7 @@ const App: React.FC = () => {
                     <Flame size={48} className="text-amber-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
                     <Flame size={20} className="fill-current" />
                   </div>
 
@@ -1449,7 +1449,7 @@ const App: React.FC = () => {
                       Daily Streak
                       <InfoTooltip text="Consecutive days with workouts. Keep the fire burning!" color="text-amber-400" />
                     </div>
-                    <div className="text-amber-700 text-lg font-bold font-['Fredoka'] flex items-center mt-0.5">
+                    <div className="text-amber-600 text-lg font-bold font-['Fredoka'] flex items-center mt-0.5">
                       {streak} {streak === 1 ? 'Day' : 'Days'}
                     </div>
                   </div>
@@ -1459,18 +1459,18 @@ const App: React.FC = () => {
                 <button
                   onClick={() => setIsHistoryOpen(true)}
                   disabled={!lastWorkout}
-                  className={`card-activity spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left ${!lastWorkout ? 'opacity-60 cursor-default' : ''}`}
+                  className={`bg-white p-3 rounded-[24px] shadow-lg border flex flex-col justify-between group transition-all h-32 relative overflow-hidden text-left ${lastWorkout ? 'shadow-emerald-100/50 border-emerald-50 hover:shadow-xl active:scale-95' : 'border-slate-100 opacity-60 cursor-default'}`}
                 >
                   <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
                     <History size={48} className="text-teal-700" />
                   </div>
 
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${!lastWorkout ? 'bg-teal-100 text-teal-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-teal-200 text-teal-600' : 'bg-teal-200 text-teal-700'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${!lastWorkout ? 'bg-slate-100 text-slate-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-blue-100 text-blue-500' : 'bg-purple-100 text-purple-500'}`}>
                     {!lastWorkout ? <History size={20} /> : lastWorkout.type === WorkoutType.CUSTOM ? <Activity size={20} /> : <Dumbbell size={20} />}
                   </div>
 
                   <div className="text-left z-10">
-                    <div className={`font-bold text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-teal-400' : 'text-teal-900'}`}>
+                    <div className={`font-bold text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-slate-400' : 'text-emerald-900'}`}>
                       {!lastWorkout ? 'No Recent Activity' : (lastWorkout.type === WorkoutType.CUSTOM ? lastWorkout.customActivity : `Plan ${lastWorkout.type}`)}
                     </div>
                     {lastWorkout && (
@@ -1491,7 +1491,7 @@ const App: React.FC = () => {
                     <Flame size={48} className="text-orange-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center text-orange-600 group-hover:rotate-12 transition-transform duration-300">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 group-hover:rotate-12 transition-transform">
                     <Flame size={20} className="fill-current" />
                   </div>
                   <div className="text-left z-10">
@@ -1514,7 +1514,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="text-left z-10">
                     <div className="text-rose-900 font-bold text-sm leading-tight">Log Wellbeing Activities</div>
-                    <div className="text-rose-500 text-[10px] font-bold">Cooking, Music...</div>
+                    <div className="text-pink-500 text-[10px] font-bold">Cooking, Music...</div>
                   </div>
                 </button>
               </div>
@@ -1716,7 +1716,7 @@ const App: React.FC = () => {
       </div> {/* End of Main Grid */}
 
       {/* Floating Dock Navigation */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-3 z-50 w-[90%] max-w-sm md:hidden" style={{ background: 'hsla(140, 70%, 6%, 0.55)', backdropFilter: 'blur(20px) saturate(1.6)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-3 z-50 w-[90%] max-w-sm md:hidden" style={{ background: "hsla(140, 70%, 6%, 0.55)", backdropFilter: "blur(20px) saturate(1.6)", borderColor: "rgba(255,255,255,0.08)" }}>
         <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" />
         <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" />
         <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" />

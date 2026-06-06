@@ -59,7 +59,7 @@ export const NotificationCenter: React.FC<Props> = ({
 
                     {/* Notification Panel */}
                     <div className="fixed top-24 right-4 left-4 sm:left-auto sm:w-96 bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden z-[9999] animate-fade-in origin-top-right">
-                        <div className="bg-emerald-50 p-4 border-b border-emerald-100 flex justify-between items-center">
+                        <div className="bg-emerald-50/30 p-4 border-b border-emerald-100 flex justify-between items-center">
                             <h3 className="font-bold text-emerald-900 font-['Fredoka']">Notifications</h3>
                             <div className="flex items-center space-x-2">
                                 {notifications.length > 0 && (
@@ -108,7 +108,7 @@ export const NotificationCenter: React.FC<Props> = ({
                                                         e.stopPropagation();
                                                         onMarkAsRead(notif.id);
                                                     }}
-                                                    className="text-slate-300 hover:text-emerald-500 p-1 rounded-full hover:bg-emerald-50 transition-colors opacity-0 group-hover:opacity-100"
+                                                    className="text-slate-300 hover:text-emerald-500 p-1 rounded-full hover:bg-emerald-50/30 transition-colors opacity-0 group-hover:opacity-100"
                                                     title="Mark as read"
                                                     aria-label="Mark as read"
                                                 >

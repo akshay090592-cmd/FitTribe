@@ -27,7 +27,7 @@ export const NotificationPopup: React.FC<Props> = ({ isOpen, onClose, title, bod
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className={`bg-white w-full max-w-sm flex flex-col rounded-[24px] overflow-hidden shadow-2xl animate-scale-up border-4 ${type === 'alert' ? 'border-red-100' : 'border-emerald-100'}`}>
-        <div className={`${type === 'alert' ? 'bg-red-50' : 'bg-emerald-50'} p-6 flex items-start relative`}>
+        <div className={`${type === 'alert' ? 'bg-red-50' : 'bg-emerald-50/30'} p-6 flex items-start relative`}>
           <div className={`bg-white p-3 rounded-2xl shadow-sm ${type === 'alert' ? 'text-red-600' : 'text-emerald-600'} mr-4`}>
             <Bell size={28} className={type === 'alert' ? 'fill-red-100' : 'fill-emerald-100'} />
           </div>

@@ -99,8 +99,8 @@ export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs,
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-up" onClick={e => e.stopPropagation()}>
-                <div className="bg-emerald-50 p-6 flex justify-between items-center border-b border-emerald-100">
+            <div className="glass-panel w-full max-w-md max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up border-white/20" style={{ background: "hsla(140,50%,98%,0.95)" }} onClick={e => e.stopPropagation()}>
+                <div className="p-6 flex justify-between items-center border-b border-emerald-100/30" style={{ background: "linear-gradient(135deg, hsl(140,60%,15%), hsl(155,65%,10%))" }}>
                     <h3 className="font-bold text-xl text-emerald-900 font-['Fredoka']">{title}</h3>
                     <button onClick={onClose} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 transition-colors shadow-sm">
                         <X size={20} />
@@ -155,7 +155,7 @@ export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs,
                                             <td className="py-3 pr-2 text-right">
                                                 {type === 'weekly' ? (
                                                     isValidForGoal ? (
-                                                        <span className="inline-flex items-center text-emerald-500 font-bold bg-emerald-50 px-2 py-0.5 rounded-full text-xs">
+                                                        <span className="inline-flex items-center text-emerald-500 font-bold bg-emerald-50/30 px-2 py-0.5 rounded-full text-xs">
                                                             <CheckCircle size={12} className="mr-1" /> +1
                                                         </span>
                                                     ) : (

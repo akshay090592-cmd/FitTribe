@@ -172,7 +172,7 @@ export const Blog4: React.FC<Blog4Props> = ({ onNavigate, onScrollToAuth }) => {
                             When you work out alone, your schedule is flexible—which sounds great until "flexible" becomes "skippable." But when you're part of a community with visible commitments, tribe challenges, or group workout times, you create <strong>non-negotiable appointments.</strong>
                         </p>
 
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">💡 Real User Story</p>
                             <p className="text-emerald-800 italic mb-2">
                                 "I used to skip morning workouts all the time. But once I joined a tribe challenge and knew my team was counting on me? I haven't missed a Monday in 3 months. It's like having a personal trainer, except it's my friends." - Sarah M., Level 12 Panda

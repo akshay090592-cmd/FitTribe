@@ -73,7 +73,7 @@ export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOw
         <div className="mt-4 border-t border-emerald-50 pt-3">
             <div className="space-y-3 mb-3">
                 {comments.map((comment, idx) => (
-                    <div key={comment.id || idx} className="flex items-start space-x-2 text-sm bg-emerald-50/50 p-2 rounded-xl">
+                    <div key={comment.id || idx} className="flex items-start space-x-2 text-sm bg-emerald-50/30 p-2 rounded-xl">
                         <div className="w-6 h-6 rounded-full overflow-hidden border border-emerald-100 flex-shrink-0 bg-emerald-100 flex items-center justify-center">
                             <img
                                 src={getAvatarPath(undefined)} // Fallback for now as comments don't have avatarId yet

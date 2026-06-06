@@ -327,7 +327,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               value="5,000+"
               label="Workouts Logged"
               iconColor="text-emerald-500"
-              bgColor="bg-emerald-50"
+              bgColor="bg-emerald-50/30"
             />
             <CounterItem
               icon={<Trophy />}
@@ -765,7 +765,7 @@ const FAQSection = () => {
             <div key={idx} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
               <button
                 onClick={() => setOpen(open === idx ? null : idx)}
-                className="w-full text-left px-6 py-5 bg-slate-50 hover:bg-emerald-50 font-bold text-slate-800 flex justify-between items-center transition-colors"
+                className="w-full text-left px-6 py-5 bg-slate-50 hover:bg-emerald-50/30 font-bold text-slate-800 flex justify-between items-center transition-colors"
               >
                 <span className="text-base md:text-lg pr-4">{faq.q}</span>
                 <span className={`text-emerald-500 font-bold text-2xl leading-none transition-transform duration-300 ${open === idx ? "rotate-45" : ""}`}>+</span>

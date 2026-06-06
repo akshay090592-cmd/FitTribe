@@ -52,34 +52,35 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
   return (
     <div
       onClick={onClick}
-      className="bg-white p-4 rounded-[24px] shadow-lg shadow-emerald-100/50 border border-emerald-50 relative overflow-hidden group cursor-pointer active:scale-95 hover:shadow-xl transition-all duration-300"
+      className="glass-panel p-4 mb-6 relative overflow-hidden group cursor-pointer shadow-xl spring-transition"
+      style={{ background: 'hsla(140,50%,98%,0.8)' }}
     >
-      {/* Background Gradient */}
-      <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-emerald-50 to-transparent opacity-50 pointer-events-none"></div>
+      {/* Background Decor */}
+      <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-emerald-50/50 to-transparent pointer-events-none"></div>
 
       {/* Header Section */}
-      <div className="flex items-center justify-between relative z-10 mb-3">
+      <div className="flex items-center justify-between relative z-10 mb-4">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mr-3 text-emerald-600 shadow-inner group-hover:rotate-12 transition-transform">
+          <div className="w-10 h-10 bg-white shadow-sm border border-emerald-100/50 rounded-xl flex items-center justify-center mr-3 text-emerald-600 group-hover:rotate-12 transition-transform duration-300">
             <Activity size={20} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-emerald-900 font-['Fredoka']" title="Goals reset every Sunday">Weekly Goal</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
+            <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']" title="Goals reset every Sunday">Weekly Goal</h3>
+            <p className="text-[10px] text-emerald-600/60 font-black uppercase tracking-widest">
               {weeklyProgress}/{userProfile?.weeklyGoal || 3} Workouts
             </p>
           </div>
         </div>
 
         {/* Progress Dots */}
-        <div className="flex space-x-1">
+        <div className="flex space-x-1.5">
           {Array.from({ length: userProfile?.weeklyGoal || 3 }, (_, i) => i + 1).map(i => (
             <div
               key={i}
-              className={`w-2 h-6 rounded-full transition-all duration-500 ${
+              className={`w-2.5 h-6 rounded-full transition-all duration-700 ${
                 i <= weeklyProgress
-                  ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-sm scale-110'
-                  : 'bg-emerald-100'
+                  ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-md scale-110'
+                  : 'bg-emerald-900/5'
               }`}
             ></div>
           ))}
@@ -87,13 +88,13 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2 relative z-10 pt-2 border-t border-slate-50">
-        <div className="flex flex-col items-center p-2 rounded-xl bg-slate-50 group-hover:bg-blue-50 transition-colors">
-          <div className="text-blue-400 mb-1"><Clock size={14} /></div>
-          <div className="text-xs font-bold text-slate-700 font-['Fredoka']">{formatDuration(stats.duration)}</div>
+      <div className="grid grid-cols-3 gap-3 relative z-10 pt-3 border-t border-emerald-100/30">
+        <div className="flex flex-col items-center p-2 rounded-xl bg-white/40 border border-emerald-100/50 transition-all hover:bg-white">
+          <div className="text-blue-500 mb-1"><Clock size={14} /></div>
+          <div className="text-xs font-bold text-emerald-950 font-['Fredoka']">{formatDuration(stats.duration)}</div>
         </div>
 
-        <div className="flex flex-col items-center p-2 rounded-xl bg-slate-50 group-hover:bg-purple-50 transition-colors">
+        <div className="flex flex-col items-center p-2 rounded-xl bg-white/40 border border-emerald-100/50 transition-all hover:bg-white">
           <div className="text-purple-400 mb-1"><Dumbbell size={14} /></div>
           <div className="text-xs font-bold text-slate-700 font-['Fredoka']">{formatVolume(stats.volume)}</div>
         </div>

@@ -84,7 +84,7 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScro
                 </p>
 
                 <div className="grid md:grid-cols-2 gap-6 mt-12">
-                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center text-center group hover:bg-emerald-50 hover:border-emerald-100 transition-all">
+                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center text-center group hover:bg-emerald-50/30 hover:border-emerald-100 transition-all">
                         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
                             <Mail size={32} />
                         </div>
@@ -98,7 +98,7 @@ export const ContactUs: React.FC<ContactUsProps> = ({ onBack, onNavigate, onScro
                         </a>
                     </div>
 
-                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center text-center group hover:bg-emerald-50 hover:border-emerald-100 transition-all">
+                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center text-center group hover:bg-emerald-50/30 hover:border-emerald-100 transition-all">
                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                             <MessageSquare size={32} />
                         </div>

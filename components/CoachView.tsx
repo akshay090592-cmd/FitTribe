@@ -555,7 +555,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                                 <span className="text-xs font-bold text-slate-700 uppercase">Weekly Adherence Stats</span>
                                             </div>
                                             <div className="grid grid-cols-4 gap-2 text-center">
-                                                <div className="bg-emerald-50 p-2 rounded-xl">
+                                                <div className="bg-emerald-50/30 p-2 rounded-xl">
                                                     <div className="text-emerald-600 font-bold text-lg">{adherenceStats.breakdown.done}</div>
                                                     <div className="text-[8px] font-bold text-emerald-400 uppercase">Done</div>
                                                 </div>
@@ -699,7 +699,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <div>
                                     <label className="block text-xs font-bold text-emerald-700 uppercase mb-1">Diet Type & Goals</label>
                                     <input
-                                        className="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
+                                        className="w-full bg-emerald-50/30 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
                                         placeholder="e.g., High Protein, Vegan, Weight Loss"
                                         value={dietPreferences}
                                         onChange={e => setDietPreferences(e.target.value)}
@@ -708,7 +708,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <div>
                                     <label className="block text-xs font-bold text-emerald-700 uppercase mb-1">Allergies / Dislikes</label>
                                     <input
-                                        className="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
+                                        className="w-full bg-emerald-50/30 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
                                         placeholder="e.g., Peanuts, Dairy, No Mushrooms"
                                         value={dietAllergies}
                                         onChange={e => setDietAllergies(e.target.value)}
@@ -717,7 +717,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <div>
                                     <label className="block text-xs font-bold text-emerald-700 uppercase mb-1">Supplements</label>
                                     <input
-                                        className="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
+                                        className="w-full bg-emerald-50/30 border-emerald-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-300 outline-none"
                                         placeholder="e.g., Whey Protein, Creatine, Multivitamin"
                                         value={dietSupplements}
                                         onChange={e => setDietSupplements(e.target.value)}
@@ -739,7 +739,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <h3 className="text-lg font-bold text-emerald-900 ml-2 font-['Fredoka']">Weekly Menu</h3>
                                 <div className="flex gap-2">
                                     <button onClick={() => { setDietPlan(null); setShowDietForm(true); }} className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-200">Edit Prefs</button>
-                                    <button onClick={handleGenerateDiet} className="p-2 bg-white rounded-full shadow text-emerald-600 hover:bg-emerald-50"><RefreshCw size={16} /></button>
+                                    <button onClick={handleGenerateDiet} className="p-2 bg-white rounded-full shadow text-emerald-600 hover:bg-emerald-50/30"><RefreshCw size={16} /></button>
                                 </div>
                             </div>
                             {dietPlan.days && Array.isArray(dietPlan.days) && dietPlan.days.map((day: any, idx: number) => (

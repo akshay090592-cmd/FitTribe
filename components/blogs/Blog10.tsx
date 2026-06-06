@@ -123,7 +123,7 @@ export const Blog10: React.FC<Blog10Props> = ({ onNavigate, onScrollToAuth }) =>
                     <div className="flex flex-col md:flex-row items-center">
                         <div className="md:w-3/5 mb-8 md:mb-0 md:pr-8">
                             <div className="mb-6">
-                                <span className="bg-emerald-500/30 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
+                                <span className="bg-emerald-500 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
                                     AI Coaching
                                 </span>
                             </div>
@@ -169,7 +169,7 @@ export const Blog10: React.FC<Blog10Props> = ({ onNavigate, onScrollToAuth }) =>
                         <p className="text-lg text-slate-700 leading-relaxed mb-4">
                             In motor learning, the timing of feedback is critical. If a coach corrects your squat form 3 days after you do it, the "learning window" has closed. You need corrections <em>now</em>.
                         </p>
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">Scientific Fact</p>
                             <p className="text-emerald-800">
                                 Studies show that <span className="font-bold">immediate feedback</span> (within seconds of action) accelerates skill acquisition by up to <strong>300%</strong> compared to delayed feedback.
@@ -280,7 +280,7 @@ export const Blog10: React.FC<Blog10Props> = ({ onNavigate, onScrollToAuth }) =>
                         </p>
                         <button
                             onClick={handleJoinNow}
-                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50 transition-all transform hover:scale-105 shadow-xl"
+                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50/30 transition-all transform hover:scale-105 shadow-xl"
                         >
                             Get Started →
                         </button>

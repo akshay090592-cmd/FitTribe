@@ -94,7 +94,7 @@ export const CreateChallengeModal: React.FC<Props> = ({ isOpen, onClose, onSave 
                  onClick={() => setType(t as any)}
                  className={`p-3 rounded-xl border-2 font-bold text-sm capitalize transition-all ${
                    type === t
-                     ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                     ? 'border-emerald-500 bg-emerald-50/30 text-emerald-700'
                      : 'border-slate-100 text-slate-400 hover:border-emerald-200'
                  }`}
                >

@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroup, MUSCLE_GROUPS } from '../utils/muscleMapping';
-import { monthDayFormatter, monthYearFormatter } from '../utils/dateUtils';
+import { monthDayFormatter, monthYearFormatter, compareISODates } from '../utils/dateUtils';
 
 import { Calendar } from './Calendar';
 
@@ -67,12 +67,18 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   }, [versusUser, freqVersusUser]);
 
 
-  // BOLT: Refactor getChartData to minimize redundant operations and support optional exercise filtering
+  /**
+   * BOLT: Refactor getChartData to minimize redundant operations.
+   * - Hoists Intl.DateTimeFormat.format calls into the "once per group" block.
+   * - Uses an isFrequencyOnly parameter to skip volume and PR calculations for the frequency chart.
+   * - Replaces localeCompare with compareISODates for sorting.
+   */
   const getChartData = (
     currentViewMode: 'weekly' | 'monthly',
     currentVersusUser: User | null,
     currentRivalLogs: any[],
-    targetExercise?: string
+    targetExercise?: string,
+    isFrequencyOnly: boolean = false
   ) => {
     if (!logs.length && (!currentVersusUser || !currentRivalLogs.length)) return [];
 
@@ -91,11 +97,9 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
         const log = logList[i];
         const date = new Date(log.date);
         let key = '';
-        let label = '';
 
         if (currentViewMode === 'monthly') {
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          label = monthYearFormatter.format(date);
+          key = log.date.substring(0, 7); // YYYY-MM
         } else {
           // Weekly grouping: Use UTC for consistency in week calculation
           const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -103,16 +107,30 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           d.setUTCDate(d.getUTCDate() + 4 - dayNum);
           const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
           const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-
           key = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-          const weekStart = new Date(d);
-          weekStart.setUTCDate(d.getUTCDate() - 3); // Back to Monday
-          label = monthDayFormatter.format(weekStart);
         }
 
         if (!grouped[key]) {
+          let label = '';
+          if (currentViewMode === 'monthly') {
+            label = monthYearFormatter.format(date);
+          } else {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 1 - dayNum); // Back to Monday
+            label = monthDayFormatter.format(d);
+          }
           grouped[key] = { label, totalVolume: 0, workoutCount: 0, rivalTotalVolume: 0, rivalWorkoutCount: 0, exerciseStats: {}, sortKey: key };
         }
+
+        if (isRival) {
+          grouped[key].rivalWorkoutCount += 1;
+        } else {
+          grouped[key].workoutCount += 1;
+        }
+
+        // BOLT: Skip expensive volume and PR calculations if we only need frequency
+        if (isFrequencyOnly) continue;
 
         let logVolume = 0;
         const exercises = log.exercises || [];
@@ -127,10 +145,8 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
         if (isRival) {
           grouped[key].rivalTotalVolume += logVolume;
-          grouped[key].rivalWorkoutCount += 1;
         } else {
           grouped[key].totalVolume += logVolume;
-          grouped[key].workoutCount += 1;
 
           if (targetExercise) {
             for (let j = 0; j < exercises.length; j++) {
@@ -166,7 +182,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       processLogs(currentRivalLogs, true);
     }
 
-    return Object.values(grouped).sort((a, b) => a.sortKey.localeCompare(b.sortKey)).map(data => {
+    return Object.values(grouped).sort((a, b) => compareISODates(a.sortKey, b.sortKey)).map(data => {
       return {
         label: data.label,
         avgVolume: data.workoutCount > 0 ? Math.round(data.totalVolume / data.workoutCount) : 0,
@@ -181,36 +197,40 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   };
 
   const chartData = useMemo(() => getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : [], selectedExercise), [logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
-  // BOLT: Remove selectedExercise from dependency array because frequency chart doesn't use it.
-  // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
-  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : []), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
+  // BOLT: Pass isFrequencyOnly=true to skip volume/PR calculations and remove selectedExercise from dependency array.
+  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
 
+  /**
+   * BOLT: Optimize muscleData calculation.
+   * - Uses standard for loops to avoid array allocations from forEach and filter.
+   */
   const muscleData = useMemo(() => {
     if (!logs.length) return [];
 
     const counts: Record<string, number> = {};
-    // Initialize all groups to 0 (excluding Cardio/Other for the chart generally, or keep them if relevant)
-    Object.values(MUSCLE_GROUPS).forEach(g => {
+    const groups = Object.values(MUSCLE_GROUPS);
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
       if (g !== MUSCLE_GROUPS.OTHER && g !== MUSCLE_GROUPS.CARDIO) {
         counts[g] = 0;
       }
-    });
+    }
 
-    logs.forEach(log => {
-      if (log.exercises) {
-        log.exercises.forEach((ex: any) => {
-          const group = getMuscleGroup(ex.name);
-          // Only count if it's in our initialized list
-          if (group && counts[group] !== undefined) {
-            // Count completed sets as the volume metric
-            const sets = ex.sets?.filter((s: any) => s.completed).length || 0;
-            counts[group] += sets;
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      const exercises = log.exercises || [];
+      for (let j = 0; j < exercises.length; j++) {
+        const ex = exercises[j];
+        const group = getMuscleGroup(ex.name);
+        if (group && counts[group] !== undefined) {
+          const sets = ex.sets || [];
+          for (let k = 0; k < sets.length; k++) {
+            if (sets[k].completed) counts[group] += 1;
           }
-        });
+        }
       }
-    });
+    }
 
-    // Determine max for scaling if needed, though Recharts handles auto domain
     return Object.entries(counts).map(([subject, A]) => ({ subject, A }));
   }, [logs]);
 

@@ -6,7 +6,7 @@ interface Props {
 
 export const LoadingSpinner: React.FC<Props> = ({ fullScreen = false }) => {
   const containerClass = fullScreen
-    ? "min-h-screen bg-[#F0FDF4] flex items-center justify-center"
+    ? "min-h-screen bg-[var(--color-bg-page)] flex items-center justify-center"
     : "p-10 flex items-center justify-center h-full min-h-[50vh]";
 
   return (

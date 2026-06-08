@@ -96,7 +96,7 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
 
           <button
             onClick={() => setShowXpHistory(true)}
-            className="w-full mb-6 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-bold py-3 rounded-2xl transition-colors flex items-center justify-center text-sm"
+            className="w-full mb-6 bg-emerald-50/30 hover:bg-emerald-100 text-emerald-600 font-bold py-3 rounded-2xl transition-colors flex items-center justify-center text-sm"
           >
             <Activity size={16} className="mr-2" /> View XP History
           </button>
@@ -148,7 +148,7 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
               </h3>
               <div className="space-y-2">
                 {profile.completedChallenges.map((c) => (
-                  <div key={c.id} className="bg-emerald-50 p-2 rounded-xl flex items-center border border-emerald-100">
+                  <div key={c.id} className="bg-emerald-50/30 p-2 rounded-xl flex items-center border border-emerald-100">
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mr-3 flex-shrink-0">
                       <Trophy size={14} />
                     </div>

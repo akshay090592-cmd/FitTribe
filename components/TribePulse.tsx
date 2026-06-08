@@ -125,7 +125,7 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
                     >
                         <div className="relative group-hover:scale-110 transition-transform">
                             <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden ${
-                                statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50' : 
+                                statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50/30' :
                                 statuses[user] === 'committing' ? 'border-amber-400 bg-amber-50 animate-pulse' : 
                                 statuses[user] === 'tomorrow' ? 'border-blue-400 bg-blue-50' :
                                 statuses[user] === 'failed' ? 'border-red-400 bg-red-50' :

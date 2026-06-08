@@ -169,22 +169,22 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* My Stats Rows */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white border border-orange-100 p-3 rounded-[24px] shadow-lg shadow-orange-100/50 flex flex-col items-center justify-center hover:-translate-y-1 transition-transform duration-300 relative group">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default">
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Days in a row you've worked out." iconSize={12} color="text-orange-400" />
           </div>
-          <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mb-3 text-orange-500">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-orange-500" style={{ background: 'linear-gradient(135deg, hsl(38,95%,92%), hsl(25,95%,88%))' }}>
             <Zap size={24} className="fill-current" />
           </div>
           <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{streaks}</span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streak</span>
         </div>
-        <div className="bg-white border border-purple-100 p-3 rounded-[24px] shadow-lg shadow-purple-100/50 flex flex-col items-center justify-center hover:-translate-y-1 transition-transform duration-300 relative group">
+        <div className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default">
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Special awards for hitting milestones." iconSize={12} color="text-purple-400" />
           </div>
-          <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mb-3 text-purple-500">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-purple-500" style={{ background: 'linear-gradient(135deg, hsl(270,65%,94%), hsl(285,60%,90%))' }}>
             <Trophy size={24} className="fill-current" />
           </div>
           <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{myState.badges.length}</span>
@@ -192,14 +192,14 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
         </div>
         <div
           onClick={handleOpenPointsHistory}
-          className="bg-white border border-blue-100 p-3 rounded-[24px] shadow-lg shadow-blue-100/50 flex flex-col items-center justify-center hover:-translate-y-1 transition-transform duration-300 relative group cursor-pointer active:scale-95"
+          className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-pointer"
           role="button"
           tabIndex={0}
         >
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Currency to buy shop items. Earn by working out!" iconSize={12} color="text-blue-400" />
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3 text-blue-500">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-blue-500" style={{ background: 'linear-gradient(135deg, hsl(210,80%,93%), hsl(215,75%,88%))' }}>
             <Star size={24} className="fill-current" />
           </div>
           <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{myState.points || 0}</span>
@@ -207,17 +207,21 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
         </div>
       </div>
 
-      <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-center">
+      <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-center">
         <p className="text-xs text-emerald-700 font-bold mr-2">💡 Tip: Plan workouts earn 10 Points. Long custom workouts earn points too!</p>
         <InfoTooltip text="Plan A/B: 10 Pts. Custom (<30m): 0 Pts. Custom (>30m): 1 Pt per 10 mins (Max 6 Pts)." iconSize={14} color="text-emerald-500" />
       </div>
 
       {/* Badge Cabinet */}
-      <div className="bg-white border border-emerald-100 rounded-[32px] p-5 shadow-xl shadow-emerald-100/20">
-        <h3 className="font-bold text-emerald-900 mb-3 flex items-center font-['Fredoka'] text-lg">
-          <span className="bg-yellow-100 p-2 rounded-xl mr-3 text-yellow-600"><Star size={20} className="fill-current" /></span>
-          Achievements
-        </h3>
+      <div className="glass-panel rounded-[32px] p-5" style={{ background: 'linear-gradient(160deg, hsl(48,80%,97%) 0%, hsl(140,50%,96%) 100%)', border: '1px solid hsl(48,60%,88%)' }}>
+        {/* Bamboo shelf header */}
+        <div className="relative mb-5">
+          <div className="absolute inset-x-0 bottom-0 h-2 rounded-full" style={{ background: 'linear-gradient(90deg, hsl(33,65%,45%), hsl(33,60%,52%), hsl(33,65%,45%))', boxShadow: '0 2px 8px hsla(33,65%,45%,0.4)' }} />
+          <h3 className="font-bold text-amber-900 mb-3 flex items-center font-['Fredoka'] text-lg relative z-10">
+            <span className="rounded-xl mr-3 text-yellow-600 text-xl">🎖️</span>
+            Achievements
+          </h3>
+        </div>
         <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {BADGES_DB.map(badge => {
             const isUnlocked = myState.badges.includes(badge.id);
@@ -227,10 +231,16 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                 className="flex flex-col items-center text-center group cursor-pointer transition-all active:scale-95"
                 onClick={() => setSelectedBadge(badge)}
               >
-                <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center mb-3 transition-all transform duration-300 ${isUnlocked ? 'bg-gradient-to-br from-yellow-300 to-amber-400 text-yellow-900 shadow-lg shadow-yellow-200 group-hover:rotate-6 group-hover:scale-110' : 'bg-slate-100 text-slate-300 grayscale opacity-70'}`}>
+                <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center mb-3 transition-all transform duration-300 ${
+                  isUnlocked
+                    ? 'text-yellow-900 group-hover:rotate-6 group-hover:scale-110 bamboo-glow'
+                    : 'bg-slate-100 text-slate-300 grayscale opacity-60'
+                  }`}
+                  style={isUnlocked ? { background: 'linear-gradient(135deg, hsl(48,95%,68%), hsl(38,90%,55%))' } : {}}
+                >
                   {isUnlocked ? <BadgeIcon name={badge.icon} size={32} /> : <Lock size={24} />}
                 </div>
-                <span className={`text-[10px] font-bold leading-tight line-clamp-2 ${isUnlocked ? 'text-emerald-900' : 'text-slate-300'}`}>{badge.title}</span>
+                <span className={`text-[10px] font-bold leading-tight line-clamp-2 ${isUnlocked ? 'text-amber-900' : 'text-slate-300'}`}>{badge.title}</span>
               </div>
             );
           })}
@@ -238,7 +248,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* Inventory / Gifting */}
-      <div className="bg-white border border-pink-100 rounded-[32px] p-5 shadow-xl shadow-pink-100/20">
+      <div className="glass-panel rounded-[32px] p-5" style={{ background: 'linear-gradient(160deg, hsl(350,70%,97%) 0%, hsl(330,60%,96%) 100%)', border: '1px solid hsl(350,60%,90%)' }}>
         <div className="flex justify-between items-start mb-3">
           <div>
             <h3 className="font-bold text-pink-900 mb-1 flex items-center font-['Fredoka'] text-xl">
@@ -265,7 +275,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                 <button
                   key={item.id}
                   onClick={() => setGiftModalItem(item)}
-                  className="flex flex-col items-center bg-gradient-to-b from-white to-pink-50 p-2 rounded-2xl border border-pink-100 hover:border-pink-300 hover:shadow-md transition-all relative group active:scale-95"
+                  className="rarity-common spring-transition flex flex-col items-center p-2 rounded-2xl relative group"
                 >
                   <div className="w-12 h-12 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                     {img ? <img src={img} className="max-w-full max-h-full drop-shadow-sm" /> : <span className="text-3xl">{item.emoji}</span>}
@@ -400,7 +410,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                   <button
                     key={m.displayName}
                     onClick={() => handleSendGift(m.displayName)}
-                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
+                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50/30 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
                   >
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 group-hover:border-emerald-300 transition-colors">
                       <img src={getAvatarPath(m.avatarId)} onError={handleImgError} className="w-full h-full object-cover" />

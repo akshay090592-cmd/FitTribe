@@ -257,7 +257,7 @@ export const Blog6: React.FC<Blog6Props> = ({ onNavigate, onScrollToAuth }) => {
                                     <li>❌ Result: You stick to it and get hurt, or skip it entirely.</li>
                                 </ul>
                             </div>
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+                            <div className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-6">
                                 <h4 className="font-bold text-emerald-800 mb-2">AI Planner Approach</h4>
                                 <ul className="text-sm text-emerald-700 space-y-2">
                                     <li>✓ Detects lower readiness score</li>

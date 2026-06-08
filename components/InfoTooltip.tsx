@@ -74,7 +74,7 @@ export const InfoTooltip: React.FC<Props> = ({ text, className = '', iconSize = 
                             setIsOpen(!isOpen);
                         }
                     }}
-                    className={`${color} hover:text-emerald-500 transition-colors p-1 rounded-full hover:bg-emerald-50 active:scale-95 cursor-pointer`}
+                    className={`${color} hover:text-emerald-500 transition-colors p-1 rounded-full hover:bg-emerald-50/30 active:scale-95 cursor-pointer`}
                     aria-label="Info"
                     role="button"
                     tabIndex={0}

@@ -168,7 +168,7 @@ export const Blog2: React.FC<Blog2Props> = ({ onNavigate, onScrollToAuth }) => {
                             When you exercise in a group, your brain doesn't just experience the same biochemical processes as solo training—it amplifies them. Research using functional MRI scans shows that group exercise activates additional neural pathways associated with social bonding, empathy, and reward processing.
                         </p>
 
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">Neuroscience Finding</p>
                             <p className="text-emerald-800 mb-2">
                                 Group exercise triggers the release of <strong>endorphins at levels 2x higher</strong> than individual exercise, creating what researchers call "collective effervescence"—a shared emotional high.
@@ -305,7 +305,7 @@ export const Blog2: React.FC<Blog2Props> = ({ onNavigate, onScrollToAuth }) => {
                         </p>
                         <button
                             onClick={handleJoinNow}
-                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50 transition-all transform hover:scale-105 shadow-xl"
+                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50/30 transition-all transform hover:scale-105 shadow-xl"
                         >
                             Join Your Tribe Today →
                         </button>

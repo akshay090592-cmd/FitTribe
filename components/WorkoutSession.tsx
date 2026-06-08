@@ -610,7 +610,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     setIsFinishing(false);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#F0FDF4] flex items-center justify-center"><div className="animate-bounce text-emerald-600 font-bold">Loading Dojo...</div></div>;
+  if (loading) return <div className="min-h-screen bg-[var(--color-bg-page)] flex items-center justify-center"><div className="animate-bounce text-emerald-600 font-bold">Loading Dojo...</div></div>;
 
   const renderExercises = () => {
     // ... (same as before)
@@ -629,7 +629,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           j++;
         }
         elements.push(
-          <div key={`group-${currentIndex}`} className="mb-4 relative bg-emerald-50/50 p-2 rounded-[36px] border border-emerald-100/50">
+          <div key={`group-${currentIndex}`} className="mb-4 relative bg-emerald-50/30 p-2 rounded-[36px] border border-emerald-100/50">
             <div className="px-3 pt-2 pb-1">
               <div className="text-xs font-bold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between items-center">
                 <span className="flex items-center"><TrendingUp size={12} className="mr-1" /> Super-Panda Set</span>
@@ -678,7 +678,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   if (step === 'warmup') {
     // ... (same as before)
     return (
-      <div className="min-h-screen flex flex-col bg-[#F0FDF4]">
+      <div className="min-h-screen flex flex-col bg-[var(--color-bg-page)]">
         <div className="p-6 flex-grow">
           <div className="flex items-center mb-8">
             <button onClick={handleWarmupCancel} className="p-3 rounded-full bg-white shadow-sm border border-emerald-100 text-emerald-600 mr-4"><ChevronLeft size={24} /></button>
@@ -707,7 +707,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
           <div className="space-y-4">
             {plan.warmup.map((item, idx) => (
-              <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm cursor-pointer hover:bg-emerald-50">
+              <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm cursor-pointer hover:bg-emerald-50/30">
                 <div className="relative flex items-center w-8 h-8 mr-4">
                   <input
                     type="checkbox"
@@ -744,7 +744,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   if (step === 'workout') {
     return (
-      <div className="min-h-screen bg-[#F0FDF4] pb-32 relative">
+      <div className="min-h-screen bg-[var(--color-bg-page)] pb-32 relative">
         {showExitModal && createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl animate-scale-up">
@@ -781,7 +781,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           document.body
         )}
 
-        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
+        <div className="sticky top-0 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
           <div className="px-4 py-3 flex justify-between items-center">
             <div className="flex items-center flex-1 min-w-0">
               <div className="mr-3">
@@ -822,7 +822,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           />
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-20 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4] to-transparent pb-6 pt-10">
+        <div className="fixed bottom-0 left-0 right-0 p-4 z-20 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)] to-transparent pb-6 pt-10">
           <button
             onClick={() => setStep('cooldown')}
             className="w-full bg-emerald-800 text-emerald-50 py-4 rounded-3xl font-bold text-lg shadow-xl active:scale-95 transition-transform border-b-4 border-emerald-950"
@@ -968,7 +968,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
             <button
               onClick={() => onFinish(tribePhoto || undefined)}
-              className="w-full bg-white text-emerald-900 font-bold py-4 rounded-3xl shadow-xl hover:bg-emerald-50 transition-colors text-lg"
+              className="w-full bg-white text-emerald-900 font-bold py-4 rounded-3xl shadow-xl hover:bg-emerald-50/30 transition-colors text-lg"
             >
               Return to Village
             </button>
@@ -979,8 +979,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0FDF4] pb-6">
-      <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg-page)] pb-6">
+      <div className="sticky top-0 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
         <div className="px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
             <div className="mr-3">
@@ -999,7 +999,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         <p className="text-emerald-600 mb-8">Cool down like a panda in the shade.</p>
         <div className="space-y-4">
           {plan.cooldown.map((item, idx) => (
-            <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm hover:bg-emerald-50 cursor-pointer">
+            <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm hover:bg-emerald-50/30 cursor-pointer">
               <div className="relative flex items-center w-8 h-8 mr-4">
                 <input
                   type="checkbox"

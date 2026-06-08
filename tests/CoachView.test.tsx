@@ -192,7 +192,7 @@ describe('CoachView', () => {
         fireEvent.click(chatTab);
 
         // Send a message to trigger AI action
-        const input = screen.getByPlaceholderText(/Ask for advice/i);
+        const input = screen.getByPlaceholderText(/Ask Sage for advice/i);
         fireEvent.change(input, { target: { value: 'Create a workout' } });
         fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 

@@ -60,7 +60,7 @@ const mockProfile: UserProfile = {
 const mockPlan: WorkoutPlan = {
   id: WorkoutType.A,
   title: 'Test Plan',
-  description: 'Test',
+  focus: 'Test',
   exercises: [
     { name: 'Pushups', defaultSets: 3, defaultReps: '10', notes: '', cues: [], image: '', isSuperset: false }
   ],

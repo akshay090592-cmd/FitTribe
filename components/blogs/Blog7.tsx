@@ -123,7 +123,7 @@ export const Blog7: React.FC<Blog7Props> = ({ onNavigate, onScrollToAuth }) => {
                     <div className="flex flex-col md:flex-row items-center">
                         <div className="md:w-3/5 mb-8 md:mb-0 md:pr-8">
                             <div className="mb-6">
-                                <span className="bg-emerald-500/30 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
+                                <span className="bg-emerald-500 text-emerald-100 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide">
                                     Training Science
                                 </span>
                             </div>
@@ -184,7 +184,7 @@ export const Blog7: React.FC<Blog7Props> = ({ onNavigate, onScrollToAuth }) => {
                             </div>
                         </div>
 
-                        <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+                        <div className="bg-emerald-50/30 rounded-2xl p-6 border border-emerald-100">
                             <h3 className="font-bold text-lg text-emerald-900 mb-3">Deep Dive: Progressive Overload Mechanics</h3>
                             <p className="text-emerald-800 mb-4">
                                 Most people get stuck because they think "Progressive Overload" only means adding 5lbs to the bar. But there are actually <strong>four ways</strong> to progress a <strong>progressive overload routine</strong>:
@@ -281,7 +281,7 @@ export const Blog7: React.FC<Blog7Props> = ({ onNavigate, onScrollToAuth }) => {
                         </p>
                         <button
                             onClick={handleJoinNow}
-                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50 transition-all transform hover:scale-105 shadow-xl"
+                            className="bg-white text-emerald-700 font-bold py-4 px-10 rounded-full text-lg hover:bg-emerald-50/30 transition-all transform hover:scale-105 shadow-xl"
                         >
                             Build My Best Plan →
                         </button>

@@ -195,7 +195,7 @@ describe('E2E Full Verification Flow', () => {
         const chatTab = screen.getByText(/AI Coach/i);
         fireEvent.click(chatTab);
 
-        const input = screen.getByPlaceholderText(/Ask for advice/i);
+        const input = screen.getByPlaceholderText(/Ask Sage for advice/i);
         fireEvent.change(input, { target: { value: 'Hi' } });
 
         const buttons = screen.getAllByRole('button');

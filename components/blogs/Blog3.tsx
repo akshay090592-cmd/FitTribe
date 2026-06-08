@@ -168,7 +168,7 @@ export const Blog3: React.FC<Blog3Props> = ({ onNavigate, onScrollToAuth }) => {
                             Social accountability is the phenomenon where individuals modify their behavior because they know others are observing. In fitness, this translates to a simple but powerful dynamic: when your community can see your activity (or lack thereof), you're exponentially more likely to follow through on your commitments.
                         </p>
 
-                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
+                        <div className="bg-emerald-50/30 border-l-4 border-emerald-500 p-6 rounded-r-xl mb-6">
                             <p className="text-emerald-900 font-bold mb-2">The Numbers Don't Lie</p>
                             <p className="text-emerald-800 mb-2">
                                 People with accountability partners are <strong>65% more likely</strong> to achieve their fitness goals compared to those working alone.

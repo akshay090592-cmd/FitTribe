@@ -178,19 +178,19 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white w-full max-w-md max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up">
-                <div className={`${mode === 'wellbeing' ? 'bg-pink-500' : 'bg-emerald-600'} p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0`}>
-                    <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-10"></div>
-                    <h2 className="text-2xl font-bold text-white font-['Fredoka'] relative z-10 flex items-center">
-                        {mode === 'wellbeing' ? <Heart className="mr-2" /> : <Activity className="mr-2" />} {mode === 'wellbeing' ? 'Log Wellbeing' : 'Track Activity'}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-md animate-fade-in">
+            <div className="glass-panel w-full max-w-md max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up border-white/20" style={{ background: 'hsla(140,50%,98%,0.95)' }}>
+                <div className="p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0" style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,75%,55%), hsl(330,70%,45%))' : 'linear-gradient(135deg, hsl(140,70%,45%), hsl(160,75%,35%))' }}>
+                    <div className="absolute inset-0 opacity-10 foliage-pattern"></div>
+                    <h2 className="text-2xl font-bold text-white font-['Fredoka'] relative z-10 flex items-center drop-shadow-sm">
+                        {mode === 'wellbeing' ? <Heart className="mr-3 fill-current" /> : <Flame className="mr-3 fill-current" />} {mode === 'wellbeing' ? 'Wellbeing' : 'Activity'}
                     </h2>
                     <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-md transition-all active:scale-95 relative z-10">
-                        <X size={24} />
+                        <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6 overflow-y-auto">
+                <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
 
                     {/* Saved Favorites Section */}
                     {savedActivities.length > 0 && (
@@ -203,7 +203,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                     <button
                                         key={fav.id}
                                         onClick={() => loadFavorite(fav)}
-                                        className="flex-shrink-0 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-xl px-3 py-2 flex items-center transition-all active:scale-95 group"
+                                        className="flex-shrink-0 bg-emerald-50/30 hover:bg-emerald-100 border border-emerald-100 rounded-xl px-3 py-2 flex items-center transition-all active:scale-95 group"
                                     >
                                         <div className="text-left mr-2">
                                             <div className={`text-xs font-bold ${mode === 'wellbeing' ? 'text-pink-800' : 'text-emerald-800'}`}>{fav.name}</div>
@@ -324,11 +324,11 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                     <><Flame size={16} className="mr-1 text-orange-500" /> Burn</>
                                 )}
                             </label>
-                            <div className={`${mode === 'wellbeing' ? 'bg-pink-50 border-pink-100' : 'bg-orange-50 border-orange-100'} border rounded-xl px-4 py-3 flex items-center justify-center`}>
-                                <span className={`text-2xl font-bold ${mode === 'wellbeing' ? 'text-pink-500' : 'text-orange-500'} font-['Fredoka']`}>
+                            <div className="glass-panel border-white shadow-inner rounded-2xl px-4 py-3 flex items-center justify-center" style={{ background: mode === 'wellbeing' ? 'hsla(350,80%,96%,0.5)' : 'hsla(30,90%,96%,0.5)' }}>
+                                <span className={`text-2xl font-bold ${mode === 'wellbeing' ? 'text-rose-500' : 'text-orange-500'} font-['Fredoka']`}>
                                     {mode === 'wellbeing' ? vibes : calories}
                                 </span>
-                                <span className={`ml-1 text-xs font-bold ${mode === 'wellbeing' ? 'text-pink-400' : 'text-orange-400'}`}>
+                                <span className={`ml-1.5 text-[10px] font-black uppercase tracking-widest ${mode === 'wellbeing' ? 'text-rose-400' : 'text-orange-400'}`}>
                                     {mode === 'wellbeing' ? 'vibes' : 'kcal'}
                                 </span>
                             </div>
@@ -358,7 +358,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     </div>
 
                     {/* Victory Photo (Optional) */}
-                    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center">
+                    <div className="bg-emerald-50/30 border border-emerald-100 p-4 rounded-2xl text-center">
                         <h3 className="text-emerald-800 font-bold text-sm uppercase tracking-wider mb-2 flex items-center justify-center">
                             <Camera size={14} className="mr-2" /> Share Victory Selfie
                         </h3>
@@ -388,7 +388,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                             }
                                         }}
                                     />
-                                    <div className="bg-white hover:bg-emerald-50 text-emerald-600 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
+                                    <div className="bg-white hover:bg-emerald-50/30 text-emerald-600 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
                                         {uploadingPhoto ? 'Uploading...' : 'Camera'}
                                     </div>
                                 </label>
@@ -429,7 +429,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     {/* Save Button */}
                     <button
                         onClick={handleSubmit}
-                        className={`w-full ${mode === 'wellbeing' ? 'bg-pink-500 shadow-pink-200' : 'bg-emerald-600 shadow-emerald-200'} text-white py-4 rounded-xl font-bold text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center hover:brightness-110`}
+                        className={`w-full ${mode === 'wellbeing' ? 'bg-rose-500 shadow-rose-200' : 'bg-emerald-600 shadow-emerald-200'} text-white py-4 rounded-2xl font-extrabold uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center hover:brightness-110 spring-transition`}
                     >
                         <Save size={20} className="mr-2" /> {mode === 'wellbeing' ? 'Log Activity' : 'Log Workout'}
                     </button>

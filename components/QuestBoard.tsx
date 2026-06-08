@@ -47,7 +47,7 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
     checkColor: 'text-indigo-500',
     radioHover: 'group-hover:border-indigo-400'
   } : {
-    bgCompleted: 'bg-emerald-50 border-emerald-100',
+    bgCompleted: 'bg-emerald-50/30 border-emerald-100',
     textCompleted: 'text-emerald-800',
     iconCompletedBg: 'bg-emerald-200 text-emerald-700',
     hoverBorder: 'hover:border-emerald-200',
@@ -114,7 +114,7 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
  * Performance Impact: Avoids re-rendering the entire quest list when unrelated App state changes.
  */
 export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false }) => {
-  if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
+  if (loading) return <div className="animate-pulse h-32 bg-emerald-50/30 rounded-[24px] w-full"></div>;
 
   const completedCount = quests.filter(q => q.completed).length;
   const allComplete = completedCount === quests.length && quests.length > 0;
@@ -145,17 +145,17 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
         </div>
       )}
 
-      <div className="bg-white p-5 rounded-[24px] shadow-lg shadow-emerald-100/50 border border-emerald-50 mb-6 relative overflow-hidden group">
+      <div className="glass-panel p-5 mb-6 relative overflow-hidden group shadow-xl" style={{ background: 'hsla(140,50%,98%,0.8)' }}>
         {/* Background Decor */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka'] flex items-center">
-              Daily Quest
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center">
+              Daily Missions
             </h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
-              {allComplete ? 'All missions complete!' : `${completedCount}/${quests.length} Completed`}
+            <p className="text-[10px] text-emerald-600/60 font-extrabold uppercase tracking-widest">
+              {allComplete ? 'Forest is thriving!' : `${completedCount}/${quests.length} Completed`}
             </p>
           </div>
           {allComplete && (

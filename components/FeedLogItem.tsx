@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { User, WorkoutLog, UserProfile } from '../types';
 import { Flame, MessageCircle, Trash2, TrendingUp, Heart } from 'lucide-react';
 import { CommentSection } from './CommentSection';
@@ -25,14 +25,30 @@ const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda';
 };
 
+const BOOST_EMOJIS = ['🔥', '💚', '🌿', '⚡', '🎋', '🐼', '✨'];
+
 export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const {
         log, currentUser, profile, reactions, commentsCount,
         isExpanded, isCommentsOpen, onReaction, onToggleExpansion, onToggleComments, onDelete
     } = props;
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [burst, setBurst] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
+    const burstIdRef = useRef(0);
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
+
+    const handleBoost = (e: React.MouseEvent<HTMLButtonElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const parentRect = e.currentTarget.closest('.feed-card-root')?.getBoundingClientRect();
+        const x = rect.left - (parentRect?.left ?? 0) + rect.width / 2;
+        const y = rect.top - (parentRect?.top ?? 0);
+        const emoji = BOOST_EMOJIS[Math.floor(Math.random() * BOOST_EMOJIS.length)];
+        const id = burstIdRef.current++;
+        setBurst(prev => [...prev, { id, x, y, emoji }]);
+        setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 950);
+        onReaction(log.id);
+    };
 
     // BOLT: Memoize total volume calculation to prevent redundant $O(E*S)$ reduction on every render
     const totalVolume = useMemo(() => log.exercises.reduce((acc, ex) =>
@@ -54,27 +70,35 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const avatarImg = getAvatarPath(props.avatarId);
 
     return (
-        <div className="bg-white p-4 rounded-[32px] shadow-lg shadow-emerald-100/40 border border-emerald-50/50 relative group hover:border-emerald-100 transition-colors">
+        <div className="glass-panel feed-card-root p-4 rounded-[32px] relative group" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+            {/* Floating Emoji Bursts */}
+            {burst.map(b => (
+                <span
+                    key={b.id}
+                    className="emoji-burst"
+                    style={{ left: b.x, top: b.y }}
+                >{b.emoji}</span>
+            ))}
             {/* Decoration Pin */}
             <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent opacity-30"></div>
 
             <div className="flex justify-between items-start mb-3 mt-1 relative">
                 <div className="flex items-center">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg mr-3 border-2 border-emerald-50 bg-emerald-50/30 overflow-hidden`}>
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg mr-3 border border-emerald-100/50 bg-white shadow-sm overflow-hidden`}>
                         <img src={avatarImg} alt={log.user} onError={handleImgError} className="w-full h-full object-cover" />
                     </div>
                     <div>
                         <div className="font-bold text-emerald-950 text-base font-['Fredoka']">
                             {log.user}
                         </div>
-                        <div className="text-[10px] text-emerald-500/70 flex items-center font-bold uppercase tracking-wider mt-0.5">
+                        <div className="text-[10px] text-emerald-600/60 flex items-center font-bold uppercase tracking-widest mt-1.5">
                             {log.type === 'Custom'
-                                ? <span className="text-orange-500/80">🔥 Activity Tracker</span>
+                                ? <span className="text-orange-500">🔥 Activity</span>
                                 : log.type === 'COMMITMENT'
-                                    ? <span className="text-amber-500/80">✋ Commitment</span>
+                                    ? <span className="text-amber-600">✋ Commitment</span>
                                     : (log.type === 'A' ? '🌿 Plan A' : '🎋 Plan B')
-                            } {log.isCommitmentFulfillment && <span className="ml-2 bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md flex items-center shadow-sm border border-emerald-200 animate-pulse"><TrendingUp size={8} className="mr-0.5" /> PROMISE KEPT</span>}
-                            <span className="mx-1.5 opacity-50">•</span> {formatTimeAgo(log.date)}
+                            } {log.isCommitmentFulfillment && <span className="ml-2 bg-emerald-500 text-white px-1.5 py-0.5 rounded-lg flex items-center shadow-sm text-[8px] animate-pulse"><TrendingUp size={8} className="mr-0.5" /> PROMISE KEPT</span>}
+                            <span className="mx-1.5 opacity-30">•</span> {formatTimeAgo(log.date)}
                         </div>
                     </div>
                 </div>
@@ -93,19 +117,19 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             </div>
 
             {/* Workout Summary Card */}
-            <div className="bg-[#F0FDF4] rounded-[20px] p-4 mb-4 border border-emerald-100/60 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="card-activity rounded-[24px] p-4 mb-4 relative overflow-hidden foliage-pattern border-teal-100/50">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-teal-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
 
-                <div className="flex justify-between items-center text-[10px] font-bold text-emerald-600 mb-3 uppercase tracking-widest relative z-10">
-                    <span className="flex items-center bg-white/60 px-2 py-0.5 rounded-lg backdrop-blur-sm"><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5"></div>{log.durationMinutes} mins</span>
+                <div className="flex justify-between items-center text-[10px] font-bold text-teal-700 mb-3 uppercase tracking-widest relative z-10">
+                    <span className="flex items-center bg-white/40 px-2 py-0.5 rounded-lg backdrop-blur-sm border border-white/20"><div className="w-1.5 h-1.5 bg-teal-500 rounded-full mr-1.5"></div>{log.durationMinutes} mins</span>
                     <div className="flex items-center space-x-2">
                         {log.vibes ? (
-                            <span className="flex items-center bg-white/60 px-2 py-0.5 rounded-lg backdrop-blur-sm"><Heart size={10} className="mr-1.5 text-pink-500 fill-current" /> {log.vibes} vibes</span>
+                            <span className="flex items-center bg-white/40 px-2 py-0.5 rounded-lg backdrop-blur-sm border border-white/20"><Heart size={10} className="mr-1.5 text-pink-500 fill-current" /> {log.vibes} vibes</span>
                         ) : log.calories ? (
-                            <span className="flex items-center bg-white/60 px-2 py-0.5 rounded-lg backdrop-blur-sm"><Flame size={10} className="mr-1.5 text-orange-500" /> {log.calories} kcal</span>
+                            <span className="flex items-center bg-white/40 px-2 py-0.5 rounded-lg backdrop-blur-sm border border-white/20"><Flame size={10} className="mr-1.5 text-orange-500" /> {log.calories} kcal</span>
                         ) : null}
                         {log.type !== 'Custom' && (
-                            <span className="flex items-center bg-white/60 px-2 py-0.5 rounded-lg backdrop-blur-sm"><TrendingUp size={10} className="mr-1.5" /> {Math.round(totalVolume)}kg</span>
+                            <span className="flex items-center bg-white/40 px-2 py-0.5 rounded-lg backdrop-blur-sm border border-white/20"><TrendingUp size={10} className="mr-1.5" /> {Math.round(totalVolume)}kg</span>
                         )}
                     </div>
                 </div>
@@ -123,14 +147,14 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                         </>
                     )}
                     {log.type === 'Custom' ? (
-                        <div className="flex items-center justify-center p-2 text-emerald-800 font-bold bg-emerald-50/50 rounded-xl">
+                        <div className="flex items-center justify-center p-2 text-teal-900 font-bold bg-white/30 backdrop-blur-sm rounded-xl border border-white/20">
                             <div className="text-center">
                                 <div className="text-xl mb-1">{log.customActivity}</div>
-                                <div className="text-[10px] text-emerald-600 uppercase tracking-widest">Intensity: {log.intensity}/10</div>
+                                <div className="text-[10px] text-teal-600 uppercase tracking-widest">Intensity: {log.intensity}/10</div>
                             </div>
                         </div>
                     ) : (log.type === 'COMMITMENT' || log.type === 'Commitment' || (log.type && log.type.toUpperCase() === 'COMMITMENT')) ? (
-                        <div className={`flex items-center justify-center p-4 font-bold rounded-xl border border-dashed ${isFailedCommitment ? 'bg-red-50 text-red-800 border-red-200' : 'bg-amber-50 text-emerald-800 border-amber-100'}`}>
+                        <div className={`flex items-center justify-center p-4 font-bold rounded-xl border border-dashed ${isFailedCommitment ? 'bg-red-50 text-red-800 border-red-200' : 'bg-amber-50/50 text-amber-900 border-amber-200 backdrop-blur-sm'}`}>
                             <div className="text-center">
                                 <div className="text-3xl mb-2">{isFailedCommitment ? '⚠️' : '✋'}</div>
                                 <div className={`text-lg leading-tight ${isFailedCommitment ? 'text-red-800' : 'text-amber-800'}`}>
@@ -147,15 +171,15 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                                 const bestSet = ex.sets.reduce((m, c) => c.weight > m.weight ? c : m, { weight: 0, reps: 0 });
                                 return (
                                     <div key={`${ex.name}-${i}`} className="flex justify-between text-xs items-center group/ex">
-                                        <span className="text-emerald-900 font-medium truncate max-w-[150px] group-hover/ex:text-emerald-700 transition-colors">{ex.name}</span>
-                                        <span className="bg-white px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 shadow-sm border border-emerald-50">{bestSet.weight}kg</span>
+                                        <span className="text-teal-900 font-bold truncate max-w-[150px] group-hover/ex:text-teal-700 transition-colors">{ex.name}</span>
+                                        <span className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] font-bold text-teal-700 shadow-sm border border-white/20">{bestSet.weight}kg</span>
                                     </div>
                                 );
                             })}
                             {log.exercises.length > 3 && (
                                 <button
                                     onClick={() => onToggleExpansion(log.id)}
-                                    className="w-full text-[10px] text-center text-emerald-500 font-bold pt-2 pb-0.5 hover:text-emerald-600 transition-colors cursor-pointer hover:underline decoration-emerald-200 underline-offset-4"
+                                    className="w-full text-[10px] text-center text-teal-600 font-bold pt-2 pb-0.5 hover:text-teal-800 transition-colors cursor-pointer hover:underline decoration-teal-300 underline-offset-4"
                                 >
                                     {isExpanded ? 'Show less' : `View ${remainingCount} more moves`}
                                 </button>
@@ -168,8 +192,13 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             {/* Actions */}
             <div className="flex items-center gap-2">
                 <button
-                    onClick={() => onReaction(log.id)}
-                    className={`flex items-center px-3 py-2 rounded-xl transition-all active:scale-95 ${hasReacted ? 'bg-red-50 text-red-500 shadow-sm border border-red-100' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'}`}
+                    onClick={handleBoost}
+                    className={`flex items-center px-4 py-2.5 rounded-2xl transition-all active:scale-95 ${
+                        hasReacted
+                            ? 'text-emerald-800 shadow-md border border-emerald-200/50'
+                            : 'bg-white/50 text-slate-500 hover:bg-white hover:text-emerald-600 border border-emerald-100/50'
+                        }`}
+                    style={hasReacted ? { background: 'linear-gradient(135deg, hsl(140,65%,92%), hsl(160,65%,88%))' } : {}}
                 >
                     <Flame size={14} className={`mr-1.5 ${hasReacted ? 'fill-current' : ''}`} />
                     <span className="font-bold text-xs">{reactionCount > 0 ? reactionCount : 'Boost'}</span>
@@ -178,7 +207,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     onClick={() => onToggleComments(log.id)}
                     className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center transition-all ${isCommentsOpen ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-100'}`}
                 >
-                    <MessageCircle size={14} className="mr-1.5" />
+                    <MessageCircle size={16} className="mr-2" />
                     {commentsCount > 0 ? `${commentsCount}` : 'Comment'}
                 </button>
             </div>

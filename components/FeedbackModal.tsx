@@ -60,7 +60,7 @@ export const FeedbackModal: React.FC<Props> = ({ isOpen, onClose, onSubmit, exer
                                     onClick={() => setRating(r)}
                                     className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${rating === r
                                             ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-110'
-                                            : 'bg-white text-slate-400 border border-slate-200 hover:bg-emerald-50'
+                                            : 'bg-white text-slate-400 border border-slate-200 hover:bg-emerald-50/30'
                                         }`}
                                 >
                                     <span className="font-bold text-lg">{r}</span>

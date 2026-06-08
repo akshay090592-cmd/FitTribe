@@ -308,7 +308,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
 
       {/* Muscle Breakdown Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden spring-transition">
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
             <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Muscle Balance</h3>
@@ -339,7 +339,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Frequency Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden spring-transition">
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
             <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Frequency</h3>
@@ -402,7 +402,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Volume Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden spring-transition">
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
             <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Volume</h3>
@@ -446,7 +446,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Exercise Trend Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden spring-transition">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Strength</h3>
@@ -456,7 +456,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
             <select
               value={selectedExercise}
               onChange={(e) => setSelectedExercise(e.target.value)}
-              className="appearance-none bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none focus:ring-2 focus:ring-emerald-200 transition-shadow max-w-[120px] truncate"
+              className="appearance-none bg-emerald-50/30 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none focus:ring-2 focus:ring-emerald-200 transition-shadow max-w-[120px] truncate"
             >
               {exerciseList.map(ex => <option key={ex} value={ex}>{ex}</option>)}
             </select>
@@ -486,9 +486,9 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       <h3 className="font-bold text-emerald-900 mb-3 text-lg font-['Fredoka'] flex items-center md:col-span-2"><Trophy className="mr-2 text-amber-400 fill-current" size={18} /> Personal Records</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:col-span-2">
         {Object.entries(stats).map(([name, stat]: [string, any]) => (
-          <div key={name} className="bg-white p-4 rounded-2xl shadow-sm border border-emerald-50 flex justify-between items-center group hover:border-emerald-200 transition-colors">
+          <div key={name} className="glass-panel p-4 flex justify-between items-center group hover:border-emerald-200 transition-all spring-transition">
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mr-3 border border-emerald-100 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50/30 flex items-center justify-center text-emerald-600 mr-3 border border-emerald-100 group-hover:scale-110 transition-transform">
                 <Dumbbell size={18} />
               </div>
               <div>

@@ -16,6 +16,7 @@ CREATE TABLE public.gamification_state (
   badges ARRAY,
   inventory jsonb,
   points integer DEFAULT 0,
+  streak integer DEFAULT 0,
   updated_at timestamp with time zone DEFAULT now(),
   unlocked_themes ARRAY DEFAULT ARRAY['default'::text],
   active_theme text DEFAULT 'default'::text,

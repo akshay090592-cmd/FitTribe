@@ -253,6 +253,7 @@ describe('gamification', () => {
                 badges: [],
                 inventory: [],
                 points: 0,
+                streak: 0,
                 unlockedThemes: [],
                 activeTheme: 'default'
             };

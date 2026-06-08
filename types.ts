@@ -174,6 +174,7 @@ export interface UserGamificationState {
   badges: string[]; // IDs of unlocked badges
   inventory: GiftItem[];
   points: number;
+  streak: number;
   lifetimeXp?: number; // Total XP earned (immune to spending). If undefined, fallback to points for migration.
   unlockedThemes: string[];
   activeTheme: string;

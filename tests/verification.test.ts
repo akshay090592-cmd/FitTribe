@@ -36,7 +36,7 @@ describe('Verification Tests', () => {
 
     describe('Points System', () => {
         it('should award 10 points for a workout', async () => {
-            const mockState: UserGamificationState = { badges: [], inventory: [], points: 0, unlockedThemes: [], activeTheme: 'default' };
+            const mockState: UserGamificationState = { badges: [], inventory: [], points: 0, streak: 0, unlockedThemes: [], activeTheme: 'default' };
             (getGamificationState as Mock).mockResolvedValue({ ['TestUser']: mockState });
             (getUserLogs as Mock).mockResolvedValue([]);
 
@@ -73,7 +73,7 @@ describe('Verification Tests', () => {
         });
 
         it('should award 50 bonus points for a badge', async () => {
-            const mockState: UserGamificationState = { badges: [], inventory: [], points: 100, unlockedThemes: [], activeTheme: 'default' };
+            const mockState: UserGamificationState = { badges: [], inventory: [], points: 100, streak: 0, unlockedThemes: [], activeTheme: 'default' };
             (getGamificationState as Mock).mockResolvedValue({ ['TestUser']: mockState });
 
             const fixedDate = new Date();
@@ -131,6 +131,7 @@ describe('Verification Tests', () => {
                 badges: [],
                 inventory: [{ id: 'fist_bump', name: 'Fist Bump', emoji: '👊', count: 1 }],
                 points: 100,
+                streak: 0,
                 unlockedThemes: [],
                 activeTheme: 'default'
             };

@@ -491,7 +491,13 @@ const App: React.FC = () => {
         }
 
         // 5. Process Streaks & Risk (Reusing logs)
-        setStreak(calculateStreaks(logs, { isSorted: true }) as number);
+        // Optimization: Use precalculated streak from database if available (> 0)
+        // Fallback to calculation for existing users with 0 in the new column or if missing
+        if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
+          setStreak(gameState[profile.displayName].streak);
+        } else {
+          setStreak(calculateStreaks(logs, { isSorted: true }) as number);
+        }
         setStreakRisk(await getStreakRisk(profile.displayName, logs));
 
         // 6. Load Quests (Uses profile)

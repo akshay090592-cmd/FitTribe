@@ -256,6 +256,15 @@ const App: React.FC = () => {
     allLogs.filter(l => l.type !== WorkoutType.COMMITMENT),
     [allLogs]
   );
+
+  // BOLT: Memoize the "tomorrow commitment" check to prevent redundant O(N) searches
+  // and Date allocations on every render cycle (critical when the workout timer is active).
+  const hasTomorrowCommitment = React.useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toDateString();
+    return allLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
+  }, [allLogs]);
   const [quests, setQuests] = useState<any[]>([]);
   const [onboardingQuests, setOnboardingQuests] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -1587,10 +1596,10 @@ const App: React.FC = () => {
 
                   <button
                     onClick={handleCommit}
-                    disabled={isCommitting || !!allLogs.find(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString())}
+                    disabled={isCommitting || hasTomorrowCommitment}
                     className="w-full mt-2.5 bg-emerald-900/30 text-emerald-100 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-900/50 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isCommitting ? 'Committing...' : allLogs.find(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
+                    {isCommitting ? 'Committing...' : hasTomorrowCommitment ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
                   </button>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { Quest, QuestType, User, UserProfile, CustomChallenge, WorkoutType } from '../types';
+import { Quest, QuestType, User, UserProfile, CustomChallenge, WorkoutType, UserGamificationState } from '../types';
 import { getGamificationState, saveGamificationState, updateProfile, saveLog, addXPLog, addPointLog } from './storage';
 import { notifyTribeOnActivity } from '../services/notificationService';
 
@@ -258,10 +258,11 @@ export const updateOnboardingQuestProgress = async (
 
     if (earnedPoints > 0 || earnedXp > 0) {
       const allState = await getGamificationState();
-      const userState = allState[user] || {
+      const userState: UserGamificationState = allState[user] || {
         badges: [],
         inventory: [],
         points: 0,
+        streak: 0,
         lifetimeXp: 0,
         unlockedThemes: [],
         activeTheme: 'default'

@@ -547,10 +547,11 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   if (log.type === WorkoutType.COMMITMENT) return [];
 
   const state = await getGamificationState();
-  const userState = state[log.user] || {
+  const userState: UserGamificationState = state[log.user] || {
     badges: [],
     inventory: [],
     points: 0,
+    streak: 0,
     lifetimeXp: 0,
     activeTheme: 'default',
     unlockedThemes: ['default'],
@@ -655,6 +656,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
   // 4. Streak
   const currentStreak = await getStreaks(log.user, userLogs);
+  userState.streak = currentStreak; // Persist calculated streak
   if (currentStreak >= 5) unlock('streak_5');
   if (currentStreak >= 10) unlock('streak_10');
 
@@ -758,6 +760,7 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
     // OR: Just rebuild Points/XP/Badges.
     inventory: [], // This deletes gifts! Bad.
     points: 0,
+    streak: 0,
     lifetimeXp: 0,
     activeTheme: 'default',
     unlockedThemes: ['default'],
@@ -1045,6 +1048,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   });
 
   userState.badges = Array.from(newBadgeSet);
+  userState.streak = currentStreak; // Persist recalculated streak
 
   await saveGamificationState(userProfile, userState);
 };

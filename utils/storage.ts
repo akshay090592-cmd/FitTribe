@@ -802,16 +802,6 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
   if (cached) return [...cached];
 
-  // BOLT: Proactively check standardized tribe/global activity cache to fulfill specific user requests
-  const standardizedCacheKey = tribeId ? `logs_tribe_${tribeId}_p0_s100` : `logs_global_p0_s100`;
-  const globalLegacyCacheKey = tribeId ? `logs_tribe_${tribeId}` : 'logs_global';
-  const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey) || getFromCache<WorkoutLog[]>(globalLegacyCacheKey);
-
-  if (globalCached && !page) { // Only use global cache for unpaginated requests to avoid confusion
-    const userLogs = globalCached.filter(l => l.user === user);
-    setInCache(cacheKey, userLogs);
-    return [...userLogs];
-  }
 
   // BOLT: Only select required columns
   let query = supabase
@@ -1131,7 +1121,7 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
   }
 
   // BOLT: Only select required columns
-  let query = supabase.from('gamification_state').select('user_id, display_name, badges, inventory, points, unlocked_themes, active_theme, lifetime_xp');
+  let query = supabase.from('gamification_state').select('user_id, display_name, badges, inventory, points, streak, unlocked_themes, active_theme, lifetime_xp');
 
   if (tribeId) {
     // BOLT: Use cached member retrieval
@@ -1170,6 +1160,7 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
         badges: allBadges.filter(b => !b.startsWith('committed_')),
         inventory: row.inventory || [],
         points: row.points || 0,
+        streak: row.streak || 0,
         unlockedThemes: row.unlocked_themes || ['default'],
         activeTheme: row.active_theme || 'default',
         lifetimeXp: row.lifetime_xp // Load from DB if exists
@@ -1208,6 +1199,7 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
     badges: badgesToSave,
     inventory: state.inventory,
     points: state.points,
+    streak: state.streak,
     unlocked_themes: state.unlockedThemes,
     active_theme: state.activeTheme,
     lifetime_xp: state.lifetimeXp // Save to DB

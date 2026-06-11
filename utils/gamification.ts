@@ -81,17 +81,19 @@ export const getRank = (level: number) => {
 export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolean } = {}) => {
   let xp = 0;
 
-  // Sort logs by date ascending to calculate streaks correctly
-  // BOLT: Optimization - if already sorted desc, just reverse (O(N) vs O(N log N))
-  const sortedLogs = options.isSortedDesc
-    ? [...logs].reverse()
-    : [...logs].sort((a, b) => compareISODates(a.date, b.date));
+  // BOLT: Optimize by using index-based iteration instead of array cloning and reversing.
+  // Reduces memory allocations and CPU overhead in high-frequency paths like the Leaderboard.
+  const isSortedDesc = options.isSortedDesc;
+  const len = logs.length;
+  const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
   let lastLogDate: Date | null = null;
 
-  sortedLogs.forEach(log => {
-    if (log.type === WorkoutType.COMMITMENT) return;
+  for (let i = 0; i < len; i++) {
+    const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
+
+    if (log.type === WorkoutType.COMMITMENT) continue;
 
     // 1. Base XP Calculation
     let logXp = 0;
@@ -136,7 +138,7 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
     const bonus = isStreakEligible ? getStreakBonus(currentStreak) : 0;
 
     xp += logXp + bonus;
-  });
+  }
 
   return xp;
 };
@@ -144,21 +146,20 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
 export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedDesc?: boolean } = {}) => {
   const breakdown = new Map<string, { base: number, bonus: number, total: number, streak: number }>();
 
-  // Sort logs by date ascending to calculate streaks correctly
-  let sortedLogs: WorkoutLog[];
-  if (options.isSortedDesc) {
-    sortedLogs = [...logs].reverse();
-  } else {
-    sortedLogs = [...logs].sort((a, b) => compareISODates(a.date, b.date));
-  }
+  // BOLT: Optimize by using index-based iteration instead of array cloning and reversing.
+  const isSortedDesc = options.isSortedDesc;
+  const len = logs.length;
+  const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
   let lastLogDate: Date | null = null;
 
-  sortedLogs.forEach(log => {
+  for (let i = 0; i < len; i++) {
+    const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
+
     if (log.type === WorkoutType.COMMITMENT) {
       breakdown.set(log.id, { base: 0, bonus: 0, total: 0, streak: currentStreak });
-      return;
+      continue;
     }
 
     // 1. Base XP Calculation
@@ -208,7 +209,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
       total: logXp + bonus,
       streak: currentStreak
     });
-  });
+  }
 
   return breakdown;
 };

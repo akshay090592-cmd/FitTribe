@@ -896,9 +896,8 @@ const App: React.FC = () => {
         if (type === 'streak') {
           logsToUse = await getStreakLogs(currentUser, userProfile?.tribeId);
         } else {
-          const logs = await getUserLogs(currentUser, userProfile?.tribeId);
-          // Optimization: Use compareISODates for sorting ISO date strings
-          logsToUse = logs.sort((a, b) => compareISODates(b.date, a.date));
+          // BOLT: Removed redundant .sort() as getUserLogs already returns logs sorted by date DESC.
+          logsToUse = await getUserLogs(currentUser, userProfile?.tribeId);
         }
 
         const breakdown = calculateLogXPBreakdown(logsToUse);

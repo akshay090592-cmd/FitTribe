@@ -202,7 +202,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                     </div>
 
                     {/* Identity Card */}
-                    <div className="bg-white rounded-[32px] shadow-2xl overflow-hidden mb-6 relative border-4 border-white">
+                    <div className="glass-panel overflow-hidden mb-6 relative border-4 border-emerald-50/50" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
                         {/* Header Background */}
                         <div className="h-32 relative bg-cover bg-center" style={headerStyle}>
                             <div className="absolute inset-0 bg-black/20"></div>
@@ -218,7 +218,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                         {/* Avatar & Info */}
                         <div className="px-6 pb-6 relative">
                             <div className="flex justify-between items-end -mt-12 mb-4">
-                                <div className="w-24 h-24 rounded-[24px] bg-white p-1 shadow-lg transform rotate-3 relative z-10">
+                                <div className="w-24 h-24 rounded-[24px] bg-white p-1 shadow-lg transform rotate-3 relative z-10 border border-emerald-100/40">
                                     <div className="w-full h-full rounded-[20px] overflow-hidden bg-slate-100">
                                         <img
                                             src={getAvatarPath(userProfile.avatarId)}
@@ -254,22 +254,22 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
 
                             {/* Key Stats Grid */}
                             <div className="grid grid-cols-3 gap-3 mb-6">
-                                <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-slate-800 font-['Fredoka']">{logs.length}</div>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Workouts</div>
+                                <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(140,50%,96%,0.6)', border: '1px solid hsl(140,50%,90%)', borderRadius: '20px' }}>
+                                    <div className="text-xl font-bold text-emerald-950 font-['Fredoka']">{logs.length}</div>
+                                    <div className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-wider">Workouts</div>
                                 </div>
-                                <div className="bg-orange-50 rounded-2xl p-3 text-center border border-orange-100">
+                                <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(25,90%,96%,0.6)', border: '1px solid hsl(25,90%,90%)', borderRadius: '20px' }}>
                                     <div className="text-xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center">
-                                        {streaks} <Zap size={14} className="ml-0.5 fill-current" />
+                                        {streaks} <Zap size={14} className="ml-0.5 fill-current animate-pulse" />
                                     </div>
-                                    <div className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">Streak</div>
+                                    <div className="text-[9px] font-bold text-orange-500/70 uppercase tracking-wider">Streak</div>
                                 </div>
                                 <div
-                                    className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors active:scale-95"
+                                    className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-pointer" style={{ background: 'hsla(200,80%,96%,0.6)', border: '1px solid hsl(200,80%,90%)', borderRadius: '20px' }}
                                     onClick={() => setShowPointsHistory(true)}
                                 >
                                     <div className="text-xl font-bold text-blue-600 font-['Fredoka']">{gamificationState?.points || 0}</div>
-                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Points</div>
+                                    <div className="text-[9px] font-bold text-blue-500/70 uppercase tracking-wider">Points</div>
                                 </div>
                             </div>
 
@@ -277,11 +277,11 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                             <div className="mb-2">
                                 <div className="flex justify-between items-center mb-3">
                                     <h4 className="text-sm font-bold text-slate-700 flex items-center">
-                                        <Trophy size={16} className="mr-2 text-yellow-500" /> Trophy Case
+                                        <Trophy size={16} className="mr-2 text-yellow-600" /> Trophy Case
                                     </h4>
                                     <button
                                         onClick={() => setIsBadgeModalOpen(true)}
-                                        className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors border border-slate-200"
+                                        className="text-[10px] font-bold text-slate-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/50 px-3 py-1.5 rounded-lg spring-transition border border-emerald-100/40"
                                     >
                                         View All
                                     </button>
@@ -292,19 +292,19 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                             const badge = BADGES_DB.find(b => b.id === badgeId);
                                             if (!badge) return null;
                                             return (
-                                                <div key={badgeId} className="aspect-square bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-600 border border-yellow-100 shadow-sm" title={badge.title}>
+                                                <div key={badgeId} className="aspect-square glass-panel p-2 flex items-center justify-center text-yellow-600 spring-transition" style={{ background: 'linear-gradient(135deg, hsl(48,95%,92%), hsl(38,90%,85%))', border: '1px solid hsl(48,70%,80%)', borderRadius: '16px' }} title={badge.title}>
                                                     <BadgeIcon name={badge.icon} size={20} />
                                                 </div>
                                             );
                                         })}
                                         {gamificationState.badges.length > 4 && (
-                                            <div className="aspect-square bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 text-xs font-bold border border-slate-100">
+                                            <div className="aspect-square glass-panel flex items-center justify-center text-slate-500 text-xs font-bold spring-transition" style={{ background: 'hsla(0,0%,96%,0.5)', border: '1px solid hsla(0,0%,90%,0.5)', borderRadius: '16px' }}>
                                                 +{gamificationState.badges.length - 4}
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="bg-slate-50 rounded-2xl p-4 text-center border border-dashed border-slate-200">
+                                    <div className="bg-slate-50/50 rounded-2xl p-4 text-center border border-dashed border-slate-200">
                                         <p className="text-xs text-slate-400 font-bold">No trophies yet. Keep training!</p>
                                     </div>
                                 )}
@@ -340,32 +340,32 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                     <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                         <button
                             onClick={() => setIsHistoryOpen(true)}
-                            className="w-full bg-white p-4 rounded-[24px] shadow-sm border border-slate-200 flex items-center justify-between group active:scale-[0.98] transition-all hover:border-emerald-200"
+                            className="w-full glass-panel p-4 flex items-center justify-between group spring-transition" style={{ background: 'hsla(140,50%,98%,0.8)', borderRadius: '24px' }}
                         >
                             <div className="flex items-center">
-                                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mr-4">
+                                <div className="w-10 h-10 bg-emerald-50 border border-emerald-100/50 rounded-xl flex items-center justify-center text-emerald-700 mr-4">
                                     <History size={20} />
                                 </div>
                                 <div className="text-left">
-                                    <div className="font-bold text-slate-800">View Logbook</div>
-                                    <div className="text-xs font-bold text-slate-400">Manage your history</div>
+                                    <div className="font-bold text-emerald-950">View Logbook</div>
+                                    <div className="text-xs font-bold text-emerald-500/70">Manage your history</div>
                                 </div>
                             </div>
-                            <div className="text-slate-300 group-hover:text-emerald-500 transition-colors">
+                            <div className="text-emerald-400 group-hover:text-emerald-600 transition-colors">
                                 <TrendingUp size={20} />
                             </div>
                         </button>
 
                         <button
                             onClick={onLogout}
-                            className="w-full bg-white p-4 rounded-[24px] shadow-sm border border-slate-200 flex items-center justify-between group active:scale-[0.98] transition-all hover:border-red-200"
+                            className="w-full glass-panel p-4 flex items-center justify-between group spring-transition" style={{ background: 'hsla(0,0%,98%,0.8)', borderRadius: '24px' }}
                         >
                             <div className="flex items-center">
-                                <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 mr-4 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 mr-4 group-hover:bg-red-50 group-hover:text-red-500 transition-all">
                                     <LogOut size={20} />
                                 </div>
                                 <div className="text-left">
-                                    <div className="font-bold text-slate-800 group-hover:text-red-600 transition-colors">Log Out</div>
+                                    <div className="font-bold text-slate-700 group-hover:text-red-600 transition-colors">Log Out</div>
                                 </div>
                             </div>
                         </button>
@@ -386,7 +386,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                         </h2>
                     </div>
 
-                    <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-6 relative overflow-hidden">
+                    <div className="glass-panel p-6 mb-6 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
                         <form className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Height (cm)</label>
@@ -503,7 +503,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                             </h3>
                             <div className="space-y-3">
                                 {userProfile.customChallenges.map((challenge) => (
-                                    <div key={challenge.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                                    <div key={challenge.id} className="glass-panel p-4 flex items-center justify-between spring-transition cursor-default" style={{ background: 'hsla(140,50%,98%,0.8)', borderRadius: '20px' }}>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${challenge.type === 'daily' ? 'bg-blue-50 text-blue-600' :

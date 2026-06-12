@@ -79,7 +79,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     style={{ left: b.x, top: b.y }}
                 >{b.emoji}</span>
             ))}
-            {/* Decoration Pin */}}
+            {/* Decoration Pin */}
             <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent opacity-30"></div>
 
             <div className="flex justify-between items-start mb-3 mt-1 relative">
@@ -193,7 +193,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             <div className="flex items-center gap-2">
                 <button
                     onClick={handleBoost}
-                    className={`flex items-center px-3 py-2 rounded-xl transition-all active:scale-95 ${
+                    className={`flex items-center px-3 py-2 rounded-xl active:scale-95 spring-transition ${
                         hasReacted
                             ? 'text-emerald-700 shadow-sm border border-emerald-200'
                             : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
@@ -205,7 +205,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                 </button>
                 <button
                     onClick={() => onToggleComments(log.id)}
-                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center transition-all ${isCommentsOpen ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-100'}`}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center spring-transition ${isCommentsOpen ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-100'}`}
                 >
                     <MessageCircle size={14} className="mr-1.5" />
                     {commentsCount > 0 ? `${commentsCount}` : 'Comment'}

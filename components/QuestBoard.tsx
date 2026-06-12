@@ -63,9 +63,10 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
       className={`flex items-center p-3 rounded-2xl border transition-all duration-300 relative overflow-hidden ${quest.completed
         ? `${colors.bgCompleted} opacity-80`
         : isManual
-          ? `bg-white border-slate-100 ${colors.hoverBorder} hover:bg-slate-50 cursor-pointer active:scale-[0.98] shadow-sm`
-          : 'bg-slate-50/50 border-slate-100'
+          ? `glass-panel border-emerald-100/50 spring-transition cursor-pointer`
+          : 'glass-panel border-slate-100/30'
         }`}
+      style={!quest.completed ? { background: 'hsla(140,50%,98%,0.75)' } : {}}
     >
       {/* Progress Bar Background for non-manual */}
       {!quest.completed && !isManual && (
@@ -125,7 +126,7 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   return (
     <>
       {showOnboarding && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-[24px] p-5 mb-6 relative overflow-hidden group">
+        <div className="glass-panel p-5 mb-6 relative overflow-hidden group" style={{ background: 'linear-gradient(135deg, hsl(230,80%,97%) 0%, hsl(250,75%,95%) 100%)', border: '1px solid hsl(230,60%,90%)', borderRadius: '24px' }}>
           {/* Header for Onboarding */}
           <div className="flex justify-between items-center mb-4 relative z-10">
             <div>
@@ -145,7 +146,7 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
         </div>
       )}
 
-      <div className="bg-white p-5 rounded-[24px] shadow-lg shadow-emerald-100/50 border border-emerald-50 mb-6 relative overflow-hidden group">
+      <div className="glass-panel p-5 mb-6 relative overflow-hidden group" style={{ background: 'hsla(140,50%,98%,0.80)', borderRadius: '24px' }}>
         {/* Background Decor */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
 

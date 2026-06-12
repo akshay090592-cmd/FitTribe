@@ -460,24 +460,39 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
         <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in relative z-10">
 
             {/* Tabs */}
-            <div className="flex bg-white/20 backdrop-blur-md p-1 rounded-2xl mb-6 shadow-lg border border-white/20">
+            <div className="glass-panel flex p-1.5 rounded-2xl mb-6 shadow-lg" style={{ background: 'hsla(140,50%,96%,0.85)' }}>
                 <button
                     onClick={() => setActiveTab('chat')}
-                    className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center transition-all ${activeTab === 'chat' ? 'bg-indigo-500 text-white shadow-md' : 'text-emerald-900 hover:bg-white/10'}`}
+                    className={`flex-1 py-2.5 rounded-xl font-bold flex items-center justify-center transition-all text-sm ${
+                        activeTab === 'chat'
+                            ? 'text-white shadow-md shadow-indigo-300/40'
+                            : 'text-emerald-700 hover:bg-white/40'
+                    }`}
+                    style={activeTab === 'chat' ? { background: 'linear-gradient(135deg, hsl(238,70%,60%), hsl(250,65%,55%))' } : {}}
                 >
-                    <MessageSquare size={18} className="mr-2" /> AI Coach
+                    <MessageSquare size={16} className="mr-1.5" /> AI Coach
                 </button>
                 <button
                     onClick={() => setActiveTab('checkin')}
-                    className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center transition-all ${activeTab === 'checkin' ? 'bg-orange-500 text-white shadow-md' : 'text-emerald-900 hover:bg-white/10'}`}
+                    className={`flex-1 py-2.5 rounded-xl font-bold flex items-center justify-center transition-all text-sm ${
+                        activeTab === 'checkin'
+                            ? 'text-white shadow-md shadow-orange-300/40'
+                            : 'text-emerald-700 hover:bg-white/40'
+                    }`}
+                    style={activeTab === 'checkin' ? { background: 'linear-gradient(135deg, hsl(25,95%,62%), hsl(15,90%,55%))' } : {}}
                 >
-                    <Calendar size={18} className="mr-2" /> Schedule
+                    <Calendar size={16} className="mr-1.5" /> Schedule
                 </button>
                 <button
                     onClick={() => setActiveTab('diet')}
-                    className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center transition-all ${activeTab === 'diet' ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-900 hover:bg-white/10'}`}
+                    className={`flex-1 py-2.5 rounded-xl font-bold flex items-center justify-center transition-all text-sm ${
+                        activeTab === 'diet'
+                            ? 'text-white shadow-md shadow-emerald-300/40'
+                            : 'text-emerald-700 hover:bg-white/40'
+                    }`}
+                    style={activeTab === 'diet' ? { background: 'linear-gradient(135deg, hsl(140,60%,40%), hsl(155,65%,35%))' } : {}}
                 >
-                    <ChefHat size={18} className="mr-2" /> Nutrition
+                    <ChefHat size={16} className="mr-1.5" /> Nutrition
                 </button>
             </div>
 
@@ -754,32 +769,42 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
 
             {
                 activeTab === 'chat' && (
-                    <div className="flex flex-col h-[60vh] bg-emerald-900/5 backdrop-blur-md rounded-[32px] shadow-xl overflow-hidden border border-white/20 animate-slide-up">
-                        <div className="bg-emerald-600 p-4 flex items-center text-white shadow-md">
-                            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 backdrop-blur-sm">
-                                <span className="text-xl">🐼</span>
+                    <div className="flex flex-col h-[60vh] glass-panel overflow-hidden animate-slide-up" style={{ background: 'hsla(140,40%,98%,0.80)' }}>
+                        {/* Sage Panda Header */}
+                        <div className="p-4 flex items-center text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
+                            <div className="w-11 h-11 bg-white/20 rounded-full flex items-center justify-center mr-3 backdrop-blur-sm border-2 border-white/30 shadow-md">
+                                <span className="text-2xl">🐼</span>
                             </div>
                             <div>
-                                <div className="font-bold font-['Fredoka']">Sage Panda</div>
-                                <div className="text-xs text-emerald-100 font-medium">Always online</div>
+                                <div className="font-bold font-['Fredoka'] text-lg">Sage Panda</div>
+                                <div className="text-xs font-medium flex items-center" style={{ color: 'hsl(140,60%,75%)' }}>
+                                    <div className="w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse" style={{ background: 'hsl(140,70%,55%)' }} />
+                                    Always online
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ background: 'hsla(140,35%,97%,0.6)' }}>
                             {messages.map((m, idx) => (
                                 <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${m.role === 'user'
-                                        ? 'bg-emerald-600 text-white rounded-br-none'
-                                        : 'bg-white text-emerald-900 border border-emerald-100 rounded-bl-none'
-                                        }`}>
+                                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                                        m.role === 'user'
+                                            ? 'text-white rounded-br-none'
+                                            : 'rounded-bl-none border'
+                                        }`}
+                                        style={m.role === 'user'
+                                            ? { background: 'linear-gradient(135deg, hsl(140,60%,32%), hsl(155,65%,26%))' }
+                                            : { background: 'hsla(0,0%,100%,0.90)', borderColor: 'hsl(140,40%,88%)', color: 'hsl(140,50%,15%)' }
+                                        }
+                                    >
                                         <FormattedMessage text={m.text} />
                                     </div>
                                 </div>
                             ))}
                             {loadingChat && (
                                 <div className="flex justify-start">
-                                    <div className="bg-white text-slate-400 p-3 rounded-2xl rounded-bl-none text-xs font-bold animate-pulse border border-slate-100">
-                                        Sage is thinking...
+                                    <div className="p-3 rounded-2xl rounded-bl-none text-xs font-bold animate-pulse border" style={{ background: 'hsla(0,0%,100%,0.85)', borderColor: 'hsl(140,40%,88%)', color: 'hsl(140,40%,50%)' }}>
+                                        Sage is thinking... 🎋
                                     </div>
                                 </div>
                             )}
@@ -890,21 +915,24 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
 
                         </div>
 
-                        <div className="p-3 bg-white/80 backdrop-blur-md border-t border-emerald-100">
-                            <div className="flex items-center bg-emerald-50 rounded-2xl p-1 pr-2 border border-emerald-100">
+                        {/* Floating Glass Message Bar */}
+                        <div className="p-3 border-t" style={{ background: 'hsla(140,40%,97%,0.90)', backdropFilter: 'blur(12px)', borderColor: 'hsla(140,40%,85%,0.5)' }}>
+                            <div className="flex items-center rounded-2xl p-1 pr-2 border" style={{ background: 'hsla(140,45%,94%,0.80)', borderColor: 'hsl(140,40%,82%)' }}>
                                 <input
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                                    placeholder="Ask for advice..."
-                                    className="flex-1 bg-transparent p-3 text-sm focus:outline-none text-emerald-900 placeholder-emerald-400"
+                                    placeholder="Ask Sage for advice..."
+                                    className="flex-1 bg-transparent p-3 text-sm focus:outline-none"
+                                    style={{ color: 'hsl(140,50%,15%)', caretColor: 'hsl(140,60%,40%)' }}
                                 />
                                 <button
                                     onClick={sendMessage}
                                     disabled={!input.trim() || loadingChat}
-                                    className="p-2 bg-emerald-600 text-white rounded-xl shadow-md disabled:opacity-50 active:scale-95 transition-transform"
+                                    className="p-2 rounded-xl shadow-md disabled:opacity-40 active:scale-95 transition-all"
+                                    style={{ background: 'linear-gradient(135deg, hsl(140,60%,40%), hsl(155,65%,32%))' }}
                                 >
-                                    <Send size={18} />
+                                    <Send size={18} className="text-white" />
                                 </button>
                             </div>
                         </div>

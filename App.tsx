@@ -1296,7 +1296,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-0 font-sans bg-[#F0FDF4] selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="min-h-screen pb-28 md:pb-0 font-sans selection:bg-emerald-200 selection:text-emerald-900" style={{ backgroundColor: 'var(--color-bg-page)' }}>
 
       {/* Header */}
       <div
@@ -1443,13 +1443,13 @@ const App: React.FC = () => {
                 {/* Streak Card */}
                 <button
                   onClick={() => handleOpenStats('streak')}
-                  className="bg-white p-3 rounded-[24px] shadow-lg shadow-amber-100/50 border border-amber-50 flex flex-col justify-between group hover:shadow-xl transition-all active:scale-95 h-32 relative overflow-hidden text-left"
+                  className="card-streak spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
                 >
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
                     <Flame size={48} className="text-amber-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
                     <Flame size={20} className="fill-current" />
                   </div>
 
@@ -1458,7 +1458,7 @@ const App: React.FC = () => {
                       Daily Streak
                       <InfoTooltip text="Consecutive days with workouts. Keep the fire burning!" color="text-amber-400" />
                     </div>
-                    <div className="text-amber-600 text-lg font-bold font-['Fredoka'] flex items-center mt-0.5">
+                    <div className="text-amber-700 text-lg font-bold font-['Fredoka'] flex items-center mt-0.5">
                       {streak} {streak === 1 ? 'Day' : 'Days'}
                     </div>
                   </div>
@@ -1468,22 +1468,22 @@ const App: React.FC = () => {
                 <button
                   onClick={() => setIsHistoryOpen(true)}
                   disabled={!lastWorkout}
-                  className={`bg-white p-3 rounded-[24px] shadow-lg border flex flex-col justify-between group transition-all h-32 relative overflow-hidden text-left ${lastWorkout ? 'shadow-emerald-100/50 border-emerald-50 hover:shadow-xl active:scale-95' : 'border-slate-100 opacity-60 cursor-default'}`}
+                  className={`card-activity spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left ${!lastWorkout ? 'opacity-60 cursor-default' : ''}`}
                 >
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <History size={48} className={lastWorkout ? "text-emerald-900" : "text-slate-400"} />
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <History size={48} className="text-teal-700" />
                   </div>
 
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${!lastWorkout ? 'bg-slate-100 text-slate-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-blue-100 text-blue-500' : 'bg-purple-100 text-purple-500'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${!lastWorkout ? 'bg-teal-100 text-teal-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-teal-200 text-teal-600' : 'bg-teal-200 text-teal-700'}`}>
                     {!lastWorkout ? <History size={20} /> : lastWorkout.type === WorkoutType.CUSTOM ? <Activity size={20} /> : <Dumbbell size={20} />}
                   </div>
 
                   <div className="text-left z-10">
-                    <div className={`font-bold text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-slate-400' : 'text-emerald-900'}`}>
+                    <div className={`font-bold text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-teal-400' : 'text-teal-900'}`}>
                       {!lastWorkout ? 'No Recent Activity' : (lastWorkout.type === WorkoutType.CUSTOM ? lastWorkout.customActivity : `Plan ${lastWorkout.type}`)}
                     </div>
                     {lastWorkout && (
-                      <div className="text-emerald-500 text-[10px] font-bold flex items-center mt-0.5">
+                      <div className="text-teal-600 text-[10px] font-bold flex items-center mt-0.5">
                         <Clock size={10} className="mr-1" />
                         {formatDistanceToNow(new Date(lastWorkout.date), { addSuffix: true })}
                       </div>
@@ -1494,36 +1494,36 @@ const App: React.FC = () => {
                 {/* Fitness Track Button - Compact */}
                 <button
                   onClick={() => { setActivityModalMode('fitness'); setIsActivityModalOpen(true); }}
-                  className="bg-white p-3 rounded-[24px] shadow-lg shadow-emerald-100/50 border border-emerald-50 flex flex-col justify-between group hover:shadow-xl transition-all active:scale-95 h-32 relative overflow-hidden"
+                  className="card-fitness spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern"
                 >
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
                     <Flame size={48} className="text-orange-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 group-hover:rotate-12 transition-transform">
+                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center text-orange-600 group-hover:rotate-12 transition-transform duration-300">
                     <Flame size={20} className="fill-current" />
                   </div>
                   <div className="text-left z-10">
-                    <div className="text-emerald-900 font-bold text-sm leading-tight">Log Fitness Activities</div>
-                    <div className="text-emerald-500 text-[10px] font-bold">Sports, Cardio...</div>
+                    <div className="text-orange-900 font-bold text-sm leading-tight">Log Fitness Activities</div>
+                    <div className="text-orange-600 text-[10px] font-bold">Sports, Cardio...</div>
                   </div>
                 </button>
 
                 {/* Wellbeing Track Button - Compact */}
                 <button
                   onClick={() => { setActivityModalMode('wellbeing'); setIsActivityModalOpen(true); }}
-                  className="bg-white p-3 rounded-[24px] shadow-lg shadow-pink-100/50 border border-pink-50 flex flex-col justify-between group hover:shadow-xl transition-all active:scale-95 h-32 relative overflow-hidden"
+                  className="card-wellbeing spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern"
                 >
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Heart size={48} className="text-pink-500" />
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <Heart size={48} className="text-rose-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-pink-500 group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300">
                     <Heart size={20} className="fill-current" />
                   </div>
                   <div className="text-left z-10">
-                    <div className="text-pink-900 font-bold text-sm leading-tight">Log Wellbeing Activities</div>
-                    <div className="text-pink-500 text-[10px] font-bold">Cooking, Music...</div>
+                    <div className="text-rose-900 font-bold text-sm leading-tight">Log Wellbeing Activities</div>
+                    <div className="text-rose-500 text-[10px] font-bold">Cooking, Music...</div>
                   </div>
                 </button>
               </div>
@@ -1725,7 +1725,7 @@ const App: React.FC = () => {
       </div> {/* End of Main Grid */}
 
       {/* Floating Dock Navigation */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-emerald-950/50 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-3 z-50 w-[90%] max-w-sm md:hidden">
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-3 z-50 w-[90%] max-w-sm md:hidden" style={{ background: 'hsla(140, 70%, 6%, 0.55)', backdropFilter: 'blur(20px) saturate(1.6)', borderColor: 'rgba(255,255,255,0.08)' }}>
         <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" />
         <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" />
         <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" />

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { User, WorkoutLog, UserProfile } from '../types';
 import { Flame, MessageCircle, Trash2, TrendingUp, Heart } from 'lucide-react';
 import { CommentSection } from './CommentSection';
@@ -25,14 +25,30 @@ const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda';
 };
 
+const BOOST_EMOJIS = ['🔥', '💚', '🌿', '⚡', '🎋', '🐼', '✨'];
+
 export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const {
         log, currentUser, profile, reactions, commentsCount,
         isExpanded, isCommentsOpen, onReaction, onToggleExpansion, onToggleComments, onDelete
     } = props;
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [burst, setBurst] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
+    const burstIdRef = useRef(0);
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
+
+    const handleBoost = (e: React.MouseEvent<HTMLButtonElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const parentRect = e.currentTarget.closest('.feed-card-root')?.getBoundingClientRect();
+        const x = rect.left - (parentRect?.left ?? 0) + rect.width / 2;
+        const y = rect.top - (parentRect?.top ?? 0);
+        const emoji = BOOST_EMOJIS[Math.floor(Math.random() * BOOST_EMOJIS.length)];
+        const id = burstIdRef.current++;
+        setBurst(prev => [...prev, { id, x, y, emoji }]);
+        setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 950);
+        onReaction(log.id);
+    };
 
     // BOLT: Memoize total volume calculation to prevent redundant $O(E*S)$ reduction on every render
     const totalVolume = useMemo(() => log.exercises.reduce((acc, ex) =>
@@ -54,7 +70,15 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const avatarImg = getAvatarPath(props.avatarId);
 
     return (
-        <div className="bg-white p-4 rounded-[32px] shadow-lg shadow-emerald-100/40 border border-emerald-50/50 relative group hover:border-emerald-100 transition-colors">
+        <div className="glass-panel feed-card-root p-4 rounded-[32px] relative group" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+            {/* Floating Emoji Bursts */}
+            {burst.map(b => (
+                <span
+                    key={b.id}
+                    className="emoji-burst"
+                    style={{ left: b.x, top: b.y }}
+                >{b.emoji}</span>
+            ))}
             {/* Decoration Pin */}
             <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent opacity-30"></div>
 
@@ -168,15 +192,20 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             {/* Actions */}
             <div className="flex items-center gap-2">
                 <button
-                    onClick={() => onReaction(log.id)}
-                    className={`flex items-center px-3 py-2 rounded-xl transition-all active:scale-95 ${hasReacted ? 'bg-red-50 text-red-500 shadow-sm border border-red-100' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'}`}
+                    onClick={handleBoost}
+                    className={`flex items-center px-3 py-2 rounded-xl active:scale-95 spring-transition ${
+                        hasReacted
+                            ? 'text-emerald-700 shadow-sm border border-emerald-200'
+                            : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
+                        }`}
+                    style={hasReacted ? { background: 'linear-gradient(135deg, hsl(140,55%,92%), hsl(160,55%,87%))' } : {}}
                 >
                     <Flame size={14} className={`mr-1.5 ${hasReacted ? 'fill-current' : ''}`} />
                     <span className="font-bold text-xs">{reactionCount > 0 ? reactionCount : 'Boost'}</span>
                 </button>
                 <button
                     onClick={() => onToggleComments(log.id)}
-                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center transition-all ${isCommentsOpen ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-100'}`}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center spring-transition ${isCommentsOpen ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-100'}`}
                 >
                     <MessageCircle size={14} className="mr-1.5" />
                     {commentsCount > 0 ? `${commentsCount}` : 'Comment'}

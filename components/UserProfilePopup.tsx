@@ -52,7 +52,7 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6 animate-fade-in">
-      <div ref={modalRef} className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden relative animate-scale-up max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="glass-panel w-full max-w-sm overflow-hidden relative animate-scale-up max-h-[90vh] overflow-y-auto" style={{ background: 'hsla(140,50%,98%,0.95)' }}>
 
         <button
           onClick={onClose}
@@ -62,7 +62,7 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
         </button>
 
         {/* Header / Avatar */}
-        <div className="h-32 bg-gradient-to-br from-emerald-400 to-emerald-600 relative">
+        <div className="h-32 relative" style={{ background: 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
             <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-white overflow-hidden">
               <img src={getAvatarPath(profile?.avatarId)} className="w-full h-full object-cover" />
@@ -73,7 +73,7 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
         <div className="pt-14 pb-8 px-6 text-center">
           <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mb-1">{user}</h2>
           <div className="flex items-center justify-center gap-2 mb-6">
-            <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+            <span className="bg-emerald-55 text-emerald-750 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200/60 shadow-sm">
               Lvl {level} {getRank(level)}
             </span>
             {gamificationState.commitment && (
@@ -84,19 +84,19 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-              <div className="text-2xl font-bold text-emerald-600 font-['Fredoka']">{gamificationState.points}</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Points</div>
+            <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(140,50%,96%,0.6)', borderRadius: '20px' }}>
+              <div className="text-2xl font-bold text-emerald-750 font-['Fredoka']">{gamificationState.points}</div>
+              <div className="text-[10px] uppercase font-bold text-emerald-600/70 tracking-wider">Points</div>
             </div>
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-              <div className="text-2xl font-bold text-blue-500 font-['Fredoka']">{gamificationState.inventory.length}</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Gifts</div>
+            <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(200,50%,96%,0.6)', borderRadius: '20px' }}>
+              <div className="text-2xl font-bold text-blue-600 font-['Fredoka']">{gamificationState.inventory.length}</div>
+              <div className="text-[10px] uppercase font-bold text-blue-500/70 tracking-wider">Gifts</div>
             </div>
           </div>
 
           <button
             onClick={() => setShowXpHistory(true)}
-            className="w-full mb-6 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-bold py-3 rounded-2xl transition-colors flex items-center justify-center text-sm"
+            className="w-full mb-6 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/60 text-emerald-700 font-bold py-3 rounded-2xl spring-transition flex items-center justify-center text-sm shadow-sm"
           >
             <Activity size={16} className="mr-2" /> View XP History
           </button>
@@ -126,8 +126,8 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
               </h3>
               <div className="space-y-2">
                 {profile.customChallenges.map((c) => (
-                  <div key={c.id} className="bg-blue-50 p-2 rounded-xl flex items-center border border-blue-100">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-3 flex-shrink-0">
+                  <div key={c.id} className="glass-panel p-2 flex items-center spring-transition cursor-default" style={{ background: 'hsla(200,50%,96%,0.6)', border: '1px solid hsl(200,50%,90%)', borderRadius: '16px' }}>
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-650 mr-3 flex-shrink-0">
                       <Target size={14} />
                     </div>
                     <div>
@@ -148,8 +148,8 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
               </h3>
               <div className="space-y-2">
                 {profile.completedChallenges.map((c) => (
-                  <div key={c.id} className="bg-emerald-50 p-2 rounded-xl flex items-center border border-emerald-100">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mr-3 flex-shrink-0">
+                  <div key={c.id} className="glass-panel p-2 flex items-center spring-transition cursor-default" style={{ background: 'hsla(140,50%,96%,0.6)', border: '1px solid hsl(140,50%,90%)', borderRadius: '16px' }}>
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-750 mr-3 flex-shrink-0">
                       <Trophy size={14} />
                     </div>
                     <div>

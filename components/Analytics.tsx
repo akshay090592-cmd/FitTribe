@@ -308,11 +308,11 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
 
       {/* Muscle Breakdown Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Muscle Balance</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Sets per Muscle Group</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Muscle Balance</h3>
+            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Sets per Muscle Group</p>
           </div>
         </div>
 
@@ -339,11 +339,11 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Frequency Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Frequency</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Workouts per Period</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Frequency</h3>
+            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Workouts per Period</p>
           </div>
           <div className="flex space-x-2">
             {/* Comparion Toggle */}
@@ -351,26 +351,26 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
               <select
                 value={freqVersusUser || ''}
                 onChange={(e) => setFreqVersusUser(e.target.value ? e.target.value as User : null)}
-                className="appearance-none bg-red-50 text-red-500 outline-none text-[10px] font-bold py-1.5 pl-3 pr-6 rounded-xl border border-red-100 hover:bg-red-100 transition-colors cursor-pointer"
+                className="appearance-none bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-xl py-1.5 pl-3 pr-6 outline-none hover:bg-emerald-100/50 transition-all cursor-pointer"
               >
                 <option value="">Compare</option>
                 {tribeMembers.filter(u => u !== user).map(u => (
                   <option key={u} value={u}>{u}</option>
                 ))}
               </select>
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-red-400">▼</div>
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-emerald-600/70">▼</div>
             </div>
 
-            <div className="bg-slate-100 p-1 rounded-xl flex text-[10px] font-bold">
+            <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
               <button
                 onClick={() => setFreqViewMode('weekly')}
-                className={`px-3 py-1 rounded-lg transition-all ${freqViewMode === 'weekly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-lg transition-all spring-transition ${freqViewMode === 'weekly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setFreqViewMode('monthly')}
-                className={`px-3 py-1 rounded-lg transition-all ${freqViewMode === 'monthly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-lg transition-all spring-transition ${freqViewMode === 'monthly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Month
               </button>
@@ -402,23 +402,23 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Volume Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Volume</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Avg Load per Workout</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Volume</h3>
+            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Avg Load per Workout</p>
           </div>
           <div className="flex space-x-2">
-            <div className="bg-slate-100 p-1 rounded-xl flex text-[10px] font-bold">
+            <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
               <button
                 onClick={() => setViewMode('weekly')}
-                className={`px-3 py-1 rounded-lg transition-all ${viewMode === 'weekly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-lg transition-all spring-transition ${viewMode === 'weekly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setViewMode('monthly')}
-                className={`px-3 py-1 rounded-lg transition-all ${viewMode === 'monthly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-lg transition-all spring-transition ${viewMode === 'monthly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Month
               </button>
@@ -446,17 +446,17 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Exercise Trend Chart */}
-      <div className="bg-white p-4 rounded-[24px] shadow-xl shadow-emerald-100/40 border border-emerald-50 mb-4 relative overflow-hidden">
+      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka']">Strength</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Estimated 1RM Trend</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Strength</h3>
+            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Estimated 1RM Trend</p>
           </div>
           <div className="relative">
             <select
               value={selectedExercise}
               onChange={(e) => setSelectedExercise(e.target.value)}
-              className="appearance-none bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none focus:ring-2 focus:ring-emerald-200 transition-shadow max-w-[120px] truncate"
+              className="appearance-none bg-white/40 backdrop-blur-md border border-emerald-100/60 text-emerald-700 text-[10px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none hover:bg-emerald-50/50 transition-all cursor-pointer max-w-[120px] truncate"
             >
               {exerciseList.map(ex => <option key={ex} value={ex}>{ex}</option>)}
             </select>
@@ -483,26 +483,26 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
         </div>
       </div>
 
-      <h3 className="font-bold text-emerald-900 mb-3 text-lg font-['Fredoka'] flex items-center md:col-span-2"><Trophy className="mr-2 text-amber-400 fill-current" size={18} /> Personal Records</h3>
+      <h3 className="font-bold text-emerald-950 mb-3 text-lg font-['Fredoka'] flex items-center md:col-span-2"><Trophy className="mr-2 text-amber-500 fill-current" size={18} /> Personal Records</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:col-span-2">
         {Object.entries(stats).map(([name, stat]: [string, any]) => (
-          <div key={name} className="bg-white p-4 rounded-2xl shadow-sm border border-emerald-50 flex justify-between items-center group hover:border-emerald-200 transition-colors">
+          <div key={name} className="glass-panel p-4 spring-transition flex justify-between items-center group cursor-default" style={{ background: 'hsla(140,50%,98%,0.75)' }}>
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mr-3 border border-emerald-100 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-emerald-700 mr-3 border border-emerald-100/60 bg-emerald-50 group-hover:scale-110 transition-transform">
                 <Dumbbell size={18} />
               </div>
               <div>
-                <div className="font-bold text-slate-700 text-sm">{name}</div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Est. 1RM: {Math.round(stat.estimated1RM)}kg</div>
+                <div className="font-bold text-emerald-950 text-sm">{name}</div>
+                <div className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-wider">Est. 1RM: {Math.round(stat.estimated1RM)}kg</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xl font-bold text-emerald-600 font-['Fredoka']">{stat.maxWeight}kg</div>
-              <div className="text-[10px] text-slate-400 font-bold">x {stat.maxReps} reps</div>
+              <div className="text-xl font-bold text-emerald-750 font-['Fredoka']">{stat.maxWeight}kg</div>
+              <div className="text-[10px] text-emerald-500/60 font-bold">x {stat.maxReps} reps</div>
             </div>
           </div>
         ))}
-        {Object.keys(stats).length === 0 && <p className="text-slate-400 text-center text-sm font-bold bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200">Complete a workout to unlock stats!</p>}
+        {Object.keys(stats).length === 0 && <p className="text-slate-400 text-center text-sm font-bold bg-white/50 p-4 rounded-2xl border-2 border-dashed border-slate-200 backdrop-blur-sm">Complete a workout to unlock stats!</p>}
       </div>
     </div>
   );

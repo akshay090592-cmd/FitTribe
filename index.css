@@ -1,15 +1,368 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 @import "tailwindcss";
 
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
+/* ============================================================
+   FITTRIBE DESIGN SYSTEM — Jungle & Panda Theme
+   Tier 1: Raw Design Tokens
+   Tier 2: Semantic Aliases
+   Tier 3: Utility Classes & Components
+   ============================================================ */
 
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    /* IE and Edge */
-    scrollbar-width: none;
-    /* Firefox */
-  }
+:root {
+  /* --- Tier 1: Palette --- */
+  --hue-jungle:   140;
+  --hue-bamboo:    60;
+  --hue-canopy:   150;
+  --hue-honey:    350;
+  --hue-sunrise:   25;
+  --hue-mist:     200;
+
+  /* Jungle Green family */
+  --color-jungle-50:  hsl(var(--hue-jungle), 65%, 96%);
+  --color-jungle-100: hsl(var(--hue-jungle), 60%, 90%);
+  --color-jungle-200: hsl(var(--hue-jungle), 55%, 78%);
+  --color-jungle-400: hsl(var(--hue-jungle), 55%, 50%);
+  --color-jungle-600: hsl(var(--hue-jungle), 60%, 30%);
+  --color-jungle-800: hsl(var(--hue-jungle), 65%, 15%);
+  --color-jungle-950: hsl(var(--hue-jungle), 70%, 8%);
+
+  /* Bamboo Gold family */
+  --color-bamboo-100: hsl(var(--hue-bamboo), 90%, 92%);
+  --color-bamboo-300: hsl(var(--hue-bamboo), 85%, 72%);
+  --color-bamboo-400: hsl(var(--hue-bamboo), 80%, 58%);
+  --color-bamboo-600: hsl(var(--hue-bamboo), 75%, 40%);
+
+  /* Canopy Shade (deep forest) */
+  --color-canopy:     hsl(var(--hue-canopy), 70%, 12%);
+
+  /* Morning Mist (glass overlays) */
+  --color-mist-light: hsla(var(--hue-mist), 30%, 98%, 0.75);
+  --color-mist-mid:   hsla(var(--hue-mist), 20%, 95%, 0.55);
+
+  /* Honey Blossom (wellbeing/heart) */
+  --color-honey-100: hsl(var(--hue-honey), 80%, 95%);
+  --color-honey-400: hsl(var(--hue-honey), 75%, 72%);
+  --color-honey-600: hsl(var(--hue-honey), 70%, 50%);
+
+  /* Sunrise Orange (fitness/flame) */
+  --color-sunrise-100: hsl(var(--hue-sunrise), 95%, 93%);
+  --color-sunrise-400: hsl(var(--hue-sunrise), 95%, 62%);
+  --color-sunrise-600: hsl(var(--hue-sunrise), 90%, 45%);
+
+  /* --- Tier 2: Semantic Tokens --- */
+  --color-brand:        var(--color-jungle-600);
+  --color-brand-light:  var(--color-jungle-100);
+  --color-accent:       var(--color-bamboo-400);
+  --color-surface:      var(--color-mist-light);
+  --color-bg-page:      hsl(var(--hue-jungle), 50%, 96%);
+
+  /* --- Tier 3: Motion & Radius --- */
+  --ease-spring:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:     180ms;
+  --dur-base:     300ms;
+  --dur-slow:     500ms;
+
+  --radius-card:  1.75rem;   /* 28px */
+  --radius-pill:  9999px;
+  --radius-chip:  0.75rem;   /* 12px */
+
+  /* --- Glassmorphism --- */
+  --glass-bg:     hsla(0, 0%, 100%, 0.60);
+  --glass-border: hsla(0, 0%, 100%, 0.30);
+  --glass-blur:   12px;
+  --glass-shadow: 0 8px 32px hsla(140, 60%, 10%, 0.15);
+}
+
+/* ============================================================
+   Tier 3 — Utility Classes
+   ============================================================ */
+
+/* Glass Panel — the core glassmorphism card */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
+}
+
+/* Bamboo Glow — golden glowing border for active/highlighted elements */
+.bamboo-glow {
+  box-shadow:
+    0 0 0 2px var(--color-bamboo-400),
+    0 0 18px 4px hsla(var(--hue-bamboo), 80%, 55%, 0.35),
+    var(--glass-shadow);
+}
+
+/* Jungle Glow — green glow for active/primary elements */
+.jungle-glow {
+  box-shadow:
+    0 0 0 2px var(--color-jungle-400),
+    0 0 16px 4px hsla(var(--hue-jungle), 55%, 45%, 0.30),
+    var(--glass-shadow);
+}
+
+/* Foliage Pattern — subtle diagonal stripe overlay */
+.foliage-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    hsla(var(--hue-jungle), 60%, 30%, 0.04) 6px,
+    hsla(var(--hue-jungle), 60%, 30%, 0.04) 7px
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Scrollbar Utilities
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   Keyframe Animations
+   ============================================================ */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes float-up-fade {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  80%  { opacity: 0.6; transform: translateY(-40px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes bamboo-grow {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to   { transform: scaleY(1); transform-origin: bottom; }
+}
+
+@keyframes leaf-check {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes breathing-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.8; }
+  50%       { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ============================================================
+   Animation Utility Classes
+   ============================================================ */
+.animate-fade-in-up   { animation: fade-in-up   var(--dur-base) var(--ease-spring) both; }
+.animate-fade-in      { animation: fade-in       var(--dur-fast) ease both; }
+.animate-float-up     { animation: float-up-fade 0.9s var(--ease-spring) forwards; }
+.animate-pulse-ring   { animation: pulse-ring    1.6s ease-out infinite; }
+.animate-bamboo-grow  { animation: bamboo-grow   var(--dur-slow) var(--ease-spring) both; }
+.animate-leaf-check   { animation: leaf-check    var(--dur-base) var(--ease-bounce) both; }
+.animate-breathing    { animation: breathing-pulse 4s ease-in-out infinite; }
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsla(var(--hue-jungle), 50%, 92%, 0.6) 25%,
+    hsla(var(--hue-jungle), 50%, 96%, 0.9) 50%,
+    hsla(var(--hue-jungle), 50%, 92%, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ============================================================
+   Spring Transition Preset
+   Apply to interactive cards / buttons for tactile feel
+   ============================================================ */
+.spring-transition {
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-spring),
+    opacity var(--dur-fast) ease;
+}
+
+.spring-transition:hover  { transform: translateY(-3px) scale(1.02); }
+.spring-transition:active { transform: translateY(0px)  scale(0.97); }
+
+/* ============================================================
+   Gradient Card System
+   ============================================================ */
+
+/* Streak / Amber */
+.card-streak {
+  background: linear-gradient(135deg,
+    hsl(38, 95%, 92%) 0%,
+    hsl(25, 95%, 88%) 100%
+  );
+  border: 1px solid hsl(38, 80%, 85%);
+}
+
+/* Activity / Mint-Teal */
+.card-activity {
+  background: linear-gradient(135deg,
+    hsl(160, 55%, 92%) 0%,
+    hsl(175, 55%, 86%) 100%
+  );
+  border: 1px solid hsl(160, 50%, 82%);
+}
+
+/* Fitness / Coral-Orange */
+.card-fitness {
+  background: linear-gradient(135deg,
+    hsl(20, 90%, 93%) 0%,
+    hsl(10, 90%, 88%) 100%
+  );
+  border: 1px solid hsl(20, 80%, 85%);
+}
+
+/* Wellbeing / Rose-Violet */
+.card-wellbeing {
+  background: linear-gradient(135deg,
+    hsl(350, 80%, 94%) 0%,
+    hsl(330, 75%, 89%) 100%
+  );
+  border: 1px solid hsl(350, 70%, 87%);
+}
+
+/* ============================================================
+   Bamboo Progress Bar
+   ============================================================ */
+.bamboo-bar-track {
+  height: 10px;
+  background: hsla(var(--hue-jungle), 40%, 80%, 0.4);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+.bamboo-bar-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--hue-bamboo), 80%, 52%),
+    hsl(var(--hue-jungle), 55%, 42%)
+  );
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 8px hsla(var(--hue-bamboo), 75%, 50%, 0.5);
+  transition: width var(--dur-slow) var(--ease-spring);
+  position: relative;
+}
+
+/* Bamboo node notches */
+.bamboo-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 4px;
+  background: hsla(0, 0%, 100%, 0.35);
+  border-radius: var(--radius-pill);
+}
+
+/* ============================================================
+   Leaf / Check Animation
+   ============================================================ */
+.leaf-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-jungle-100);
+  color: var(--color-jungle-600);
+  transition: all var(--dur-base) var(--ease-bounce);
+}
+
+.leaf-check-icon.checked {
+  background: var(--color-jungle-600);
+  color: #fff;
+  animation: leaf-check var(--dur-base) var(--ease-bounce) both;
+}
+
+/* ============================================================
+   Rarity Badge Colors (Loot / Goodie Bag)
+   ============================================================ */
+.rarity-common  { border: 2px solid hsl(130, 55%, 55%); background: hsl(130, 55%, 96%); }
+.rarity-rare    { border: 2px solid hsl(215, 70%, 60%); background: hsl(215, 70%, 95%); }
+.rarity-epic    { border: 2px solid hsl(275, 65%, 60%); background: hsl(275, 65%, 96%); }
+.rarity-legend  { border: 2px solid hsl(var(--hue-bamboo), 80%, 55%); background: hsl(var(--hue-bamboo), 80%, 96%); box-shadow: 0 0 10px hsla(var(--hue-bamboo), 80%, 55%, 0.4); }
+
+/* ============================================================
+   Floating Emoji Burst
+   Used for boost / reactions
+   ============================================================ */
+.emoji-burst {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  animation: float-up-fade 0.9s var(--ease-spring) forwards;
+  font-size: 1.25rem;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ============================================================
+   Pulse Avatar Ring (Tribe Status)
+   ============================================================ */
+.avatar-pulse-ring {
+  position: relative;
+}
+
+.avatar-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--hue-bamboo), 75%, 55%);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* ============================================================
+   Cooldown Breathing Circle
+   ============================================================ */
+.breathing-circle {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsla(var(--hue-jungle), 55%, 50%, 0.3) 0%,
+    hsla(var(--hue-jungle), 55%, 50%, 0.05) 70%
+  );
+  animation: breathing-pulse 4s ease-in-out infinite;
+}
+
+/* ============================================================
+   Theme-aware body background
+   ============================================================ */
+body {
+  background-color: var(--color-bg-page);
+  font-family: 'Nunito', system-ui, sans-serif;
 }

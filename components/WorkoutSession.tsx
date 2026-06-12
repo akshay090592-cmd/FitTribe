@@ -695,11 +695,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             </div>
           )}
 
-          <div className="bg-white p-6 rounded-[32px] shadow-lg shadow-emerald-100/50 border border-emerald-50 mb-8">
+          <div className="glass-panel p-6 mb-8 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
             <div className="flex items-center space-x-4 mb-2">
               <div className="text-4xl">🧘</div>
               <div>
-                <h3 className="text-lg font-bold text-emerald-900">Stretch it out!</h3>
+                <h3 className="text-lg font-bold text-emerald-950 font-['Fredoka']">Stretch it out!</h3>
                 <p className="text-emerald-600/70 text-sm">Prepare your muscles, Panda.</p>
               </div>
             </div>
@@ -707,7 +707,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
           <div className="space-y-4">
             {plan.warmup.map((item, idx) => (
-              <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm cursor-pointer hover:bg-emerald-50">
+              <label key={idx} className="flex items-center p-4 glass-panel border border-emerald-100/60 spring-transition cursor-pointer" style={{ background: 'hsla(140,50%,98%,0.75)', borderRadius: '20px' }}>
                 <div className="relative flex items-center w-8 h-8 mr-4">
                   <input
                     type="checkbox"
@@ -747,7 +747,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       <div className="min-h-screen bg-[#F0FDF4] pb-32 relative">
         {showExitModal && createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl animate-scale-up">
+            <div className="glass-panel p-6 w-full max-w-sm animate-scale-up" style={{ background: 'hsla(140,50%,98%,0.95)' }}>
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">🐼</span>
@@ -999,7 +999,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         <p className="text-emerald-600 mb-8">Cool down like a panda in the shade.</p>
         <div className="space-y-4">
           {plan.cooldown.map((item, idx) => (
-            <label key={idx} className="flex items-center p-4 bg-white rounded-2xl border border-emerald-100 transition-all active:scale-95 shadow-sm hover:bg-emerald-50 cursor-pointer">
+            <label key={idx} className="flex items-center p-4 glass-panel border border-emerald-100/60 spring-transition cursor-pointer" style={{ background: 'hsla(140,50%,98%,0.75)', borderRadius: '20px' }}>
               <div className="relative flex items-center w-8 h-8 mr-4">
                 <input
                   type="checkbox"

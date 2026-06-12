@@ -88,8 +88,8 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
     }, [members, filteredStats]);
 
     return (
-        <div className="bg-white rounded-[32px] overflow-hidden shadow-lg shadow-emerald-900/5 border border-emerald-50 mb-6 font-sans">
-            <div className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-5">
+        <div className="glass-panel overflow-hidden mb-6 font-sans" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+            <div className="p-5 text-white" style={{ background: 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-white font-bold text-xl flex items-center font-['Fredoka']">
                         <Crown size={24} className="mr-2 text-yellow-400 fill-yellow-400" /> Leaderboard
@@ -97,12 +97,12 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
 
                 </div>
 
-                <div className="flex bg-emerald-900/50 rounded-xl p-1 border border-white/5">
+                <div className="flex rounded-xl p-1 border border-white/10" style={{ background: 'hsla(0,0%,0%,0.25)' }}>
                     {(['weekly', 'monthly', 'lifetime'] as Timeframe[]).map(t => (
                         <button
                             key={t}
                             onClick={() => setTimeframe(t)}
-                            className={`flex-1 px-3 py-2 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${timeframe === t ? 'bg-white text-emerald-900 shadow-md' : 'text-emerald-300 hover:bg-white/10'}`}
+                            className={`flex-1 px-3 py-2 rounded-lg text-[10px] uppercase font-bold tracking-wider spring-transition ${timeframe === t ? 'bg-white text-emerald-950 shadow-md' : 'text-emerald-100/70 hover:bg-white/10 hover:text-white'}`}
                         >
                             {t}
                         </button>
@@ -115,7 +115,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                     const { xp, count } = filteredStats[user] || { xp: 0, count: 0 };
 
                     return (
-                        <div key={user} onClick={() => onUserClick?.(user)} className="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors rounded-xl group cursor-pointer active:scale-[0.99] transform duration-100">
+                        <div key={user} onClick={() => onUserClick?.(user)} className="flex items-center justify-between p-3 border-b border-emerald-100/30 last:border-0 hover:bg-emerald-50/40 spring-transition rounded-xl group cursor-pointer">
                             <div className="flex items-center flex-1">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 shadow-sm transition-transform group-hover:scale-110
                                     ${idx === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
@@ -137,7 +137,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                                         {idx === 0 && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded-full border border-yellow-200">Lead</span>}
                                     </div>
                                     <div className="flex items-center space-x-3 mt-0.5">
-                                        <div className="text-xs text-amber-600 font-bold flex items-center bg-amber-50 px-1.5 py-0.5 rounded">
+                                        <div className="text-xs text-amber-800 font-bold flex items-center bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded">
                                             <Zap size={10} className="mr-1 fill-current" /> {xp.toLocaleString()} XP
                                         </div>
                                     </div>
@@ -145,7 +145,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                             </div>
 
                             <div className="flex flex-col items-end">
-                                <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg flex items-center group-hover:bg-emerald-100 transition-colors">
+                                <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100/50 px-2 py-1 rounded-lg flex items-center group-hover:bg-emerald-100/50 transition-all">
                                     <Activity size={12} className="mr-1" /> {count}
                                 </div>
                             </div>
@@ -153,7 +153,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                     );
                 })}
             </div>
-            <div className="bg-emerald-50/50 border-t border-emerald-100 p-3 text-center flex items-center justify-center">
+            <div className="border-t border-emerald-100/50 p-3 text-center flex items-center justify-center" style={{ background: 'hsla(140,40%,96%,0.5)' }}>
                 <p className="text-[10px] text-emerald-700 font-bold mr-2 uppercase tracking-tight">💡 Stay consistent to earn more!</p>
                 <InfoTooltip text="Plan A/B: 100 XP. Custom: 1 XP/min (Max 60 XP). Short (<30m): XP = Duration. Streaks (3/7/15/30d): +50/100/250/500 XP." iconSize={12} color="text-emerald-500" />
             </div>

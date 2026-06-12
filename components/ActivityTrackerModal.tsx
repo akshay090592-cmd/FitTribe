@@ -179,8 +179,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white w-full max-w-md max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl animate-scale-up">
-                <div className={`${mode === 'wellbeing' ? 'bg-pink-500' : 'bg-emerald-600'} p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0`}>
+            <div className="glass-panel w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'hsla(140,50%,98%,0.95)', borderRadius: '32px' }}>
+                <div className="p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0" style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
                     <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-10"></div>
                     <h2 className="text-2xl font-bold text-white font-['Fredoka'] relative z-10 flex items-center">
                         {mode === 'wellbeing' ? <Heart className="mr-2" /> : <Activity className="mr-2" />} {mode === 'wellbeing' ? 'Log Wellbeing' : 'Track Activity'}
@@ -261,7 +261,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                         <select
                             value={activity}
                             onChange={(e) => setActivity(e.target.value)}
-                            className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
+                            className={`w-full bg-white/40 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
                         >
                             {(mode === 'wellbeing' ? WELLBEING_ACTIVITIES : ACTIVITIES_LIST).map(act => (
                                 <option key={act} value={act}>
@@ -293,7 +293,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                             type="datetime-local"
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
-                            className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
+                            className={`w-full bg-white/40 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
                         />
                     </div>
 
@@ -309,7 +309,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                     type="number"
                                     value={duration}
                                     onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
-                                    className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
+                                    className={`w-full bg-white/40 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 focus:outline-none focus:ring-2 ${mode === 'wellbeing' ? 'focus:ring-pink-400' : 'focus:ring-emerald-400'}`}
                                 />
                                 <span className="ml-2 text-sm font-bold text-slate-400">min</span>
                             </div>
@@ -324,8 +324,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                     <><Flame size={16} className="mr-1 text-orange-500" /> Burn</>
                                 )}
                             </label>
-                            <div className={`${mode === 'wellbeing' ? 'bg-pink-50 border-pink-100' : 'bg-orange-50 border-orange-100'} border rounded-xl px-4 py-3 flex items-center justify-center`}>
-                                <span className={`text-2xl font-bold ${mode === 'wellbeing' ? 'text-pink-500' : 'text-orange-500'} font-['Fredoka']`}>
+                            <div className={`${mode === 'wellbeing' ? 'border-pink-200/50' : 'border-orange-200/50'} border rounded-xl px-4 py-3 flex items-center justify-center`} style={{ background: mode === 'wellbeing' ? 'hsla(350,70%,97%,0.6)' : 'hsla(25,90%,96%,0.6)' }}>
+                                <span className={`text-2xl font-bold ${mode === 'wellbeing' ? 'text-pink-550' : 'text-orange-600'} font-['Fredoka']`}>
                                     {mode === 'wellbeing' ? vibes : calories}
                                 </span>
                                 <span className={`ml-1 text-xs font-bold ${mode === 'wellbeing' ? 'text-pink-400' : 'text-orange-400'}`}>
@@ -358,8 +358,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     </div>
 
                     {/* Victory Photo (Optional) */}
-                    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center">
-                        <h3 className="text-emerald-800 font-bold text-sm uppercase tracking-wider mb-2 flex items-center justify-center">
+                    <div className="glass-panel p-4 rounded-2xl text-center border border-emerald-100/60" style={{ background: 'hsla(140,50%,98%,0.75)' }}>
+                        <h3 className="text-emerald-850 font-bold text-sm uppercase tracking-wider mb-2 flex items-center justify-center">
                             <Camera size={14} className="mr-2" /> Share Victory Selfie
                         </h3>
 
@@ -388,7 +388,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                             }
                                         }}
                                     />
-                                    <div className="bg-white hover:bg-emerald-50 text-emerald-600 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
+                                    <div className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2 px-2 rounded-xl font-bold border border-emerald-200/60 shadow-sm flex items-center justify-center text-xs spring-transition">
                                         {uploadingPhoto ? 'Uploading...' : 'Camera'}
                                     </div>
                                 </label>
@@ -414,7 +414,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                                             }
                                         }}
                                     />
-                                    <div className="bg-emerald-100/50 hover:bg-emerald-100 text-emerald-700 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs">
+                                    <div className="bg-emerald-100/50 hover:bg-emerald-100 text-emerald-700 py-2 px-2 rounded-xl font-bold border border-emerald-200 shadow-sm flex items-center justify-center text-xs spring-transition">
                                         {uploadingPhoto ? 'Uploading...' : 'Gallery'}
                                     </div>
                                 </label>
@@ -429,7 +429,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     {/* Save Button */}
                     <button
                         onClick={handleSubmit}
-                        className={`w-full ${mode === 'wellbeing' ? 'bg-pink-500 shadow-pink-200' : 'bg-emerald-600 shadow-emerald-200'} text-white py-4 rounded-xl font-bold text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center hover:brightness-110`}
+                        className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-xl flex items-center justify-center spring-transition hover:brightness-110`}
+                        style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(140,60%,32%), hsl(155,65%,26%))' }}
                     >
                         <Save size={20} className="mr-2" /> {mode === 'wellbeing' ? 'Log Activity' : 'Log Workout'}
                     </button>

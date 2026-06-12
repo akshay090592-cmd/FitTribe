@@ -20,17 +20,11 @@ import { QuestBoard } from './components/QuestBoard';
 import { getDailyQuests, getOnboardingQuests, completeManualQuest } from './utils/questUtils';
 import { NotificationPopup } from './components/NotificationPopup';
 import { getAvatarPath } from './utils/avatar';
-import { StatsDetailPopup } from './components/StatsDetailPopup';
 import { formatTimeAgo, compareISODates } from './utils/dateUtils';
-import { TutorialPage } from './components/TutorialPage';
-import { HistoryModal } from './components/HistoryModal';
 import { formatDistanceToNow } from 'date-fns';
 import { WeeklyStatsWidget } from './components/WeeklyStatsWidget';
-import { CreateChallengeModal } from './components/CreateChallengeModal';
 import { Plus } from 'lucide-react';
-import { WorkoutLibraryModal } from './components/WorkoutLibraryModal';
 import { DesktopNavigation } from './components/DesktopNavigation';
-import { LandingPage } from './components/LandingPage';
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -66,6 +60,14 @@ const Blog13 = React.lazy(() => import('./components/blogs/Blog13').then(module 
 const Blog14 = React.lazy(() => import('./components/blogs/Blog14').then(module => ({ default: module.Blog14 })));
 const Blog15 = React.lazy(() => import('./components/blogs/Blog15').then(module => ({ default: module.Blog15 })));
 const Blog16 = React.lazy(() => import('./components/blogs/Blog16').then(module => ({ default: module.Blog16 })));
+
+// Additional code splitting for modals and auxiliary pages to improve TTI
+const LandingPage = React.lazy(() => import('./components/LandingPage').then(module => ({ default: module.LandingPage })));
+const HistoryModal = React.lazy(() => import('./components/HistoryModal').then(module => ({ default: module.HistoryModal })));
+const StatsDetailPopup = React.lazy(() => import('./components/StatsDetailPopup').then(module => ({ default: module.StatsDetailPopup })));
+const CreateChallengeModal = React.lazy(() => import('./components/CreateChallengeModal').then(module => ({ default: module.CreateChallengeModal })));
+const WorkoutLibraryModal = React.lazy(() => import('./components/WorkoutLibraryModal').then(module => ({ default: module.WorkoutLibraryModal })));
+const TutorialPage = React.lazy(() => import('./components/TutorialPage').then(module => ({ default: module.TutorialPage })));
 
 const VIEW_PATHS: Record<string, string> = {
   dashboard: '/',
@@ -972,24 +974,26 @@ const App: React.FC = () => {
   // Landing Page (when user explicitly navigates to it or not logged in)
   if (view === 'landing' || (!session && !userProfile)) {
     return (
-      <LandingPage
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        isSignUp={isSignUp}
-        setIsSignUp={setIsSignUp}
-        authLoading={authLoading}
-        authError={authError}
-        setAuthError={setAuthError}
-        handleAuth={handleAuth}
-        isSupabaseConfigured={supabaseReady}
-        popupNotification={popupNotification}
-        setPopupNotification={setPopupNotification}
-        handleImgError={handleImgError}
-        onNavigate={(newView) => setView(newView)}
-        isLoggedIn={!!session}
-      />
+      <React.Suspense fallback={null}>
+        <LandingPage
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          isSignUp={isSignUp}
+          setIsSignUp={setIsSignUp}
+          authLoading={authLoading}
+          authError={authError}
+          setAuthError={setAuthError}
+          handleAuth={handleAuth}
+          isSupabaseConfigured={supabaseReady}
+          popupNotification={popupNotification}
+          setPopupNotification={setPopupNotification}
+          handleImgError={handleImgError}
+          onNavigate={(newView) => setView(newView)}
+          isLoggedIn={!!session}
+        />
+      </React.Suspense>
     );
   }
 
@@ -1739,22 +1743,22 @@ const App: React.FC = () => {
         />
       )}
 
-      <StatsDetailPopup
-        isOpen={activeStatsPopup.isOpen}
-        onClose={() => setActiveStatsPopup(prev => ({ ...prev, isOpen: false }))}
-        type={activeStatsPopup.type}
-        logs={allLogs}
-        xpBreakdown={activeStatsPopup.xpBreakdown}
-      />
-
-      <HistoryModal
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        logs={allLogs}
-        onDelete={handleDeleteLog}
-      />
-
       <React.Suspense fallback={null}>
+        <StatsDetailPopup
+          isOpen={activeStatsPopup.isOpen}
+          onClose={() => setActiveStatsPopup(prev => ({ ...prev, isOpen: false }))}
+          type={activeStatsPopup.type}
+          logs={allLogs}
+          xpBreakdown={activeStatsPopup.xpBreakdown}
+        />
+
+        <HistoryModal
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          logs={allLogs}
+          onDelete={handleDeleteLog}
+        />
+
         <ActivityTrackerModal
           isOpen={isActivityModalOpen}
           onClose={() => setIsActivityModalOpen(false)}
@@ -1814,60 +1818,60 @@ const App: React.FC = () => {
             loadProfile(true);
           }}
         />
+
+        <CreateChallengeModal
+          isOpen={isChallengeModalOpen}
+          onClose={() => setIsChallengeModalOpen(false)}
+          onSave={async (challenge) => {
+            if (userProfile) {
+              // Check if one of this type already exists, if so replace it
+              const existing = userProfile.customChallenges || [];
+              const otherTypes = existing.filter(c => c.type !== challenge.type);
+              const updatedChallenges = [...otherTypes, challenge];
+
+              const updated = { ...userProfile, customChallenges: updatedChallenges };
+              setUserProfile(updated);
+              await updateProfile(updated);
+              setQuests(getDailyQuests(userProfile.displayName, updated));
+              showToast(`${challenge.type} Challenge Created!`, "success");
+            }
+          }}
+        />
+
+        <WorkoutLibraryModal
+          isOpen={isLibraryOpen}
+          onClose={() => setIsLibraryOpen(false)}
+          userProfile={userProfile}
+          onUpdateProfile={setUserProfile}
+          onStartTemplate={(template) => {
+            const plan: WorkoutPlan = {
+              id: WorkoutType.CUSTOM_TEMPLATE,
+              title: template.name,
+              focus: 'Custom Template',
+              warmup: ['Arm Circles', 'Jumping Jacks', 'Torso Twists'],
+              cooldown: ['Static Stretch', 'Deep Breathing'],
+              exercises: template.exercises.map(ex => ({
+                id: ex.name,
+                name: ex.name,
+                sets: Array.from({ length: ex.sets }, () => ({ reps: 0, weight: 0, completed: false })), // Initial state
+                defaultSets: ex.sets,
+                defaultReps: ex.reps,
+                notes: '',
+                trackingType: ex.trackingType,
+                isSuperset: false
+              }))
+            };
+            setActiveCustomPlan(plan);
+            setIsLibraryOpen(false);
+            setView('workout');
+          }}
+        />
+
+        {isTutorialOpen && <TutorialPage onClose={() => {
+          setIsTutorialOpen(false);
+          localStorage.setItem('tutorial_seen', 'true');
+        }} />}
       </React.Suspense>
-
-      <CreateChallengeModal
-        isOpen={isChallengeModalOpen}
-        onClose={() => setIsChallengeModalOpen(false)}
-        onSave={async (challenge) => {
-          if (userProfile) {
-            // Check if one of this type already exists, if so replace it
-            const existing = userProfile.customChallenges || [];
-            const otherTypes = existing.filter(c => c.type !== challenge.type);
-            const updatedChallenges = [...otherTypes, challenge];
-
-            const updated = { ...userProfile, customChallenges: updatedChallenges };
-            setUserProfile(updated);
-            await updateProfile(updated);
-            setQuests(getDailyQuests(userProfile.displayName, updated));
-            showToast(`${challenge.type} Challenge Created!`, "success");
-          }
-        }}
-      />
-
-      <WorkoutLibraryModal
-        isOpen={isLibraryOpen}
-        onClose={() => setIsLibraryOpen(false)}
-        userProfile={userProfile}
-        onUpdateProfile={setUserProfile}
-        onStartTemplate={(template) => {
-          const plan: WorkoutPlan = {
-            id: WorkoutType.CUSTOM_TEMPLATE,
-            title: template.name,
-            focus: 'Custom Template',
-            warmup: ['Arm Circles', 'Jumping Jacks', 'Torso Twists'],
-            cooldown: ['Static Stretch', 'Deep Breathing'],
-            exercises: template.exercises.map(ex => ({
-              id: ex.name,
-              name: ex.name,
-              sets: Array.from({ length: ex.sets }, () => ({ reps: 0, weight: 0, completed: false })), // Initial state
-              defaultSets: ex.sets,
-              defaultReps: ex.reps,
-              notes: '',
-              trackingType: ex.trackingType,
-              isSuperset: false
-            }))
-          };
-          setActiveCustomPlan(plan);
-          setIsLibraryOpen(false);
-          setView('workout');
-        }}
-      />
-
-      {isTutorialOpen && <TutorialPage onClose={() => {
-        setIsTutorialOpen(false);
-        localStorage.setItem('tutorial_seen', 'true');
-      }} />}
     </div >
   );
 };

@@ -25,3 +25,7 @@
 ## 2026-06-03 - Timezone-Safe Early Exit in Hot Loops
 **Learning:** Implementing an early exit in log processing loops based on `new Date().toISOString()` can be dangerous if not buffered. Since `toISOString()` includes the current time, a naive check against "yesterday" (e.g., `new Date(now - 24h).toISOString()`) will skip any logs from yesterday morning if it is currently afternoon.
 **Action:** Always use a generous buffer (e.g., 48 hours) when implementing early breaks for "recent" activity checks, or normalize both operands to midnight UTC to ensure no data is lost across timezone boundaries or time-of-day shifts.
+
+## 2026-06-13 - Root State Debouncing for Parallel Fetches
+**Learning:** In large root components like `App.tsx`, tracking the exact count of active background requests via state causes the entire application tree to re-render every time any request starts or finishes. When 5+ requests are fired in parallel (common during initial load or tab switching), this creates a storm of expensive reconciliations.
+**Action:** Use a `useRef` to track the underlying request count and a single boolean `isFetching` state. Only update the state when the count transitions from 0 to 1 or 1 to 0. This "debounces" the UI updates to only the necessary status changes.

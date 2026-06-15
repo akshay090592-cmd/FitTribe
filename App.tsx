@@ -168,8 +168,14 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(initialProfileData.user);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfileData.profile);
   const [loading, setLoading] = useState(initialProfileData.loading);
-  const [fetchingCount, setFetchingCount] = useState(0);
-  const isFetching = fetchingCount > 0;
+  /**
+   * BOLT: Optimized background fetch tracking.
+   * By using a ref for the counter and only updating a boolean state,
+   * we eliminate redundant root-level re-renders when multiple parallel
+   * requests are initiated or completed.
+   */
+  const fetchingCountRef = React.useRef(0);
+  const [isFetching, setIsFetching] = useState(false);
   const [session, setSession] = useState<any>(null);
   const isAppReady = React.useRef(false);
   const { showToast } = useToast();
@@ -292,7 +298,13 @@ const App: React.FC = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
   const handleChildFetching = React.useCallback((fetching: boolean) => {
-    setFetchingCount(prev => Math.max(0, prev + (fetching ? 1 : -1)));
+    if (fetching) {
+      fetchingCountRef.current++;
+      if (fetchingCountRef.current === 1) setIsFetching(true);
+    } else {
+      fetchingCountRef.current = Math.max(0, fetchingCountRef.current - 1);
+      if (fetchingCountRef.current === 0) setIsFetching(false);
+    }
   }, []);
 
   // Reset scroll and update URL on view change
@@ -461,7 +473,10 @@ const App: React.FC = () => {
 
   const loadProfile = async (silent = false, passedUserId?: string) => {
     if (!silent) setLoading(true);
-    else setFetchingCount(prev => prev + 1);
+    else {
+      fetchingCountRef.current++;
+      if (fetchingCountRef.current === 1) setIsFetching(true);
+    }
     try {
       const profile = await getCurrentProfile(passedUserId);
       if (profile) {
@@ -536,7 +551,10 @@ const App: React.FC = () => {
       console.error("Failed to load profile:", error);
     } finally {
       if (!silent) setLoading(false);
-      else setFetchingCount(prev => Math.max(0, prev - 1));
+      else {
+        fetchingCountRef.current = Math.max(0, fetchingCountRef.current - 1);
+        if (fetchingCountRef.current === 0) setIsFetching(false);
+      }
       setPulseRefreshTrigger((prev: number) => prev + 1);
       isAppReady.current = true;
     }

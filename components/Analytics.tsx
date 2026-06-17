@@ -4,7 +4,7 @@ import { getUserLogs, calculateStats, getTribeMembers } from '../utils/storage';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
-import { getMuscleGroup, MUSCLE_GROUPS } from '../utils/muscleMapping';
+import { getMuscleGroups, MUSCLE_GROUPS } from '../utils/muscleMapping';
 import { monthDayFormatter, monthYearFormatter, compareISODates } from '../utils/dateUtils';
 
 import { Calendar } from './Calendar';
@@ -219,17 +219,24 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       if (log.exercises) {
         for (let j = 0; j < log.exercises.length; j++) {
           const ex = log.exercises[j];
-          const group = getMuscleGroup(ex.name);
-          // Only count if it's in our initialized list
-          if (group && counts[group] !== undefined) {
-            // BOLT: Count completed sets with a manual loop to avoid .filter().length
-            let completedSets = 0;
-            if (ex.sets) {
-              for (let k = 0; k < ex.sets.length; k++) {
-                if (ex.sets[k].completed) completedSets++;
+          const groups = getMuscleGroups(ex.name);
+
+          // BOLT: Count completed sets with a manual loop to avoid .filter().length
+          let completedSets = 0;
+          if (ex.sets) {
+            for (let k = 0; k < ex.sets.length; k++) {
+              if (ex.sets[k].completed) completedSets++;
+            }
+          }
+
+          if (completedSets > 0) {
+            for (let g = 0; g < groups.length; g++) {
+              const group = groups[g];
+              // Only count if it's in our initialized list (excludes OTHER/CARDIO if filtered)
+              if (counts[group] !== undefined) {
+                counts[group] += completedSets;
               }
             }
-            counts[group] += completedSets;
           }
         }
       }

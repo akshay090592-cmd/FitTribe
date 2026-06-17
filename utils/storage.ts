@@ -896,26 +896,44 @@ export const calculateStats = async (user: User): Promise<PRStats> => {
   const logs = await getUserLogs(user);
   const stats: PRStats = {};
 
-  logs.forEach(log => {
-    log.exercises.forEach(ex => {
-      if (!stats[ex.name]) {
-        stats[ex.name] = { maxWeight: 0, maxReps: 0, estimated1RM: 0 };
+  // BOLT: Optimized using index-based for loops and hoisted property lookups.
+  // Reduces function invocation overhead and object access latency in large datasets.
+  for (let i = 0, len = logs.length; i < len; i++) {
+    const log = logs[i];
+    const exercises = log.exercises;
+    if (!exercises) continue;
+
+    for (let j = 0, exLen = exercises.length; j < exLen; j++) {
+      const ex = exercises[j];
+      const exName = ex.name;
+      const sets = ex.sets;
+      if (!sets) continue;
+
+      if (!stats[exName]) {
+        stats[exName] = { maxWeight: 0, maxReps: 0, estimated1RM: 0 };
       }
-      ex.sets.forEach(set => {
-        if (!set.completed) return;
-        if (set.weight > stats[ex.name].maxWeight) {
-          stats[ex.name].maxWeight = set.weight;
+      const exStats = stats[exName];
+
+      for (let k = 0, setLen = sets.length; k < setLen; k++) {
+        const set = sets[k];
+        if (!set.completed) continue;
+
+        const weight = set.weight;
+        const reps = set.reps;
+
+        if (weight > exStats.maxWeight) {
+          exStats.maxWeight = weight;
         }
-        if (set.reps > stats[ex.name].maxReps) {
-          stats[ex.name].maxReps = set.reps;
+        if (reps > exStats.maxReps) {
+          exStats.maxReps = reps;
         }
-        const e1rm = set.weight * (1 + set.reps / 30);
-        if (e1rm > stats[ex.name].estimated1RM) {
-          stats[ex.name].estimated1RM = e1rm;
+        const e1rm = weight * (1 + reps / 30);
+        if (e1rm > exStats.estimated1RM) {
+          exStats.estimated1RM = e1rm;
         }
-      });
-    });
-  });
+      }
+    }
+  }
 
   setInCache(cacheKey, stats);
   return stats;

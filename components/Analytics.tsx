@@ -43,6 +43,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
   const [freqViewMode, setFreqViewMode] = useState<'weekly' | 'monthly'>('weekly'); // New state for Frequency
   const [freqVersusUser, setFreqVersusUser] = useState<User | null>(null); // New state for Frequency Rival
+  const [muscleViewMode, setMuscleViewMode] = useState<'week' | 'month'>('month');
 
 
 
@@ -203,6 +204,12 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   const muscleData = useMemo(() => {
     if (!logs.length) return [];
 
+    // BOLT: Calculate date boundary for filtering
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(now.getDate() - (muscleViewMode === 'week' ? 7 : 30));
+    const cutoffStr = cutoff.toISOString();
+
     const counts: Record<string, number> = {};
     const muscleGroups = Object.values(MUSCLE_GROUPS);
     // Initialize all groups to 0 (excluding Cardio/Other for the chart generally, or keep them if relevant)
@@ -216,6 +223,9 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
     // BOLT: Use standard for loops to minimize array iterations and allocations
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
+      // BOLT: Filter logs by timeframe
+      if (log.date < cutoffStr) continue;
+
       if (log.exercises) {
         for (let j = 0; j < log.exercises.length; j++) {
           const ex = log.exercises[j];
@@ -244,7 +254,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
     // Determine max for scaling if needed, though Recharts handles auto domain
     return Object.entries(counts).map(([subject, A]) => ({ subject, A }));
-  }, [logs]);
+  }, [logs, muscleViewMode]);
 
 
 
@@ -320,6 +330,20 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           <div>
             <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Muscle Balance</h3>
             <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Sets per Muscle Group</p>
+          </div>
+          <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
+            <button
+              onClick={() => setMuscleViewMode('week')}
+              className={`px-3 py-1 rounded-lg transition-all spring-transition ${muscleViewMode === 'week' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Week
+            </button>
+            <button
+              onClick={() => setMuscleViewMode('month')}
+              className={`px-3 py-1 rounded-lg transition-all spring-transition ${muscleViewMode === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Month
+            </button>
           </div>
         </div>
 

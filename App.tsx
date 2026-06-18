@@ -146,6 +146,14 @@ const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
 
 const SESSION_RESTORE_WINDOW = 24 * 60 * 60 * 1000; // 24 hours
 
+const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda'; // Simple fallback
+};
+
+const getAvatarPathHelper = (avatarId: string | undefined, mood: 'fire' | 'tired' | 'normal') => {
+  return getAvatarPath(avatarId, mood);
+};
+
 const App: React.FC = () => {
   /* Helper to check if Env Vars are loaded - Defined early for use in useEffect */
   const supabaseReady = isSupabaseConfigured();
@@ -168,8 +176,8 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(initialProfileData.user);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfileData.profile);
   const [loading, setLoading] = useState(initialProfileData.loading);
-  const [fetchingCount, setFetchingCount] = useState(0);
-  const isFetching = fetchingCount > 0;
+  const fetchingCountRef = React.useRef(0);
+  const [isFetching, setIsFetching] = useState(false);
   const [session, setSession] = useState<any>(null);
   const isAppReady = React.useRef(false);
   const { showToast } = useToast();
@@ -291,8 +299,20 @@ const App: React.FC = () => {
   }, [activeCustomPlan]);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
+  /**
+   * BOLT: Optimized fetching state management.
+   * Uses a ref to track concurrent requests and only updates state on transitions (0 <-> 1).
+   * This prevents multiple re-renders of the root App component during parallel data fetches.
+   */
   const handleChildFetching = React.useCallback((fetching: boolean) => {
-    setFetchingCount(prev => Math.max(0, prev + (fetching ? 1 : -1)));
+    const prevCount = fetchingCountRef.current;
+    fetchingCountRef.current = Math.max(0, prevCount + (fetching ? 1 : -1));
+
+    if (fetching && prevCount === 0) {
+      setIsFetching(true);
+    } else if (!fetching && fetchingCountRef.current === 0 && prevCount > 0) {
+      setIsFetching(false);
+    }
   }, []);
 
   // Reset scroll and update URL on view change
@@ -461,7 +481,7 @@ const App: React.FC = () => {
 
   const loadProfile = async (silent = false, passedUserId?: string) => {
     if (!silent) setLoading(true);
-    else setFetchingCount(prev => prev + 1);
+    else handleChildFetching(true);
     try {
       const profile = await getCurrentProfile(passedUserId);
       if (profile) {
@@ -536,7 +556,7 @@ const App: React.FC = () => {
       console.error("Failed to load profile:", error);
     } finally {
       if (!silent) setLoading(false);
-      else setFetchingCount(prev => Math.max(0, prev - 1));
+      else handleChildFetching(false);
       setPulseRefreshTrigger((prev: number) => prev + 1);
       isAppReady.current = true;
     }
@@ -858,16 +878,6 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setView('dashboard');
-  };
-
-  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda'; // Simple fallback
-  };
-
-
-
-  const getAvatarPathHelper = (avatarId: string | undefined, mood: 'fire' | 'tired' | 'normal') => {
-    return getAvatarPath(avatarId, mood);
   };
 
   const handleCommit = async () => {

@@ -437,7 +437,7 @@ const App: React.FC = () => {
         getLogs(tribeId, 0, PAGE_SIZE),
         getGiftTransactions(tribeId, 0, PAGE_SIZE),
         getAllReactions(tribeId),
-        getCommentCounts(),
+        getCommentCounts(tribeId),
         getTeamStats(tribeId),
         getGamificationState(tribeId),
         getTribeMembers(tribeId),

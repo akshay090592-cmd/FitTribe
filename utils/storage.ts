@@ -957,30 +957,33 @@ export const getAllReactions = async (tribeId?: string): Promise<Record<string, 
   const cacheKey = tribeId ? `reactions_tribe_${tribeId}` : 'reactions_all';
 
   return deduplicateRequest(cacheKey, async () => {
-  const cached = getFromCache<Record<string, string[]>>(cacheKey, 60 * 1000); // Short TTL (1 min) for reactions
-  if (cached) return cached;
+    const cached = getFromCache<Record<string, string[]>>(cacheKey, 60 * 1000); // Short TTL (1 min) for reactions
+    if (cached) return cached;
 
-  // BOLT: Only select required columns
-  let query = supabase.from('reactions').select('log_id, user_name');
+    // BOLT: Optimize by only fetching reactions for logs belonging to the tribe.
+    // We use an inner join with workout_logs to filter by the log owner's tribe membership.
+    let query = supabase.from('reactions').select('log_id, user_name');
 
-  if (tribeId) {
-    // BOLT: Use cached member retrieval
-    const members = await getTribeMembers(tribeId);
-    if (members && members.length > 0) {
-      const memberIds = members.map(m => m.id);
-      query = query.in('user_id', memberIds);
-    } else {
-      return {};
+    if (tribeId) {
+      const members = await getTribeMembers(tribeId);
+      if (members && members.length > 0) {
+        const memberIds = members.map(m => m.id);
+        query = supabase
+          .from('reactions')
+          .select('log_id, user_name, workout_logs!inner(user_id)')
+          .in('workout_logs.user_id', memberIds);
+      } else {
+        return {};
+      }
     }
-  }
 
-  const { data } = await query;
+    const { data } = await query;
 
-  const result: Record<string, string[]> = {};
-  data?.forEach((row: any) => {
-    if (!result[row.log_id]) result[row.log_id] = [];
-    result[row.log_id].push(row.user_name);
-  });
+    const result: Record<string, string[]> = {};
+    data?.forEach((row: any) => {
+      if (!result[row.log_id]) result[row.log_id] = [];
+      result[row.log_id].push(row.user_name);
+    });
 
     setInCache(cacheKey, result);
     return result;
@@ -1036,11 +1039,11 @@ export const toggleReaction = async (logId: string, profile: UserProfile) => {
       user_name: profile.displayName
     });
   }
-  invalidateCache('reactions_all');
+  invalidateCache('reactions'); // Clears reactions_all and reactions_tribe_... caches
 };
 
-export const getCommentCounts = async (): Promise<Record<string, number>> => {
-  const cacheKey = 'comment_counts_global';
+export const getCommentCounts = async (tribeId?: string): Promise<Record<string, number>> => {
+  const cacheKey = tribeId ? `comment_counts_tribe_${tribeId}` : 'comment_counts_global';
 
   return deduplicateRequest(cacheKey, async () => {
     const cached = getFromCache<Record<string, number>>(cacheKey, 60 * 1000); // 1-minute TTL
@@ -1048,9 +1051,25 @@ export const getCommentCounts = async (): Promise<Record<string, number>> => {
 
     if (!isSupabaseConfigured()) return {};
 
-    const { data, error } = await supabase
-      .from('comments')
-      .select('log_id');
+    // BOLT: Optimize by only fetching comments for logs belonging to the tribe.
+    // This reduces the payload size and processing time as the total number of comments grows.
+    let query = supabase.from('comments').select('log_id');
+
+    if (tribeId) {
+      const members = await getTribeMembers(tribeId);
+      if (members && members.length > 0) {
+        const memberIds = members.map(m => m.id);
+        // Inner join with workout_logs to filter by owner's tribe membership
+        query = supabase
+          .from('comments')
+          .select('log_id, workout_logs!inner(user_id)')
+          .in('workout_logs.user_id', memberIds);
+      } else {
+        return {};
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching comment counts:", error);
@@ -1123,7 +1142,7 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
   });
 
   invalidateCache('comments_log_' + recordId);
-  invalidateCache('comment_counts_global');
+  invalidateCache('comment_counts'); // Clears global and tribe-specific caches
 };
 
 // --- GAMIFICATION ---

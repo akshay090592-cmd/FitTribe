@@ -122,7 +122,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                 getLogs(profile.tribeId, 0, PAGE_SIZE),
                 getGiftTransactions(profile.tribeId, 0, PAGE_SIZE),
                 getAllReactions(profile.tribeId),
-                getCommentCounts(),
+                getCommentCounts(profile.tribeId),
                 getTeamStats(profile.tribeId),
                 getGamificationState(profile.tribeId),
                 getTribeMembers(profile.tribeId),

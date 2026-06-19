@@ -99,5 +99,70 @@ describe('Google Health Service', () => {
       expect(res.syncedCount).toBe(1); // Only log id '1' (within 7 days and not commitment)
       expect(sendSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should skip wellbeing activities in syncHistoricalWorkouts', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const sendSpy = vi.spyOn(googleHealthService, 'sendWorkoutToGoogleHealth').mockResolvedValue({ calories: 300 });
+
+      const logs = [
+        { id: '10', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 45, calories: 400 }, // fitness
+        { id: '11', date: new Date().toISOString(), type: WorkoutType.CUSTOM, exercises: [], durationMinutes: 30, vibes: 12, customActivity: 'Meditation' }, // wellbeing - should be skipped
+        { id: '12', date: new Date().toISOString(), type: WorkoutType.CUSTOM, exercises: [], durationMinutes: 60, vibes: 8, customActivity: 'Cooking' },  // wellbeing - should be skipped
+      ];
+
+      const profile = { id: '123', displayName: 'User' } as any;
+      const res = await googleHealthService.syncHistoricalWorkouts(logs as any, profile, 7);
+
+      // Only the fitness workout (id '10') should be synced
+      expect(sendSpy).toHaveBeenCalledTimes(1);
+      expect(sendSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '10' }), profile);
+      expect(res.syncedCount).toBe(1);
+    });
+  });
+
+  describe('Wellbeing Activity Exclusion', () => {
+    it('should return null for logs with a positive vibes score (wellbeing activities)', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+
+      const wellbeingLog = {
+        id: 'wb-1',
+        date: new Date().toISOString(),
+        type: WorkoutType.CUSTOM,
+        exercises: [],
+        durationMinutes: 30,
+        vibes: 10,
+        customActivity: 'Meditation',
+      } as any;
+
+      const profile = { id: '123', displayName: 'User' } as any;
+      const result = await googleHealthService.sendWorkoutToGoogleHealth(wellbeingLog, profile);
+
+      expect(result).toBeNull();
+    });
+
+    it('should NOT skip fitness custom activities with vibes=0 or vibes=undefined', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      // Mock the internal API call so it doesn't actually hit Google
+      vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue(null);
+      vi.spyOn(googleHealthService as any, 'fetchAverageHeartRate').mockResolvedValue(null);
+      vi.spyOn(googleHealthService as any, 'writeCalorieDataPoint').mockResolvedValue(undefined);
+
+      const fitnessLog = {
+        id: 'fit-1',
+        date: new Date().toISOString(),
+        type: WorkoutType.CUSTOM,
+        exercises: [],
+        durationMinutes: 30,
+        calories: 250,
+        vibes: 0, // zero vibes = not a wellbeing log
+        customActivity: 'Running',
+      } as any;
+
+      const profile = { id: '123', displayName: 'User' } as any;
+      const result = await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
+
+      // Should have proceeded (result is not null due to vibes=0)
+      expect(result).not.toBeNull();
+    });
   });
 });

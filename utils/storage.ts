@@ -221,7 +221,7 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, avatar_id, workout_templates, custom_challenge, completed_challenges')
+    .select('id, email, display_name, height, weight, gender, dob, tribe_id, fitness_level, avatar_id, workout_templates, custom_challenge, completed_challenges, goals')
     .eq('id', userId)
     .single();
 
@@ -245,7 +245,9 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
     tribeId: data.tribe_id,
     fitnessLevel: data.fitness_level as 'beginner' | 'advanced',
     customPlans: [], // Not stored in DB yet, but part of interface
-    workoutTemplates: data.workout_templates || []
+    workoutTemplates: data.workout_templates || [],
+    goals: data.goals || {},
+    bodyFatPercentage: data.goals?.bodyFatPercentage
   };
 
   setInCache(cacheKey, profile);
@@ -463,7 +465,8 @@ export const updateProfile = async (profile: UserProfile) => {
     dob: profile.dob,
     custom_challenge: profile.customChallenges,
     completed_challenges: profile.completedChallenges,
-    workout_templates: profile.workoutTemplates
+    workout_templates: profile.workoutTemplates,
+    goals: { ...(profile.goals || {}), bodyFatPercentage: profile.bodyFatPercentage }
   }).eq('id', profile.id);
 
   if (error) {

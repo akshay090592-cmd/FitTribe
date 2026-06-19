@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutLog, UserGamificationState, Badge } from '../types';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
-import { Save, User as UserIcon, LogOut, FileText, Download, Trash2, History, Target, Calendar, Zap, Trophy, Star, Crown, MessageCircle, Edit, ArrowLeft, CheckCircle, TrendingUp, Map, AlertCircle, ChevronRight } from 'lucide-react';
+import { Save, User as UserIcon, LogOut, FileText, Download, Trash2, History, Target, Calendar, Zap, Trophy, Star, Crown, MessageCircle, Edit, ArrowLeft, CheckCircle, TrendingUp, Map, AlertCircle, ChevronRight, Activity } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { getUserLogs, deleteLog, updateProfile, getGamificationState, getPointLogs } from '../utils/storage';
 import { convertToCSV, downloadCSV } from '../utils/exportUtils';
@@ -12,6 +12,7 @@ import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, g
 import { getAvatarPath } from '../utils/avatar';
 import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
+import { googleHealthService } from '../services/googleHealthService';
 
 interface Props {
     userProfile: UserProfile;
@@ -31,6 +32,10 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [streaks, setStreaks] = useState(0);
     const [xpData, setXpData] = useState<any>(null);
 
+    // Google Health State
+    const [isGoogleConnected, setIsGoogleConnected] = useState(googleHealthService.isConnected());
+    const [syncingMetrics, setSyncingMetrics] = useState(false);
+
     // Form State
     const [height, setHeight] = useState<number | string>(userProfile.height || '');
     const [weight, setWeight] = useState<number | string>(userProfile.weight || '');
@@ -47,6 +52,74 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [pointLogs, setPointLogs] = useState<any[]>([]);
     const [showPointsHistory, setShowPointsHistory] = useState(false);
+
+    // Handle Google Fit Auth Callback on load
+    useEffect(() => {
+        const checkCallback = async () => {
+            if (googleHealthService.handleAuthCallback()) {
+                setIsGoogleConnected(true);
+                // Trigger auto-sync once connected
+                setSyncingMetrics(true);
+                try {
+                    const metrics = await googleHealthService.fetchLatestBodyMetrics();
+                    if (metrics.weight || metrics.bodyFatPercentage) {
+                        const updated = {
+                            ...userProfile,
+                            weight: metrics.weight || userProfile.weight,
+                            bodyFatPercentage: metrics.bodyFatPercentage || userProfile.bodyFatPercentage
+                        };
+                        onSave(updated);
+                        await updateProfile(updated);
+                        if (metrics.weight) setWeight(metrics.weight);
+                        alert(`Successfully connected to Google Fit and synced metrics!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
+                    } else {
+                        alert("Connected to Google Fit, but no weight or body fat metrics were found in the last 30 days.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Connected to Google Fit, but failed to fetch body metrics. Try syncing manually.");
+                } finally {
+                    setSyncingMetrics(false);
+                }
+            }
+        };
+        checkCallback();
+    }, []);
+
+    const handleSyncMetrics = async () => {
+        setSyncingMetrics(true);
+        try {
+            const metrics = await googleHealthService.fetchLatestBodyMetrics();
+            if (metrics.weight || metrics.bodyFatPercentage) {
+                const updated = {
+                    ...userProfile,
+                    weight: metrics.weight || userProfile.weight,
+                    bodyFatPercentage: metrics.bodyFatPercentage || userProfile.bodyFatPercentage
+                };
+                onSave(updated);
+                await updateProfile(updated);
+                if (metrics.weight) setWeight(metrics.weight);
+                alert(`Successfully synced from Google Fit!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
+            } else {
+                alert("No new weight or body fat data found in Google Fit.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to sync metrics from Google Fit. Please verify your connection.");
+        } finally {
+            setSyncingMetrics(false);
+        }
+    };
+
+    const handleToggleGoogleConnection = () => {
+        if (isGoogleConnected) {
+            googleHealthService.disconnect();
+            setIsGoogleConnected(false);
+            alert("Disconnected from Google Fit.");
+        } else {
+            googleHealthService.authorize();
+        }
+    };
 
     // Load Gamification Data
     useEffect(() => {
@@ -335,6 +408,48 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                             </div>
                         </div>
                     )}
+
+                    {/* Google Fit Integration Widget */}
+                    <div className="glass-panel p-5 mb-6 relative overflow-hidden border border-emerald-100/50" style={{ background: 'hsla(140,50%,98%,0.80)', borderRadius: '24px' }}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                                    <Activity size={22} className="animate-pulse" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">Google Health Connection</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        {isGoogleConnected ? 'Connected & Calibrated' : 'Sync Workout & Body Data'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isGoogleConnected ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                                {isGoogleConnected ? 'Linked' : 'Not Linked'}
+                            </span>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleToggleGoogleConnection}
+                                className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wide transition-all active:scale-[0.98] ${
+                                    isGoogleConnected 
+                                    ? 'bg-red-50 hover:bg-red-100 text-red-500 border border-red-100' 
+                                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                }`}
+                            >
+                                {isGoogleConnected ? 'Disconnect' : 'Connect Google Fit'}
+                            </button>
+                            {isGoogleConnected && (
+                                <button
+                                    onClick={handleSyncMetrics}
+                                    disabled={syncingMetrics}
+                                    className="px-4 py-3 bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-bold text-xs uppercase tracking-wide rounded-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                >
+                                    {syncingMetrics ? 'Syncing...' : 'Sync Metrics'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Quick Actions */}
                     <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">

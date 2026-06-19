@@ -29,6 +29,7 @@ export interface UserProfile {
   workoutTemplates?: WorkoutTemplate[];
   goals?: UserGoals;
   customPlans?: WorkoutPlan[];
+  bodyFatPercentage?: number; // Fetched from Google Fit
 }
 
 export interface WorkoutTemplate {

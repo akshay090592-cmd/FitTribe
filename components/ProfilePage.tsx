@@ -35,6 +35,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     // Google Health State
     const [isGoogleConnected, setIsGoogleConnected] = useState(googleHealthService.isConnected());
     const [syncingMetrics, setSyncingMetrics] = useState(false);
+    const [syncingWorkouts, setSyncingWorkouts] = useState(false);
 
     // Form State
     const [height, setHeight] = useState<number | string>(userProfile.height || '');
@@ -108,6 +109,23 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
             alert("Failed to sync metrics from Google Fit. Please verify your connection.");
         } finally {
             setSyncingMetrics(false);
+        }
+    };
+
+    const handleHistoricalSync = async (days: number | 'all') => {
+        setSyncingWorkouts(true);
+        try {
+            const result = await googleHealthService.syncHistoricalWorkouts(logs, userProfile, days);
+            alert(`Sync complete!\nWorkouts synced: ${result.syncedCount}\nPrecise calorie overrides computed: ${result.updatedCaloriesCount}`);
+            if (result.updatedCaloriesCount > 0) {
+                const freshLogs = await getUserLogs(userProfile.displayName);
+                setLogs(freshLogs);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to sync workouts. Please verify your connection.");
+        } finally {
+            setSyncingWorkouts(false);
         }
     };
 
@@ -449,6 +467,35 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                 </button>
                             )}
                         </div>
+
+                        {isGoogleConnected && (
+                            <div className="mt-4 pt-4 border-t border-emerald-100/50 flex flex-col space-y-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sync Workouts & Heart Rate Calories</span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleHistoricalSync(7)}
+                                        disabled={syncingWorkouts}
+                                        className="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wide rounded-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        1 Week
+                                    </button>
+                                    <button
+                                        onClick={() => handleHistoricalSync(30)}
+                                        disabled={syncingWorkouts}
+                                        className="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wide rounded-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        1 Month
+                                    </button>
+                                    <button
+                                        onClick={() => handleHistoricalSync('all')}
+                                        disabled={syncingWorkouts}
+                                        className="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wide rounded-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        All Time
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Quick Actions */}

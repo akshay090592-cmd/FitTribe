@@ -73,4 +73,31 @@ describe('Google Health Service', () => {
       expect(googleHealthService.calculateKeytelCalories({ ...maleProfile, gender: undefined }, 140, 60)).toBeNull();
     });
   });
+
+  describe('Historical Workouts Sync', () => {
+    it('should throw an error if not connected to Google Fit', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(false);
+      await expect(googleHealthService.syncHistoricalWorkouts([], {} as any, 7))
+        .rejects.toThrow('Google Fit not connected');
+    });
+
+    it('should filter workouts correctly and call sendWorkoutToGoogleHealth', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const sendSpy = vi.spyOn(googleHealthService, 'sendWorkoutToGoogleHealth').mockResolvedValue({ calories: 500 });
+
+      const logs = [
+        { id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30, calories: 150 },
+        { id: '2', date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), type: WorkoutType.B, exercises: [], durationMinutes: 40, calories: 200 }, // 10 days ago
+        { id: '3', date: new Date().toISOString(), type: 'COMMITMENT' as any, exercises: [], durationMinutes: 0 } // commitment (skipped)
+      ];
+
+      const profile = { id: '123', displayName: 'User' } as any;
+
+      // Sync 1 week (7 days)
+      const res = await googleHealthService.syncHistoricalWorkouts(logs as any, profile, 7);
+
+      expect(res.syncedCount).toBe(1); // Only log id '1' (within 7 days and not commitment)
+      expect(sendSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

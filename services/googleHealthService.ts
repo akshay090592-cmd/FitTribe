@@ -229,10 +229,17 @@ class GoogleHealthService {
   }
 
   /**
-   * Syncs completed workout session and calorie burn data back to Google Fit
+   * Syncs completed workout session and calorie burn data back to Google Fit.
+   * Wellbeing activities (logs with a positive vibes score) are explicitly excluded.
    */
   async sendWorkoutToGoogleHealth(workoutLog: WorkoutLog, userProfile: UserProfile): Promise<{ calories?: number, avgHeartRate?: number } | null> {
     if (!this.isConnected()) return null;
+
+    // Wellbeing activities (Cooking, Meditation, etc.) must never be sent to Google Fit
+    if (workoutLog.vibes !== undefined && workoutLog.vibes > 0) {
+      console.log(`[GoogleFit] Skipping wellbeing activity "${workoutLog.customActivity}" — not a fitness workout.`);
+      return null;
+    }
 
     try {
       const endTimeMillis = new Date(workoutLog.date).getTime();
@@ -327,6 +334,47 @@ class GoogleHealthService {
         }]
       })
     });
+  }
+
+  /**
+   * Syncs historical workouts in the selected time range (1 week, 1 month, or all time)
+   * Calculates/updates calories based on tracker heart rate and sends them to Google Fit.
+   */
+  async syncHistoricalWorkouts(
+    logs: WorkoutLog[],
+    userProfile: UserProfile,
+    days: number | 'all'
+  ): Promise<{ syncedCount: number; updatedCaloriesCount: number }> {
+    if (!this.isConnected()) throw new Error('Google Fit not connected');
+
+    const now = Date.now();
+    const cutoffTime = days === 'all' ? 0 : now - days * 24 * 60 * 60 * 1000;
+
+    // Filter relevant logs: completed fitness workouts only (exclude commitments and wellbeing activities)
+    const logsToSync = logs.filter(log => {
+      if (log.type === 'COMMITMENT' as any) return false;
+      // Wellbeing activities have a positive vibes score — exclude them
+      if (log.vibes !== undefined && log.vibes > 0) return false;
+      const logTime = new Date(log.date).getTime();
+      return logTime >= cutoffTime;
+    });
+
+    let syncedCount = 0;
+    let updatedCaloriesCount = 0;
+
+    for (const log of logsToSync) {
+      const syncResult = await this.sendWorkoutToGoogleHealth(log, userProfile);
+      if (syncResult) {
+        syncedCount++;
+        if (syncResult.calories && syncResult.calories !== log.calories) {
+          log.calories = syncResult.calories;
+          updatedCaloriesCount++;
+          await import('../utils/storage').then(({ updateLog }) => updateLog(log, userProfile));
+        }
+      }
+    }
+
+    return { syncedCount, updatedCaloriesCount };
   }
 }
 

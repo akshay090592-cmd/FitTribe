@@ -3,10 +3,10 @@ import { calculateAge } from '../utils/profileUtils';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id';
 const SCOPES = [
-  'https://www.googleapis.com/auth/fitness.activity.read',
-  'https://www.googleapis.com/auth/fitness.activity.write',
-  'https://www.googleapis.com/auth/fitness.heart_rate.read',
-  'https://www.googleapis.com/auth/fitness.body.read'
+  'https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly',
+  'https://www.googleapis.com/auth/googlehealth.activity_and_fitness.writeonly',
+  'https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly',
+  'https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.writeonly'
 ];
 
 export interface FitBodyMetrics {
@@ -15,12 +15,14 @@ export interface FitBodyMetrics {
 }
 
 class GoogleHealthService {
+  private readonly BASE_URL = 'https://health.googleapis.com/v4/';
+
   /**
    * Redirects user to Google OAuth2 consent screen
    */
   authorize() {
     const redirectUri = window.location.origin + window.location.pathname;
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPES.join(' '))}&state=google_fit_auth`;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPES.join(' '))}&state=google_health_auth`;
     window.location.href = authUrl;
   }
 
@@ -36,7 +38,7 @@ class GoogleHealthService {
     const expiresIn = params.get('expires_in');
     const state = params.get('state');
 
-    if (accessToken && state === 'google_fit_auth') {
+    if (accessToken && state === 'google_health_auth') {
       const expiresAt = Date.now() + Number(expiresIn) * 1000;
       localStorage.setItem('google_fit_access_token', accessToken);
       localStorage.setItem('google_fit_expires_at', String(expiresAt));
@@ -49,7 +51,7 @@ class GoogleHealthService {
   }
 
   /**
-   * Checks if user has authorized Google Fit
+   * Checks if user has authorized Google Health
    */
   isConnected(): boolean {
     const token = localStorage.getItem('google_fit_access_token');
@@ -59,7 +61,7 @@ class GoogleHealthService {
   }
 
   /**
-   * Disconnects/logs out from Google Fit
+   * Disconnects/logs out from Google Health
    */
   disconnect() {
     localStorage.removeItem('google_fit_access_token');
@@ -72,11 +74,11 @@ class GoogleHealthService {
   }
 
   /**
-   * Helper to perform authenticated Google API requests
+   * Helper to perform authenticated Google Health API v4 requests
    */
   private async fetchGoogleAPI(endpoint: string, options: RequestInit = {}): Promise<any> {
     const token = this.getAccessToken();
-    if (!token) throw new Error('Not connected to Google Fit');
+    if (!token) throw new Error('Not connected to Google Health');
 
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -84,14 +86,14 @@ class GoogleHealthService {
       ...(options.headers || {})
     };
 
-    const response = await fetch(`https://www.googleapis.com/fitness/v1/${endpoint}`, {
+    const response = await fetch(`${this.BASE_URL}${endpoint}`, {
       ...options,
       headers
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Google Fit API error: ${response.status} - ${errText}`);
+      throw new Error(`Google Health API error: ${response.status} - ${errText}`);
     }
 
     if (response.status === 204) return null;
@@ -99,74 +101,59 @@ class GoogleHealthService {
   }
 
   /**
-   * Map FitTribe Workout Type to Google Fit Activity Type IDs
-   * Refer: https://developers.google.com/fit/rest/v1/reference/activity-types
+   * Map FitTribe Workout Type to Google Health v4 Exercise Enum strings
    */
-  mapWorkoutActivityType(type: WorkoutType, customActivity?: string): number {
+  mapWorkoutActivityType(type: WorkoutType, customActivity?: string): string {
     if (type === WorkoutType.A || type === WorkoutType.B) {
-      return 97; // Weightlifting (Strength Training)
+      return 'WEIGHTLIFTING';
     }
 
     const activityText = (customActivity || '').toLowerCase();
-    if (activityText.includes('run') || activityText.includes('jog')) return 8; // Running
-    if (activityText.includes('cycle') || activityText.includes('bike') || activityText.includes('spin')) return 1; // Biking
-    if (activityText.includes('walk') || activityText.includes('hike')) return 7; // Walking
-    if (activityText.includes('yoga') || activityText.includes('stretch')) return 100; // Yoga
-    if (activityText.includes('swim')) return 9; // Swimming
-    if (activityText.includes('hiit') || activityText.includes('cardio') || activityText.includes('crossfit')) return 115; // HIIT
-    if (activityText.includes('pilates')) return 75; // Pilates
-    if (activityText.includes('strength') || activityText.includes('lift') || activityText.includes('weight')) return 97; // Weightlifting
+    if (activityText.includes('run') || activityText.includes('jog')) return 'RUNNING';
+    if (activityText.includes('cycle') || activityText.includes('bike') || activityText.includes('spin')) return 'BIKING';
+    if (activityText.includes('walk') || activityText.includes('hike')) return 'WALKING';
+    if (activityText.includes('yoga') || activityText.includes('stretch')) return 'YOGA';
+    if (activityText.includes('swim')) return 'SWIMMING_POOL';
+    if (activityText.includes('hiit') || activityText.includes('cardio') || activityText.includes('crossfit')) return 'HIIT';
+    if (activityText.includes('strength') || activityText.includes('lift') || activityText.includes('weight')) return 'WEIGHTLIFTING';
 
-    return 97; // Default to weightlifting / strength training
+    return 'WORKOUT'; // Default
   }
 
   /**
-   * Fetch latest Weight and Body Fat % from Google Fit
+   * Fetch latest Weight and Body Fat % from Google Health API v4
    */
   async fetchLatestBodyMetrics(): Promise<FitBodyMetrics> {
+    if (!this.isConnected()) return {};
+
     try {
-      const now = Date.now();
-      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-      const startTimeNanos = BigInt(thirtyDaysAgo) * 1000000n;
-      const endTimeNanos = BigInt(now) * 1000000n;
+      const nowISO = new Date().toISOString();
+      const agoISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const metrics: FitBodyMetrics = {};
 
       // 1. Fetch Weight
       try {
-        const weightData = await this.fetchGoogleAPI(
-          `users/me/dataSources/derived:com.google.weight:com.google.android.gms:merge_weight/datasets/${startTimeNanos}-${endTimeNanos}`
-        );
-        if (weightData.point && weightData.point.length > 0) {
-          // Sort by start time descending to get the latest
-          const latestPoint = weightData.point.reduce((latest: any, current: any) => {
-            return BigInt(current.startTimeNanos) > BigInt(latest.startTimeNanos) ? current : latest;
-          }, weightData.point[0]);
-
-          if (latestPoint?.value?.[0]?.fpVal) {
-            metrics.weight = Math.round(latestPoint.value[0].fpVal * 10) / 10;
-          }
+        const filter = `weight.sample_time.physical_time >= "${agoISO}" AND weight.sample_time.physical_time <= "${nowISO}"`;
+        const weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=1`);
+        if (weightData.dataPoints && weightData.dataPoints.length > 0) {
+          const grams = weightData.dataPoints[0].weight?.weightGrams;
+          if (grams !== undefined) metrics.weight = Math.round((grams / 1000) * 10) / 10;
         }
       } catch (err) {
-        console.warn('Failed to fetch weight from Google Fit:', err);
+        console.warn('Failed to fetch weight from Google Health:', err);
       }
 
       // 2. Fetch Body Fat %
       try {
-        const fatData = await this.fetchGoogleAPI(
-          `users/me/dataSources/derived:com.google.body.fat.percentage:com.google.android.gms:merge_body_fat_percentage/datasets/${startTimeNanos}-${endTimeNanos}`
-        );
-        if (fatData.point && fatData.point.length > 0) {
-          const latestPoint = fatData.point.reduce((latest: any, current: any) => {
-            return BigInt(current.startTimeNanos) > BigInt(latest.startTimeNanos) ? current : latest;
-          }, fatData.point[0]);
-
-          if (latestPoint?.value?.[0]?.fpVal) {
-            metrics.bodyFatPercentage = Math.round(latestPoint.value[0].fpVal * 10) / 10;
-          }
+        const filter = `bodyFat.sample_time.physical_time >= "${agoISO}" AND bodyFat.sample_time.physical_time <= "${nowISO}"`;
+        const fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=1`);
+        if (fatData.dataPoints && fatData.dataPoints.length > 0) {
+          const val = fatData.dataPoints[0].bodyFat?.percentage;
+          if (val !== undefined) metrics.bodyFatPercentage = Math.round(val * 10) / 10;
         }
       } catch (err) {
-        console.warn('Failed to fetch body fat % from Google Fit:', err);
+        console.warn('Failed to fetch body fat % from Google Health:', err);
       }
 
       return metrics;
@@ -177,24 +164,23 @@ class GoogleHealthService {
   }
 
   /**
-   * Fetches heart rate from Google Fit during the workout duration and calculates average HR
+   * Fetches heart rate from Google Health API v4 during the workout duration and calculates average HR
    */
-  async fetchAverageHeartRate(startTimeMillis: number, endTimeMillis: number): Promise<number | null> {
+  async fetchAverageHeartRate(startTimeISO: string, endTimeISO: string): Promise<number | null> {
     try {
-      const startTimeNanos = BigInt(startTimeMillis) * 1000000n;
-      const endTimeNanos = BigInt(endTimeMillis) * 1000000n;
+      const filter = `heartRate.sample_time.physical_time >= "${startTimeISO}" AND heartRate.sample_time.physical_time <= "${endTimeISO}"`;
+      const hrData = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints?filter=${encodeURIComponent(filter)}`);
 
-      const hrData = await this.fetchGoogleAPI(
-        `users/me/dataSources/derived:com.google.heart_rate.bpm:com.google.android.gms:merge_heart_rate_bpm/datasets/${startTimeNanos}-${endTimeNanos}`
-      );
-
-      if (hrData.point && hrData.point.length > 0) {
-        const total = hrData.point.reduce((sum: number, pt: any) => sum + (pt.value?.[0]?.fpVal || 0), 0);
-        return total / hrData.point.length;
+      if (hrData.dataPoints && hrData.dataPoints.length > 0) {
+        const total = hrData.dataPoints.reduce((sum: number, pt: any) => {
+          const bpm = parseInt(pt.heartRate?.beatsPerMinute || '0');
+          return sum + bpm;
+        }, 0);
+        return total / hrData.dataPoints.length;
       }
       return null;
     } catch (err) {
-      console.warn('Failed to fetch heart rate from Google Fit:', err);
+      console.warn('Failed to fetch heart rate from Google Health:', err);
       return null;
     }
   }
@@ -215,9 +201,6 @@ class GoogleHealthService {
     const weight = userProfile.weight;
     const gender = userProfile.gender;
 
-    // Keytel Formula (2005)
-    // Men: ((-55.0969 + (0.6309 * HR) + (0.1988 * Weight_kg) + (0.2017 * Age)) / 4.184) * Duration
-    // Women: ((-20.4022 + (0.4472 * HR) - (0.1263 * Weight_kg) + (0.074 * Age)) / 4.184) * Duration
     let calories = 0;
     if (gender === 'male') {
       calories = ((-55.0969 + (0.6309 * avgHeartRate) + (0.1988 * weight) + (0.2017 * age)) / 4.184) * durationMinutes;
@@ -229,58 +212,62 @@ class GoogleHealthService {
   }
 
   /**
-   * Syncs completed workout session and calorie burn data back to Google Fit.
+   * Syncs completed workout session and calorie burn data back to Google Health v4 as an 'exercise' DataPoint.
    * Wellbeing activities (logs with a positive vibes score) are explicitly excluded.
    */
   async sendWorkoutToGoogleHealth(workoutLog: WorkoutLog, userProfile: UserProfile): Promise<{ calories?: number, avgHeartRate?: number } | null> {
     if (!this.isConnected()) return null;
 
-    // Wellbeing activities (Cooking, Meditation, etc.) must never be sent to Google Fit
     if (workoutLog.vibes !== undefined && workoutLog.vibes > 0) {
-      console.log(`[GoogleFit] Skipping wellbeing activity "${workoutLog.customActivity}" — not a fitness workout.`);
+      console.log(`[GoogleHealth] Skipping wellbeing activity "${workoutLog.customActivity || workoutLog.type}" — not a fitness workout.`);
       return null;
     }
 
     try {
-      const endTimeMillis = new Date(workoutLog.date).getTime();
-      const startTimeMillis = endTimeMillis - (workoutLog.durationMinutes * 60 * 1000);
+      const startTime = new Date(workoutLog.date);
+      const endTime = new Date(startTime.getTime() + (workoutLog.durationMinutes || 30) * 60000);
 
-      // 1. Fetch heart rate if user has a fitness tracker linked
-      let avgHeartRate: number | null = null;
+      const startTimeISO = startTime.toISOString();
+      const endTimeISO = endTime.toISOString();
+      const offsetSeconds = -startTime.getTimezoneOffset() * 60;
+      const utcOffset = `${offsetSeconds >= 0 ? '' : '-'}${Math.abs(offsetSeconds)}s`;
+
+      let avgHeartRate = await this.fetchAverageHeartRate(startTimeISO, endTimeISO);
       let finalCalories = workoutLog.calories || 0;
-
-      avgHeartRate = await this.fetchAverageHeartRate(startTimeMillis, endTimeMillis);
 
       if (avgHeartRate) {
         const calculatedCalories = this.calculateKeytelCalories(userProfile, avgHeartRate, workoutLog.durationMinutes);
         if (calculatedCalories) {
           finalCalories = calculatedCalories;
-          // Optimistically update workout log calories in local object
           workoutLog.calories = finalCalories;
         }
+      } else if (!finalCalories) {
+        finalCalories = this.calculateKeytelCalories(userProfile, 130, workoutLog.durationMinutes) || 300;
       }
 
-      // 2. Upload workout session to Google Fit
-      const sessionId = `fittribe_${workoutLog.id}`;
       const activityType = this.mapWorkoutActivityType(workoutLog.type, workoutLog.customActivity);
 
-      await this.fetchGoogleAPI(`users/me/sessions/${sessionId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          id: sessionId,
-          name: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`,
-          description: `Completed exercises: ${workoutLog.exercises.map(e => e.name).join(', ')}`,
-          startTimeMillis,
-          endTimeMillis,
-          activityType,
-          application: {
-            name: 'FitTribe Tracker'
-          }
-        })
-      });
+      const dataPoint = {
+        exercise: {
+          exerciseType: activityType,
+          interval: {
+            startTime: startTimeISO,
+            startUtcOffset: utcOffset,
+            endTime: endTimeISO,
+            endUtcOffset: utcOffset
+          },
+          metricsSummary: {
+            caloriesKcal: finalCalories || 0,
+            averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined
+          },
+          displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`
+        }
+      };
 
-      // 3. Write calorie burn data points
-      await this.writeCalorieDataPoint(startTimeMillis, endTimeMillis, finalCalories);
+      await this.fetchGoogleAPI('users/me/dataTypes/exercise/dataPoints', {
+        method: 'POST',
+        body: JSON.stringify(dataPoint)
+      });
 
       return {
         calories: finalCalories,
@@ -293,67 +280,20 @@ class GoogleHealthService {
   }
 
   /**
-   * Helper to write calories expended to custom FitTribe datasource
-   */
-  private async writeCalorieDataPoint(startTimeMillis: number, endTimeMillis: number, calories: number) {
-    const dataSourceId = 'raw:com.google.calories.expended:1020887087658:FitTribe:fittribe_calories';
-    
-    // Ensure data source exists
-    try {
-      await this.fetchGoogleAPI('users/me/dataSources', {
-        method: 'POST',
-        body: JSON.stringify({
-          dataStreamName: 'fittribe_calories',
-          type: 'raw',
-          application: { name: 'FitTribe Tracker' },
-          dataType: {
-            name: 'com.google.calories.expended',
-            field: [{ name: 'calories', format: 'floatPoint' }]
-          }
-        })
-      });
-    } catch (err) {
-      // Data source might already exist, which is fine
-    }
-
-    // Write calories dataset
-    const startTimeNanos = BigInt(startTimeMillis) * 1000000n;
-    const endTimeNanos = BigInt(endTimeMillis) * 1000000n;
-
-    await this.fetchGoogleAPI(`users/me/dataSources/${dataSourceId}/datasets/${startTimeNanos}-${endTimeNanos}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        dataSourceId,
-        minStartTimeNs: String(startTimeNanos),
-        maxEndTimeNs: String(endTimeNanos),
-        point: [{
-          startTimeNanos: String(startTimeNanos),
-          endTimeNanos: String(endTimeNanos),
-          dataTypeName: 'com.google.calories.expended',
-          value: [{ fpVal: calories }]
-        }]
-      })
-    });
-  }
-
-  /**
    * Syncs historical workouts in the selected time range (1 week, 1 month, or all time)
-   * Calculates/updates calories based on tracker heart rate and sends them to Google Fit.
    */
   async syncHistoricalWorkouts(
     logs: WorkoutLog[],
     userProfile: UserProfile,
     days: number | 'all'
   ): Promise<{ syncedCount: number; updatedCaloriesCount: number }> {
-    if (!this.isConnected()) throw new Error('Google Fit not connected');
+    if (!this.isConnected()) throw new Error('Google Health not connected');
 
     const now = Date.now();
     const cutoffTime = days === 'all' ? 0 : now - days * 24 * 60 * 60 * 1000;
 
-    // Filter relevant logs: completed fitness workouts only (exclude commitments and wellbeing activities)
     const logsToSync = logs.filter(log => {
       if (log.type === 'COMMITMENT' as any) return false;
-      // Wellbeing activities have a positive vibes score — exclude them
       if (log.vibes !== undefined && log.vibes > 0) return false;
       const logTime = new Date(log.date).getTime();
       return logTime >= cutoffTime;

@@ -20,6 +20,7 @@ import { geminiClient, Type } from '../services/geminiClient';
 import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
+import { googleHealthService } from '../services/googleHealthService';
 
 interface Props {
   user: User;
@@ -485,6 +486,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     }
 
     try {
+      const estimatedCalories = calculateCalories(userProfile, 5.0, Math.round(workoutTimer.seconds / 60)); // MET 5.0 for Weight Lifting
       const currentLog: WorkoutLog = {
         id: Date.now().toString(),
         date: new Date().toISOString(),
@@ -493,8 +495,20 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         customActivity: plan.id === WorkoutType.CUSTOM ? plan.title : undefined,
         exercises: records,
         durationMinutes: Math.max(1, Math.round(workoutTimer.seconds / 60)), // Ensure at least 1 minute
-        calories: calculateCalories(userProfile, 5.0, Math.round(workoutTimer.seconds / 60)) // MET 5.0 for Weight Lifting
+        calories: estimatedCalories
       };
+
+      // If Google Fit is connected, sync workout and use tracker heart rate for calorie calculations
+      if (googleHealthService.isConnected()) {
+        try {
+          const syncResult = await googleHealthService.sendWorkoutToGoogleHealth(currentLog, userProfile);
+          if (syncResult && syncResult.calories) {
+            currentLog.calories = syncResult.calories;
+          }
+        } catch (fitErr) {
+          console.warn("Failed to sync workout to Google Health:", fitErr);
+        }
+      }
 
       // Fetch all logs to find previous workout and commitment log
       const allLogs = await getUserLogs(user);

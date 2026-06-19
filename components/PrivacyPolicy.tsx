@@ -98,6 +98,15 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, onNavigate
                 <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mt-8">Data Security</h2>
                 <p>We implement industry-standard security measures to protect your personal data from unauthorized access or disclosure. Your authentication is powered by secure providers (like Supabase or Firebase) to ensure your credentials remain protected.</p>
 
+                <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mt-8">Google Fit & Health Data</h2>
+                <p>If you choose to connect your Google Fit account, FitTribe collects and accesses the following metrics to enhance your fitness tracking:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                    <li><strong>Heart Rate:</strong> Accessed to compute precise heart-rate-based calorie burn calculations during your active workouts using the Keytel Formula.</li>
+                    <li><strong>Body Metrics (Weight & Body Fat %):</strong> Fetched on connection or sync to keep your local profile and BMI calculations accurate.</li>
+                    <li><strong>Workout Sessions:</strong> We write your completed sessions back to Google Fit to centralize your training history.</li>
+                </ul>
+                <p>FitTribe does not share your Google Fit or health data with third parties or use it for advertising purposes. Your health data is processed client-side and saved securely in your private profile database.</p>
+
                 <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mt-8">Social Sharing</h2>
                 <p>By design, FitTribe is a social app. Your workout activity and consistency levels may be shared with members of your tribe to foster accountability and community support. You have control over what information you share in your profile settings.</p>
 

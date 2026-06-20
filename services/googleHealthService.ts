@@ -130,6 +130,7 @@ class GoogleHealthService {
   /**
    * Fetch latest Weight and Body Fat % from Google Health API v4.
    * Uses :reconcile to ensure data from all connected apps is visible.
+   * Setting pageSize=1 guarantees only the single most recent log entry.
    */
   async fetchLatestBodyMetrics(): Promise<HealthBodyMetrics> {
     if (!this.isConnected()) return {};
@@ -139,23 +140,13 @@ class GoogleHealthService {
 
       // 1. Fetch Weight
       try {
-        const nowISO = new Date().toISOString();
-        const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const filter = `weight.sample_time.physical_time >= "${agoISO}" AND weight.sample_time.physical_time <= "${nowISO}"`;
-
-        let weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
-
-        if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
-          weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
-        }
-
-        if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
-          weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?pageSize=1`);
-        }
+        const weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?pageSize=1`);
 
         if (weightData.dataPoints && weightData.dataPoints.length > 0) {
           const point = weightData.dataPoints[0].weight;
-          if (point.weightGrams !== undefined) {
+          if (point.valueKg !== undefined) {
+            metrics.weight = Math.round(point.valueKg * 10) / 10;
+          } else if (point.weightGrams !== undefined) {
             metrics.weight = Math.round((point.weightGrams / 1000) * 10) / 10;
           } else if (point.weightKg !== undefined) {
             metrics.weight = Math.round(point.weightKg * 10) / 10;
@@ -167,23 +158,15 @@ class GoogleHealthService {
 
       // 2. Fetch Body Fat %
       try {
-        const nowISO = new Date().toISOString();
-        const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const filter = `bodyFat.sample_time.physical_time >= "${agoISO}" AND bodyFat.sample_time.physical_time <= "${nowISO}"`;
-
-        let fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
-
-        if (!fatData.dataPoints || fatData.dataPoints.length === 0) {
-          fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
-        }
-
-        if (!fatData.dataPoints || fatData.dataPoints.length === 0) {
-          fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?pageSize=1`);
-        }
+        const fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints:reconcile?pageSize=1`);
 
         if (fatData.dataPoints && fatData.dataPoints.length > 0) {
-          const val = fatData.dataPoints[0].bodyFat?.percentage;
-          if (val !== undefined) metrics.bodyFatPercentage = Math.round(val * 10) / 10;
+          const point = fatData.dataPoints[0].bodyFat;
+          if (point?.valuePercentage !== undefined) {
+            metrics.bodyFatPercentage = Math.round(point.valuePercentage * 10) / 10;
+          } else if (point?.percentage !== undefined) {
+            metrics.bodyFatPercentage = Math.round(point.percentage * 10) / 10;
+          }
         }
       } catch (err) {
         console.warn('Failed to fetch body fat % from Google Health:', err);

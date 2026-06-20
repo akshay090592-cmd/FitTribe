@@ -303,7 +303,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       };
       localStorage.setItem(`workout_session_${plan.id}`, JSON.stringify(stateToSave));
     }
-  }, [records, step, warmupDone, cooldownDone, workoutTimer.seconds, loading, plan.id, showRestTimer, restDuration, restTimer.seconds, expandedExerciseId, isFinishing]);
+    // BOLT: Optimize by excluding 'workoutTimer.seconds' and 'restTimer.seconds' from dependencies.
+    // The current time can be derived from 'lastUpdated' upon restoration.
+    // This prevents redundant synchronous localStorage writes every second during a workout.
+  }, [records, step, warmupDone, cooldownDone, loading, plan.id, showRestTimer, restDuration, expandedExerciseId, isFinishing]);
 
   useEffect(() => {
     if (step !== 'analysis') {

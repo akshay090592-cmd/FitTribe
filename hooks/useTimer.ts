@@ -107,8 +107,11 @@ export const useTimer = ({
 
     // Persist state
     useEffect(() => {
+        // BOLT: Optimize by excluding 'state.seconds' from dependencies.
+        // Structural state (isActive, startTime, pauseTime) is sufficient for recovery.
+        // This prevents redundant sessionStorage writes every second.
         sessionStorage.setItem(timerId, JSON.stringify({ ...state, initialSecondsManaged }));
-    }, [state, timerId, initialSecondsManaged]);
+    }, [state.isActive, state.startTime, state.pauseTime, timerId, initialSecondsManaged]);
 
     // Timer logic
     useEffect(() => {

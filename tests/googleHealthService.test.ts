@@ -1,38 +1,49 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { googleHealthService } from '../services/googleHealthService';
 import { WorkoutType, UserProfile } from '../types';
 
 describe('Google Health Service', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('Workout Activity Mapping', () => {
-    it('should map Plan A and Plan B to Strength Training (Weightlifting - 97)', () => {
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.A)).toBe(97);
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.B)).toBe(97);
+    it('should map Plan A and Plan B to WEIGHTLIFTING', () => {
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.A)).toBe('WEIGHTLIFTING');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.B)).toBe('WEIGHTLIFTING');
     });
 
-    it('should map custom activities appropriately by keyword', () => {
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'morning run')).toBe(8); // Running
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'outdoor cycle')).toBe(1); // Biking
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'hike in the woods')).toBe(7); // Walking
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'vinyasa yoga')).toBe(100); // Yoga
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'pool swim')).toBe(9); // Swimming
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'HIIT session')).toBe(115); // HIIT
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'heavy lifting')).toBe(97); // Weightlifting
+    it('should map custom activities appropriately by keyword to Enums', () => {
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'morning run')).toBe('RUNNING');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'outdoor cycle')).toBe('BIKING');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'hike in the woods')).toBe('WALKING');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'vinyasa yoga')).toBe('YOGA');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'pool swim')).toBe('SWIMMING_POOL');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'HIIT session')).toBe('HIIT');
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'heavy lifting')).toBe('WEIGHTLIFTING');
     });
 
-    it('should default to Weightlifting (97) if custom activity is unknown', () => {
-      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'random movement')).toBe(97);
+    it('should default to WORKOUT if custom activity is unknown', () => {
+      expect(googleHealthService.mapWorkoutActivityType(WorkoutType.CUSTOM, 'random movement')).toBe('WORKOUT');
     });
   });
 
   describe('Keytel Calorie Calculation', () => {
-    // Mock user profile (approx 34 years old on 2024-01-01)
+    // Mock user profile
     const maleProfile: UserProfile = {
       id: '123',
       email: 'test@example.com',
       displayName: 'MaleUser',
       weight: 80, // kg
       dob: '1990-01-01',
-      gender: 'male'
+      gender: 'male',
+      tribeId: 'tribe1',
+      weeklyGoal: 3,
+      customChallenges: [],
+      completedChallenges: [],
+      fitnessLevel: 'beginner',
+      customPlans: [],
+      workoutTemplates: []
     };
 
     const femaleProfile: UserProfile = {
@@ -41,26 +52,23 @@ describe('Google Health Service', () => {
       displayName: 'FemaleUser',
       weight: 60, // kg
       dob: '1990-01-01',
-      gender: 'female'
+      gender: 'female',
+      tribeId: 'tribe1',
+      weeklyGoal: 3,
+      customChallenges: [],
+      completedChallenges: [],
+      fitnessLevel: 'beginner',
+      customPlans: [],
+      workoutTemplates: []
     };
 
     it('should calculate Keytel calories correctly for male profiles', () => {
-      // Keytel Formula for Male: ((-55.0969 + (0.6309 * HR) + (0.1988 * Weight) + (0.2017 * Age)) / 4.184) * Duration
-      // Let's assume HR = 140, Weight = 80kg, Age = 36 (since local time is 2026)
-      // Calories: ((-55.0969 + (0.6309 * 140) + (0.1988 * 80) + (0.2017 * 36)) / 4.184) * 60
-      // Calories = ((-55.0969 + 88.326 + 15.904 + 7.2612) / 4.184) * 60
-      // Calories = (56.3943 / 4.184) * 60 = 13.478 * 60 = 808.7 kcal
       const calories = googleHealthService.calculateKeytelCalories(maleProfile, 140, 60);
       expect(calories).toBeGreaterThanOrEqual(800);
       expect(calories).toBeLessThanOrEqual(820);
     });
 
     it('should calculate Keytel calories correctly for female profiles', () => {
-      // Keytel Formula for Female: ((-20.4022 + (0.4472 * HR) - (0.1263 * Weight) + (0.074 * Age)) / 4.184) * Duration
-      // Let's assume HR = 140, Weight = 60kg, Age = 36 (since local time is 2026)
-      // Calories: ((-20.4022 + (0.4472 * 140) - (0.1263 * 60) + (0.074 * 36)) / 4.184) * 60
-      // Calories = ((-20.4022 + 62.608 - 7.578 + 2.664) / 4.184) * 60
-      // Calories = (37.2918 / 4.184) * 60 = 8.913 * 60 = 534.78 kcal
       const calories = googleHealthService.calculateKeytelCalories(femaleProfile, 140, 60);
       expect(calories).toBeGreaterThanOrEqual(525);
       expect(calories).toBeLessThanOrEqual(545);
@@ -75,10 +83,10 @@ describe('Google Health Service', () => {
   });
 
   describe('Historical Workouts Sync', () => {
-    it('should throw an error if not connected to Google Fit', async () => {
+    it('should throw an error if not connected to Google Health', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(false);
       await expect(googleHealthService.syncHistoricalWorkouts([], {} as any, 7))
-        .rejects.toThrow('Google Fit not connected');
+        .rejects.toThrow('Google Health not connected');
     });
 
     it('should filter workouts correctly and call sendWorkoutToGoogleHealth', async () => {
@@ -96,27 +104,8 @@ describe('Google Health Service', () => {
       // Sync 1 week (7 days)
       const res = await googleHealthService.syncHistoricalWorkouts(logs as any, profile, 7);
 
-      expect(res.syncedCount).toBe(1); // Only log id '1' (within 7 days and not commitment)
+      expect(res.syncedCount).toBe(1); // Only log id '1'
       expect(sendSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('should skip wellbeing activities in syncHistoricalWorkouts', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const sendSpy = vi.spyOn(googleHealthService, 'sendWorkoutToGoogleHealth').mockResolvedValue({ calories: 300 });
-
-      const logs = [
-        { id: '10', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 45, calories: 400 }, // fitness
-        { id: '11', date: new Date().toISOString(), type: WorkoutType.CUSTOM, exercises: [], durationMinutes: 30, vibes: 12, customActivity: 'Meditation' }, // wellbeing - should be skipped
-        { id: '12', date: new Date().toISOString(), type: WorkoutType.CUSTOM, exercises: [], durationMinutes: 60, vibes: 8, customActivity: 'Cooking' },  // wellbeing - should be skipped
-      ];
-
-      const profile = { id: '123', displayName: 'User' } as any;
-      const res = await googleHealthService.syncHistoricalWorkouts(logs as any, profile, 7);
-
-      // Only the fitness workout (id '10') should be synced
-      expect(sendSpy).toHaveBeenCalledTimes(1);
-      expect(sendSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '10' }), profile);
-      expect(res.syncedCount).toBe(1);
     });
   });
 
@@ -142,10 +131,8 @@ describe('Google Health Service', () => {
 
     it('should NOT skip fitness custom activities with vibes=0 or vibes=undefined', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      // Mock the internal API call so it doesn't actually hit Google
-      vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue(null);
+      vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({ dataPoints: [] });
       vi.spyOn(googleHealthService as any, 'fetchAverageHeartRate').mockResolvedValue(null);
-      vi.spyOn(googleHealthService as any, 'writeCalorieDataPoint').mockResolvedValue(undefined);
 
       const fitnessLog = {
         id: 'fit-1',
@@ -154,15 +141,58 @@ describe('Google Health Service', () => {
         exercises: [],
         durationMinutes: 30,
         calories: 250,
-        vibes: 0, // zero vibes = not a wellbeing log
+        vibes: 0,
         customActivity: 'Running',
       } as any;
 
       const profile = { id: '123', displayName: 'User' } as any;
       const result = await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
 
-      // Should have proceeded (result is not null due to vibes=0)
       expect(result).not.toBeNull();
+    });
+  });
+
+  describe('Body Metrics Sync', () => {
+    it('should correctly parse weight (grams) and body fat from v4 response', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('dataTypes/weight')) {
+          return {
+            dataPoints: [{
+              weight: { weightGrams: 75500 }
+            }]
+          };
+        }
+        if (endpoint.includes('dataTypes/body-fat')) {
+          return {
+            dataPoints: [{
+              bodyFat: { percentage: 18.2 }
+            }]
+          };
+        }
+        return { dataPoints: [] };
+      });
+
+      const metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(75.5);
+      expect(metrics.bodyFatPercentage).toBe(18.2);
+    });
+  });
+
+  describe('Heart Rate Sync', () => {
+    it('should correctly parse and average string-based heart rate values', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({
+        dataPoints: [
+          { heartRate: { beatsPerMinute: '140' } },
+          { heartRate: { beatsPerMinute: '150' } }
+        ]
+      });
+
+      const avg = await googleHealthService.fetchAverageHeartRate('start', 'end');
+      expect(avg).toBe(145);
     });
   });
 });

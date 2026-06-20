@@ -153,22 +153,22 @@ describe('Google Health Service', () => {
   });
 
   describe('Body Metrics Sync', () => {
-    it('should correctly parse weight (grams) and body fat from v4 response', async () => {
+    it('should correctly parse weight (valueKg) and body fat (valuePercentage) from v4 reconcile response', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
       fetchSpy.mockImplementation(async (endpoint: string) => {
-        if (endpoint.includes('dataTypes/weight')) {
+        if (endpoint.includes('dataTypes/weight') && endpoint.includes(':reconcile')) {
           return {
             dataPoints: [{
-              weight: { weightGrams: 75500 }
+              weight: { valueKg: 75.5 }
             }]
           };
         }
-        if (endpoint.includes('dataTypes/body-fat')) {
+        if (endpoint.includes('dataTypes/body-fat') && endpoint.includes(':reconcile')) {
           return {
             dataPoints: [{
-              bodyFat: { percentage: 18.2 }
+              bodyFat: { valuePercentage: 18.2 }
             }]
           };
         }
@@ -180,10 +180,11 @@ describe('Google Health Service', () => {
       expect(metrics.bodyFatPercentage).toBe(18.2);
     });
 
-    it('should handle weightKg fallback if weightGrams is missing', async () => {
+    it('should handle fallbacks (weightKg, weightGrams, percentage) if new fields are missing', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
+      // Test weightKg fallback
       fetchSpy.mockImplementation(async (endpoint: string) => {
         if (endpoint.includes('dataTypes/weight')) {
           return {
@@ -192,33 +193,34 @@ describe('Google Health Service', () => {
             }]
           };
         }
-        return { dataPoints: [] };
-      });
-
-      const metrics = await googleHealthService.fetchLatestBodyMetrics();
-      expect(metrics.weight).toBe(82.3);
-    });
-
-    it('should fall back to unfiltered list if reconcile and filtered list are empty', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
-
-      fetchSpy.mockImplementation(async (endpoint: string) => {
-        if (endpoint.includes('filter=')) {
-          return { dataPoints: [] };
-        }
-        if (endpoint.includes('dataTypes/weight') && !endpoint.includes('filter=')) {
+        if (endpoint.includes('dataTypes/body-fat')) {
           return {
             dataPoints: [{
-              weight: { weightGrams: 90000 }
+              bodyFat: { percentage: 15.5 }
             }]
           };
         }
         return { dataPoints: [] };
       });
 
-      const metrics = await googleHealthService.fetchLatestBodyMetrics();
-      expect(metrics.weight).toBe(90);
+      let metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(82.3);
+      expect(metrics.bodyFatPercentage).toBe(15.5);
+
+      // Test weightGrams fallback
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('dataTypes/weight')) {
+          return {
+            dataPoints: [{
+              weight: { weightGrams: 70500 }
+            }]
+          };
+        }
+        return { dataPoints: [] };
+      });
+
+      metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(70.5);
     });
   });
 

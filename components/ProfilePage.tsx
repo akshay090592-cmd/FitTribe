@@ -54,7 +54,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [pointLogs, setPointLogs] = useState<any[]>([]);
     const [showPointsHistory, setShowPointsHistory] = useState(false);
 
-    // Handle Google Fit Auth Callback on load
+    // Handle Google Health Auth Callback on load
     useEffect(() => {
         const checkCallback = async () => {
             if (googleHealthService.handleAuthCallback()) {
@@ -72,13 +72,13 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                         onSave(updated);
                         await updateProfile(updated);
                         if (metrics.weight) setWeight(metrics.weight);
-                        alert(`Successfully connected to Google Fit and synced metrics!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
+                        alert(`Successfully connected to Google Health and synced metrics!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
                     } else {
-                        alert("Connected to Google Fit, but no weight or body fat metrics were found in the last 30 days.");
+                        alert("Connected to Google Health, but no weight or body fat metrics were found in the last 30 days.");
                     }
                 } catch (e) {
                     console.error(e);
-                    alert("Connected to Google Fit, but failed to fetch body metrics. Try syncing manually.");
+                    alert("Connected to Google Health, but failed to fetch body metrics. Try syncing manually.");
                 } finally {
                     setSyncingMetrics(false);
                 }
@@ -100,13 +100,13 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                 onSave(updated);
                 await updateProfile(updated);
                 if (metrics.weight) setWeight(metrics.weight);
-                alert(`Successfully synced from Google Fit!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
+                alert(`Successfully synced from Google Health!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
             } else {
-                alert("No new weight or body fat data found in Google Fit.");
+                alert("No new weight or body fat data found in Google Health.");
             }
         } catch (err) {
             console.error(err);
-            alert("Failed to sync metrics from Google Fit. Please verify your connection.");
+            alert("Failed to sync metrics from Google Health. Please verify your connection.");
         } finally {
             setSyncingMetrics(false);
         }
@@ -133,7 +133,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
         if (isGoogleConnected) {
             googleHealthService.disconnect();
             setIsGoogleConnected(false);
-            alert("Disconnected from Google Fit.");
+            alert("Disconnected from Google Health.");
         } else {
             googleHealthService.authorize();
         }
@@ -427,7 +427,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                         </div>
                     )}
 
-                    {/* Google Fit Integration Widget */}
+                    {/* Google Health Integration Widget */}
                     <div className="glass-panel p-5 mb-6 relative overflow-hidden border border-emerald-100/50" style={{ background: 'hsla(140,50%,98%,0.80)', borderRadius: '24px' }}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
@@ -455,7 +455,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                     : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200'
                                 }`}
                             >
-                                {isGoogleConnected ? 'Disconnect' : 'Connect Google Fit'}
+                                {isGoogleConnected ? 'Disconnect' : 'Connect Google Health'}
                             </button>
                             {isGoogleConnected && (
                                 <button

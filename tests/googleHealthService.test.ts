@@ -154,7 +154,34 @@ describe('Google Health Service', () => {
   });
 
   describe('Body Metrics Sync', () => {
-    it('should correctly parse weight (grams) and body fat from v4 response', async () => {
+    it('should correctly parse weight (valueKg) and body fat (valuePercentage) from v4 response', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('dataTypes/weight')) {
+          return {
+            dataPoints: [{
+              weight: { valueKg: 74.2 }
+            }]
+          };
+        }
+        if (endpoint.includes('dataTypes/body-fat')) {
+          return {
+            dataPoints: [{
+              bodyFat: { valuePercentage: 14.5 }
+            }]
+          };
+        }
+        return { dataPoints: [] };
+      });
+
+      const metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(74.2);
+      expect(metrics.bodyFatPercentage).toBe(14.5);
+    });
+
+    it('should handle weightGrams and percentage fallback', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
@@ -181,7 +208,7 @@ describe('Google Health Service', () => {
       expect(metrics.bodyFatPercentage).toBe(18.2);
     });
 
-    it('should handle weightKg fallback if weightGrams is missing', async () => {
+    it('should handle weightKg fallback', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 

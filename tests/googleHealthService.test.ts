@@ -179,6 +179,25 @@ describe('Google Health Service', () => {
       expect(metrics.weight).toBe(75.5);
       expect(metrics.bodyFatPercentage).toBe(18.2);
     });
+
+    it('should handle weightKg fallback if weightGrams is missing', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('dataTypes/weight')) {
+          return {
+            dataPoints: [{
+              weight: { weightKg: 82.3 }
+            }]
+          };
+        }
+        return { dataPoints: [] };
+      });
+
+      const metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(82.3);
+    });
   });
 
   describe('Heart Rate Sync', () => {

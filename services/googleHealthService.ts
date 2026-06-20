@@ -136,29 +136,16 @@ class GoogleHealthService {
 
       // 1. Fetch Weight
       try {
-        const nowISO = new Date().toISOString();
-        const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const filter = `weight.sample_time.physical_time >= "${agoISO}" AND weight.sample_time.physical_time <= "${nowISO}"`;
-
-        // Try reconcile first (for cross-app data)
-        let weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
-
-        // Fallback 1: Standard list if reconcile is empty
-        if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
-          weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
-        }
-
-        // Fallback 2: Remove filter to get the absolute latest point if recent ones are missing
-        if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
-          weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?pageSize=1`);
-        }
+        const weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?pageSize=1`);
 
         if (weightData.dataPoints && weightData.dataPoints.length > 0) {
           const point = weightData.dataPoints[0].weight;
-          if (point.weightGrams !== undefined) {
-            metrics.weight = Math.round((point.weightGrams / 1000) * 10) / 10;
+          if (point.valueKg !== undefined) {
+            metrics.weight = Math.round(point.valueKg * 10) / 10;
           } else if (point.weightKg !== undefined) {
             metrics.weight = Math.round(point.weightKg * 10) / 10;
+          } else if (point.weightGrams !== undefined) {
+            metrics.weight = Math.round((point.weightGrams / 1000) * 10) / 10;
           }
         }
       } catch (err) {
@@ -167,22 +154,11 @@ class GoogleHealthService {
 
       // 2. Fetch Body Fat %
       try {
-        const nowISO = new Date().toISOString();
-        const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const filter = `bodyFat.sample_time.physical_time >= "${agoISO}" AND bodyFat.sample_time.physical_time <= "${nowISO}"`;
-
-        let fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
-
-        if (!fatData.dataPoints || fatData.dataPoints.length === 0) {
-          fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
-        }
-
-        if (!fatData.dataPoints || fatData.dataPoints.length === 0) {
-          fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?pageSize=1`);
-        }
+        const fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints:reconcile?pageSize=1`);
 
         if (fatData.dataPoints && fatData.dataPoints.length > 0) {
-          const val = fatData.dataPoints[0].bodyFat?.percentage;
+          const bodyFat = fatData.dataPoints[0].bodyFat;
+          const val = bodyFat?.valuePercentage ?? bodyFat?.percentage;
           if (val !== undefined) metrics.bodyFatPercentage = Math.round(val * 10) / 10;
         }
       } catch (err) {

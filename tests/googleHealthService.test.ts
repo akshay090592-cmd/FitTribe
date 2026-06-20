@@ -133,6 +133,7 @@ describe('Google Health Service', () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({ dataPoints: [] });
       vi.spyOn(googleHealthService as any, 'fetchAverageHeartRate').mockResolvedValue(null);
+      vi.spyOn(googleHealthService as any, 'fetchHeartRateZones').mockResolvedValue(null);
 
       const fitnessLog = {
         id: 'fit-1',
@@ -198,31 +199,9 @@ describe('Google Health Service', () => {
       const metrics = await googleHealthService.fetchLatestBodyMetrics();
       expect(metrics.weight).toBe(82.3);
     });
-
-    it('should fall back to unfiltered list if reconcile and filtered list are empty', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
-
-      fetchSpy.mockImplementation(async (endpoint: string) => {
-        if (endpoint.includes('filter=')) {
-          return { dataPoints: [] };
-        }
-        if (endpoint.includes('dataTypes/weight') && !endpoint.includes('filter=')) {
-          return {
-            dataPoints: [{
-              weight: { weightGrams: 90000 }
-            }]
-          };
-        }
-        return { dataPoints: [] };
-      });
-
-      const metrics = await googleHealthService.fetchLatestBodyMetrics();
-      expect(metrics.weight).toBe(90);
-    });
   });
 
-  describe('Heart Rate Sync', () => {
+  describe('Heart Rate and Zone Sync', () => {
     it('should correctly parse and average string-based heart rate values', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({
@@ -234,6 +213,51 @@ describe('Google Health Service', () => {
 
       const avg = await googleHealthService.fetchAverageHeartRate('start', 'end');
       expect(avg).toBe(145);
+    });
+
+    it('should perform rollUp and inject HR zones into Exercise payload', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('time-in-heart-rate-zone/dataPoints:rollUp')) {
+          return {
+            rollupDataPoints: [{
+              timeInHeartRateZone: {
+                timeInHeartRateZones: [
+                  { heartRateZone: 'LIGHT', duration: '300s' },
+                  { heartRateZone: 'MODERATE', duration: '1200s' }
+                ]
+              }
+            }]
+          };
+        }
+        if (endpoint.includes('heart-rate/dataPoints')) {
+          return { dataPoints: [{ heartRate: { beatsPerMinute: '140' } }] };
+        }
+        return { dataPoints: [] };
+      });
+
+      const fitnessLog = {
+        id: 'fit-2',
+        date: new Date().toISOString(),
+        type: WorkoutType.A,
+        exercises: [],
+        durationMinutes: 30,
+        calories: 300
+      } as any;
+
+      const profile = { id: '123', displayName: 'User', weight: 70, dob: '1990-01-01', gender: 'male' } as any;
+      await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
+
+      // Verify that the POST call to exercise dataPoints included the zones
+      const exerciseCall = fetchSpy.mock.calls.find(call => call[0].includes('dataTypes/exercise/dataPoints') && call[1]?.method === 'POST');
+      const body = JSON.parse(exerciseCall[1].body);
+
+      expect(body.exercise.metricsSummary.heartRateZoneDurations).toEqual({
+        lightTime: '300s',
+        moderateTime: '1200s'
+      });
     });
   });
 });

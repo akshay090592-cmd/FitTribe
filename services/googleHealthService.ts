@@ -224,20 +224,24 @@ class GoogleHealthService {
           range: {
             startTime: startTimeISO,
             endTime: endTimeISO
-          },
-          windowSize: '86400s'
+          }
         })
       });
 
       if (response.rollupDataPoints && response.rollupDataPoints.length > 0) {
         const zoneData = response.rollupDataPoints[0].timeInHeartRateZone;
         if (zoneData && zoneData.timeInHeartRateZones) {
-          const zones: any = {};
+          const zones: any = {
+            lightZoneDuration: "0s",
+            moderateZoneDuration: "0s",
+            vigorousZoneDuration: "0s",
+            peakZoneDuration: "0s"
+          };
           zoneData.timeInHeartRateZones.forEach((z: any) => {
-            if (z.heartRateZone === 'LIGHT') zones.lightTime = z.duration;
-            if (z.heartRateZone === 'MODERATE') zones.moderateTime = z.duration;
-            if (z.heartRateZone === 'VIGOROUS') zones.vigorousTime = z.duration;
-            if (z.heartRateZone === 'PEAK') zones.peakTime = z.duration;
+            if (z.heartRateZone === 'LIGHT') zones.lightZoneDuration = z.duration;
+            if (z.heartRateZone === 'MODERATE') zones.moderateZoneDuration = z.duration;
+            if (z.heartRateZone === 'VIGOROUS') zones.vigorousZoneDuration = z.duration;
+            if (z.heartRateZone === 'PEAK') zones.peakZoneDuration = z.duration;
           });
           return zones;
         }
@@ -319,6 +323,8 @@ class GoogleHealthService {
 
       // 2. Step 2: Push the Exercise Session
       const dataPoint = {
+        startTime: startTimeISO,
+        endTime: endTimeISO,
         exercise: {
           exerciseType: activityType,
           interval: {
@@ -330,15 +336,17 @@ class GoogleHealthService {
           metricsSummary: {
             caloriesKcal: finalCalories || 0,
             averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined,
-            heartRateZoneDurations: heartRateZones || undefined
+            timeInHeartRateZones: heartRateZones || undefined
           },
-          displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`
+          title: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`
         }
       };
 
-      await this.fetchGoogleAPI('users/me/dataTypes/exercise/dataPoints', {
+      await this.fetchGoogleAPI('users/me/dataTypes/exercise/dataPoints:batchCreate', {
         method: 'POST',
-        body: JSON.stringify(dataPoint)
+        body: JSON.stringify({
+          dataPoints: [dataPoint]
+        })
       });
 
       return {

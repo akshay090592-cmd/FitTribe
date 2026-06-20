@@ -224,7 +224,8 @@ class GoogleHealthService {
           range: {
             startTime: startTimeISO,
             endTime: endTimeISO
-          }
+          },
+          windowSize: "86400s" // Aggregate over the whole range
         })
       });
 
@@ -232,16 +233,16 @@ class GoogleHealthService {
         const zoneData = response.rollupDataPoints[0].timeInHeartRateZone;
         if (zoneData && zoneData.timeInHeartRateZones) {
           const zones: any = {
-            lightZoneDuration: "0s",
-            moderateZoneDuration: "0s",
-            vigorousZoneDuration: "0s",
-            peakZoneDuration: "0s"
+            lightTime: "0s",
+            moderateTime: "0s",
+            vigorousTime: "0s",
+            peakTime: "0s"
           };
           zoneData.timeInHeartRateZones.forEach((z: any) => {
-            if (z.heartRateZone === 'LIGHT') zones.lightZoneDuration = z.duration;
-            if (z.heartRateZone === 'MODERATE') zones.moderateZoneDuration = z.duration;
-            if (z.heartRateZone === 'VIGOROUS') zones.vigorousZoneDuration = z.duration;
-            if (z.heartRateZone === 'PEAK') zones.peakZoneDuration = z.duration;
+            if (z.heartRateZone === 'LIGHT') zones.lightTime = z.duration;
+            if (z.heartRateZone === 'MODERATE') zones.moderateTime = z.duration;
+            if (z.heartRateZone === 'VIGOROUS') zones.vigorousTime = z.duration;
+            if (z.heartRateZone === 'PEAK') zones.peakTime = z.duration;
           });
           return zones;
         }
@@ -321,10 +322,12 @@ class GoogleHealthService {
 
       const activityType = this.mapWorkoutActivityType(workoutLog.type, workoutLog.customActivity);
 
-      // 2. Step 2: Push the Exercise Session
+      // Stable ID for the data point to ensure idempotency
+      const dataPointId = `fittribe-log-${workoutLog.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+      // 2. Step 2: Push the Exercise Session using PATCH for specific ID
       const dataPoint = {
-        startTime: startTimeISO,
-        endTime: endTimeISO,
+        name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
         exercise: {
           exerciseType: activityType,
           interval: {
@@ -336,17 +339,16 @@ class GoogleHealthService {
           metricsSummary: {
             caloriesKcal: finalCalories || 0,
             averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined,
-            timeInHeartRateZones: heartRateZones || undefined
+            heartRateZoneDurations: heartRateZones || undefined
           },
-          title: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`
+          displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`,
+          notes: "Workout logged via FitTribe"
         }
       };
 
-      await this.fetchGoogleAPI('users/me/dataTypes/exercise/dataPoints:batchCreate', {
-        method: 'POST',
-        body: JSON.stringify({
-          dataPoints: [dataPoint]
-        })
+      await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(dataPoint)
       });
 
       return {

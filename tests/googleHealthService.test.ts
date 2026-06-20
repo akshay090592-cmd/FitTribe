@@ -277,20 +277,20 @@ describe('Google Health Service', () => {
       const profile = { id: '123', displayName: 'User', weight: 70, dob: '1990-01-01', gender: 'male' } as any;
       await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
 
-      // Verify that the POST call to exercise dataPoints included the zones
-      const exerciseCall = fetchSpy.mock.calls.find(call => call[0].includes('dataTypes/exercise/dataPoints:batchCreate') && call[1]?.method === 'POST');
-      const body = JSON.parse(exerciseCall[1].body);
-      const dataPoint = body.dataPoints[0];
+      // Verify that the PATCH call to exercise dataPoints included the zones
+      const exerciseCall = fetchSpy.mock.calls.find(call => call[0].includes('dataTypes/exercise/dataPoints/fittribe-log-fit-2') && call[1]?.method === 'PATCH');
+      const dataPoint = JSON.parse(exerciseCall[1].body);
 
-      expect(dataPoint.exercise.metricsSummary.timeInHeartRateZones).toEqual({
-        lightZoneDuration: '300s',
-        moderateZoneDuration: '1200s',
-        vigorousZoneDuration: '0s',
-        peakZoneDuration: '0s'
+      expect(dataPoint.exercise.metricsSummary.heartRateZoneDurations).toEqual({
+        lightTime: '300s',
+        moderateTime: '1200s',
+        vigorousTime: '0s',
+        peakTime: '0s'
       });
-      expect(dataPoint.startTime).toBeDefined();
-      expect(dataPoint.endTime).toBeDefined();
-      expect(dataPoint.exercise.title).toBeDefined();
+      expect(dataPoint.exercise.interval.startTime).toBeDefined();
+      expect(dataPoint.exercise.interval.endTime).toBeDefined();
+      expect(dataPoint.exercise.displayName).toBeDefined();
+      expect(dataPoint.name).toBe('users/me/dataTypes/exercise/dataPoints/fittribe-log-fit-2');
     });
   });
 });

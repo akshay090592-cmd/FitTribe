@@ -9,7 +9,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.writeonly'
 ];
 
-export interface FitBodyMetrics {
+export interface HealthBodyMetrics {
   weight?: number; // kg
   bodyFatPercentage?: number; // %
 }
@@ -40,8 +40,8 @@ class GoogleHealthService {
 
     if (accessToken && state === 'google_health_auth') {
       const expiresAt = Date.now() + Number(expiresIn) * 1000;
-      localStorage.setItem('google_fit_access_token', accessToken);
-      localStorage.setItem('google_fit_expires_at', String(expiresAt));
+      localStorage.setItem('google_health_access_token', accessToken);
+      localStorage.setItem('google_health_expires_at', String(expiresAt));
       // Clear hash from URL
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       return true;
@@ -54,8 +54,8 @@ class GoogleHealthService {
    * Checks if user has authorized Google Health
    */
   isConnected(): boolean {
-    const token = localStorage.getItem('google_fit_access_token');
-    const expiresAt = localStorage.getItem('google_fit_expires_at');
+    const token = localStorage.getItem('google_health_access_token');
+    const expiresAt = localStorage.getItem('google_health_expires_at');
     if (!token || !expiresAt) return false;
     return Date.now() < Number(expiresAt);
   }
@@ -64,13 +64,13 @@ class GoogleHealthService {
    * Disconnects/logs out from Google Health
    */
   disconnect() {
-    localStorage.removeItem('google_fit_access_token');
-    localStorage.removeItem('google_fit_expires_at');
+    localStorage.removeItem('google_health_access_token');
+    localStorage.removeItem('google_health_expires_at');
   }
 
   private getAccessToken(): string | null {
     if (!this.isConnected()) return null;
-    return localStorage.getItem('google_fit_access_token');
+    return localStorage.getItem('google_health_access_token');
   }
 
   /**
@@ -86,7 +86,8 @@ class GoogleHealthService {
       ...(options.headers || {})
     };
 
-    const response = await fetch(`${this.BASE_URL}${endpoint}`, {
+    const url = endpoint.startsWith('http') ? endpoint : `${this.BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
       ...options,
       headers
     });
@@ -103,7 +104,7 @@ class GoogleHealthService {
   /**
    * Map FitTribe Workout Type to Google Health v4 Exercise Enum strings
    */
-  mapWorkoutActivityType(type: WorkoutType, customActivity?: string): string {
+  mapWorkoutActivityType(type: WorkoutType | string, customActivity?: string): string {
     if (type === WorkoutType.A || type === WorkoutType.B) {
       return 'WEIGHTLIFTING';
     }
@@ -116,29 +117,46 @@ class GoogleHealthService {
     if (activityText.includes('swim')) return 'SWIMMING_POOL';
     if (activityText.includes('hiit') || activityText.includes('cardio') || activityText.includes('crossfit')) return 'HIIT';
     if (activityText.includes('strength') || activityText.includes('lift') || activityText.includes('weight')) return 'WEIGHTLIFTING';
+    if (activityText.includes('pilates')) return 'PILATES';
+    if (activityText.includes('row')) return 'ROWING';
+    if (activityText.includes('elliptical')) return 'ELLIPTICAL';
 
     return 'WORKOUT'; // Default
   }
 
   /**
-   * Fetch latest Weight and Body Fat % from Google Health API v4
+   * Fetch latest Weight and Body Fat % from Google Health API v4.
+   * Uses :reconcile to ensure data from all connected apps is visible.
    */
-  async fetchLatestBodyMetrics(): Promise<FitBodyMetrics> {
+  async fetchLatestBodyMetrics(): Promise<HealthBodyMetrics> {
     if (!this.isConnected()) return {};
 
     try {
       const nowISO = new Date().toISOString();
-      const agoISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      // Look back 90 days for better coverage of periodic weigh-ins
+      const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
-      const metrics: FitBodyMetrics = {};
+      const metrics: HealthBodyMetrics = {};
 
       // 1. Fetch Weight
       try {
         const filter = `weight.sample_time.physical_time >= "${agoISO}" AND weight.sample_time.physical_time <= "${nowISO}"`;
-        const weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=1`);
+        // Use :reconcile to merge data from multiple sources
+        let weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
+
+        // Fallback to standard list if reconcile is empty
+        if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
+          weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
+        }
+
         if (weightData.dataPoints && weightData.dataPoints.length > 0) {
-          const grams = weightData.dataPoints[0].weight?.weightGrams;
-          if (grams !== undefined) metrics.weight = Math.round((grams / 1000) * 10) / 10;
+          const point = weightData.dataPoints[0].weight;
+          // Support both possible field names for weight
+          if (point.weightGrams !== undefined) {
+            metrics.weight = Math.round((point.weightGrams / 1000) * 10) / 10;
+          } else if (point.weightKg !== undefined) {
+            metrics.weight = Math.round(point.weightKg * 10) / 10;
+          }
         }
       } catch (err) {
         console.warn('Failed to fetch weight from Google Health:', err);
@@ -147,7 +165,12 @@ class GoogleHealthService {
       // 2. Fetch Body Fat %
       try {
         const filter = `bodyFat.sample_time.physical_time >= "${agoISO}" AND bodyFat.sample_time.physical_time <= "${nowISO}"`;
-        const fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=1`);
+        let fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
+
+        if (!fatData.dataPoints || fatData.dataPoints.length === 0) {
+          fatData = await this.fetchGoogleAPI(`users/me/dataTypes/body-fat/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
+        }
+
         if (fatData.dataPoints && fatData.dataPoints.length > 0) {
           const val = fatData.dataPoints[0].bodyFat?.percentage;
           if (val !== undefined) metrics.bodyFatPercentage = Math.round(val * 10) / 10;
@@ -164,19 +187,31 @@ class GoogleHealthService {
   }
 
   /**
-   * Fetches heart rate from Google Health API v4 during the workout duration and calculates average HR
+   * Fetches heart rate from Google Health API v4 and calculates average HR.
    */
   async fetchAverageHeartRate(startTimeISO: string, endTimeISO: string): Promise<number | null> {
     try {
       const filter = `heartRate.sample_time.physical_time >= "${startTimeISO}" AND heartRate.sample_time.physical_time <= "${endTimeISO}"`;
-      const hrData = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints?filter=${encodeURIComponent(filter)}`);
+      let hrData = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints:reconcile?filter=${encodeURIComponent(filter)}`);
+
+      if (!hrData.dataPoints || hrData.dataPoints.length === 0) {
+        hrData = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints?filter=${encodeURIComponent(filter)}`);
+      }
 
       if (hrData.dataPoints && hrData.dataPoints.length > 0) {
-        const total = hrData.dataPoints.reduce((sum: number, pt: any) => {
-          const bpm = parseInt(pt.heartRate?.beatsPerMinute || '0');
-          return sum + bpm;
-        }, 0);
-        return total / hrData.dataPoints.length;
+        let sum = 0;
+        let count = 0;
+        for (const pt of hrData.dataPoints) {
+          const bpmStr = pt.heartRate?.beatsPerMinute;
+          if (bpmStr) {
+            const bpm = parseInt(bpmStr);
+            if (bpm > 0) {
+              sum += bpm;
+              count++;
+            }
+          }
+        }
+        return count > 0 ? sum / count : null;
       }
       return null;
     } catch (err) {
@@ -225,7 +260,8 @@ class GoogleHealthService {
 
     try {
       const startTime = new Date(workoutLog.date);
-      const endTime = new Date(startTime.getTime() + (workoutLog.durationMinutes || 30) * 60000);
+      const duration = workoutLog.durationMinutes || 30;
+      const endTime = new Date(startTime.getTime() + duration * 60000);
 
       const startTimeISO = startTime.toISOString();
       const endTimeISO = endTime.toISOString();
@@ -236,13 +272,13 @@ class GoogleHealthService {
       let finalCalories = workoutLog.calories || 0;
 
       if (avgHeartRate) {
-        const calculatedCalories = this.calculateKeytelCalories(userProfile, avgHeartRate, workoutLog.durationMinutes);
+        const calculatedCalories = this.calculateKeytelCalories(userProfile, avgHeartRate, duration);
         if (calculatedCalories) {
           finalCalories = calculatedCalories;
           workoutLog.calories = finalCalories;
         }
       } else if (!finalCalories) {
-        finalCalories = this.calculateKeytelCalories(userProfile, 130, workoutLog.durationMinutes) || 300;
+        finalCalories = this.calculateKeytelCalories(userProfile, 130, duration) || 300;
       }
 
       const activityType = this.mapWorkoutActivityType(workoutLog.type, workoutLog.customActivity);

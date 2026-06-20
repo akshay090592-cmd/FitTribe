@@ -29,7 +29,7 @@ export interface UserProfile {
   workoutTemplates?: WorkoutTemplate[];
   goals?: UserGoals;
   customPlans?: WorkoutPlan[];
-  bodyFatPercentage?: number; // Fetched from Google Fit
+  bodyFatPercentage?: number; // Fetched from Google Health
 }
 
 export interface WorkoutTemplate {

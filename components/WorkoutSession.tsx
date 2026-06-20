@@ -498,7 +498,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         calories: estimatedCalories
       };
 
-      // If Google Fit is connected, sync workout and use tracker heart rate for calorie calculations
+      // If Google Health is connected, sync workout and use tracker heart rate for calorie calculations
       if (googleHealthService.isConnected()) {
         try {
           const syncResult = await googleHealthService.sendWorkoutToGoogleHealth(currentLog, userProfile);

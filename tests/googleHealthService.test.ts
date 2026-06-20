@@ -198,6 +198,28 @@ describe('Google Health Service', () => {
       const metrics = await googleHealthService.fetchLatestBodyMetrics();
       expect(metrics.weight).toBe(82.3);
     });
+
+    it('should fall back to unfiltered list if reconcile and filtered list are empty', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string) => {
+        if (endpoint.includes('filter=')) {
+          return { dataPoints: [] };
+        }
+        if (endpoint.includes('dataTypes/weight') && !endpoint.includes('filter=')) {
+          return {
+            dataPoints: [{
+              weight: { weightGrams: 90000 }
+            }]
+          };
+        }
+        return { dataPoints: [] };
+      });
+
+      const metrics = await googleHealthService.fetchLatestBodyMetrics();
+      expect(metrics.weight).toBe(90);
+    });
   });
 
   describe('Heart Rate Sync', () => {

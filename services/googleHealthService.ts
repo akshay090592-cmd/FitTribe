@@ -87,6 +87,7 @@ class GoogleHealthService {
     };
 
     const url = endpoint.startsWith('http') ? endpoint : `${this.BASE_URL}${endpoint}`;
+
     const response = await fetch(url, {
       ...options,
       headers
@@ -94,6 +95,8 @@ class GoogleHealthService {
 
     if (!response.ok) {
       const errText = await response.text();
+      // LOG ERROR for debugging in sandbox
+      console.warn(`[GoogleHealth] API Error: ${response.status} URL: ${url}`, errText);
       throw new Error(`Google Health API error: ${response.status} - ${errText}`);
     }
 
@@ -140,15 +143,12 @@ class GoogleHealthService {
         const agoISO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
         const filter = `weight.sample_time.physical_time >= "${agoISO}" AND weight.sample_time.physical_time <= "${nowISO}"`;
 
-        // Try reconcile first (for cross-app data)
         let weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints:reconcile?filter=${encodeURIComponent(filter)}&pageSize=5`);
 
-        // Fallback 1: Standard list if reconcile is empty
         if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
           weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=5`);
         }
 
-        // Fallback 2: Remove filter to get the absolute latest point if recent ones are missing
         if (!weightData.dataPoints || weightData.dataPoints.length === 0) {
           weightData = await this.fetchGoogleAPI(`users/me/dataTypes/weight/dataPoints?pageSize=1`);
         }
@@ -231,6 +231,42 @@ class GoogleHealthService {
   }
 
   /**
+   * Fetches heart rate zone durations for a timeframe using rollUp.
+   */
+  async fetchHeartRateZones(startTimeISO: string, endTimeISO: string): Promise<any | null> {
+    try {
+      const response = await this.fetchGoogleAPI('users/me/dataTypes/time-in-heart-rate-zone/dataPoints:rollUp', {
+        method: 'POST',
+        body: JSON.stringify({
+          range: {
+            startTime: startTimeISO,
+            endTime: endTimeISO
+          },
+          windowSize: '86400s'
+        })
+      });
+
+      if (response.rollupDataPoints && response.rollupDataPoints.length > 0) {
+        const zoneData = response.rollupDataPoints[0].timeInHeartRateZone;
+        if (zoneData && zoneData.timeInHeartRateZones) {
+          const zones: any = {};
+          zoneData.timeInHeartRateZones.forEach((z: any) => {
+            if (z.heartRateZone === 'LIGHT') zones.lightTime = z.duration;
+            if (z.heartRateZone === 'MODERATE') zones.moderateTime = z.duration;
+            if (z.heartRateZone === 'VIGOROUS') zones.vigorousTime = z.duration;
+            if (z.heartRateZone === 'PEAK') zones.peakTime = z.duration;
+          });
+          return zones;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('Failed to fetch heart rate zones via rollUp:', err);
+      return null;
+    }
+  }
+
+  /**
    * Calculates calorie burn based on heart rate using the Keytel Formula
    */
   calculateKeytelCalories(
@@ -278,7 +314,12 @@ class GoogleHealthService {
       const offsetSeconds = -startTime.getTimezoneOffset() * 60;
       const utcOffset = `${offsetSeconds >= 0 ? '' : '-'}${Math.abs(offsetSeconds)}s`;
 
-      let avgHeartRate = await this.fetchAverageHeartRate(startTimeISO, endTimeISO);
+      // 1. Step 1: Read-then-write - Fetch tracker details if available
+      const [avgHeartRate, heartRateZones] = await Promise.all([
+        this.fetchAverageHeartRate(startTimeISO, endTimeISO),
+        this.fetchHeartRateZones(startTimeISO, endTimeISO)
+      ]);
+
       let finalCalories = workoutLog.calories || 0;
 
       if (avgHeartRate) {
@@ -293,6 +334,7 @@ class GoogleHealthService {
 
       const activityType = this.mapWorkoutActivityType(workoutLog.type, workoutLog.customActivity);
 
+      // 2. Step 2: Push the Exercise Session
       const dataPoint = {
         exercise: {
           exerciseType: activityType,
@@ -304,7 +346,8 @@ class GoogleHealthService {
           },
           metricsSummary: {
             caloriesKcal: finalCalories || 0,
-            averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined
+            averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined,
+            heartRateZoneDurations: heartRateZones || undefined
           },
           displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`
         }

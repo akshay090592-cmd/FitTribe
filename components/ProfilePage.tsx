@@ -36,6 +36,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const isGoogleConnected = !!userProfile.googleHealthConnected;
     const [syncingMetrics, setSyncingMetrics] = useState(false);
     const [syncingWorkouts, setSyncingWorkouts] = useState(false);
+    const [isDeletingWorkouts, setIsDeletingWorkouts] = useState(false);
 
     // Form State
     const [height, setHeight] = useState<number | string>(userProfile.height || '');
@@ -93,6 +94,23 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
             alert("Failed to sync workouts. Please verify your connection.");
         } finally {
             setSyncingWorkouts(false);
+        }
+    };
+
+    const handleDeleteSyncedWorkouts = async () => {
+        if (!window.confirm("This will remove all FitTribe workout entries from Google Health. Your Fitbit data remains safe, but the FitTribe-labeled sessions will be deleted. Proceed?")) {
+            return;
+        }
+
+        setIsDeletingWorkouts(true);
+        try {
+            const deleted = await googleHealthService.deleteHistoricalWorkouts(logs);
+            alert(`Successfully removed ${deleted} workouts from Google Health.`);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to delete workouts. Please verify your connection.");
+        } finally {
+            setIsDeletingWorkouts(false);
         }
     };
 
@@ -468,6 +486,13 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                         All Time
                                     </button>
                                 </div>
+                                <button
+                                    onClick={handleDeleteSyncedWorkouts}
+                                    disabled={isDeletingWorkouts}
+                                    className="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[9px] uppercase tracking-widest rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
+                                >
+                                    {isDeletingWorkouts ? 'Deleting...' : 'Delete All Synced Workouts'}
+                                </button>
                             </div>
                         )}
                     </div>

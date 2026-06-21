@@ -278,4 +278,36 @@ describe('Google Health Service', () => {
       expect(dataPoint.name).toBe('users/me/dataTypes/exercise/dataPoints/fittribe-log-fit-2');
     });
   });
+
+  describe('Historical Workouts Deletion', () => {
+    it('should filter workouts correctly and call fetchGoogleAPI with DELETE', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({});
+
+      const logs = [
+        { id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30 },
+        { id: '2', date: new Date().toISOString(), type: WorkoutType.B, exercises: [], durationMinutes: 40 },
+        { id: '3', date: new Date().toISOString(), type: 'COMMITMENT' as any, exercises: [], durationMinutes: 0 }, // skipped
+        { id: '4', date: new Date().toISOString(), type: WorkoutType.CUSTOM, vibes: 10, exercises: [], durationMinutes: 30 } // wellbeing (skipped)
+      ];
+
+      const deletedCount = await googleHealthService.deleteHistoricalWorkouts(logs as any);
+
+      expect(deletedCount).toBe(2); // Only '1' and '2'
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('fittribe-log-1'), { method: 'DELETE' });
+      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('fittribe-log-2'), { method: 'DELETE' });
+    });
+
+    it('should handle 404 errors gracefully', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockRejectedValue(new Error('404 Not Found'));
+
+      const logs = [{ id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30 }];
+      const deletedCount = await googleHealthService.deleteHistoricalWorkouts(logs as any);
+
+      expect(deletedCount).toBe(1); // Still counted as attempt/success for UI purpose if it's already gone
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

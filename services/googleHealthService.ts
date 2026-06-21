@@ -362,6 +362,47 @@ class GoogleHealthService {
 
     return { syncedCount, updatedCaloriesCount };
   }
+
+  /**
+   * Deletes previously synced workouts from Google Health.
+   * This is useful for clearing out old data before a clean re-sync.
+   */
+  async deleteHistoricalWorkouts(logs: WorkoutLog[]): Promise<number> {
+    if (!this.isConnected()) throw new Error('Google Health not connected');
+
+    // Filter to only the logs that FitTribe would have actually synced
+    const logsToDelete = logs.filter(log => {
+      if (log.type === 'COMMITMENT' as any) return false;
+      if (log.vibes !== undefined && log.vibes > 0) return false;
+      return true;
+    });
+
+    let deletedCount = 0;
+
+    for (const log of logsToDelete) {
+      // Re-generate the exact same ID used during the original sync
+      const dataPointId = `fittribe-log-${log.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+      try {
+        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
+          method: 'DELETE'
+        });
+        deletedCount++;
+        console.log(`[GoogleHealth] Successfully deleted: ${dataPointId}`);
+      } catch (err: any) {
+        // If Google Health returns a 404, it just means the record isn't there
+        // (either the user deleted it manually, or it never synced). We can safely ignore 404s.
+        if (err.message && err.message.includes('404')) {
+          console.log(`[GoogleHealth] Record not found (already deleted): ${dataPointId}`);
+          deletedCount++; // Still count as "processed/clean" for UI
+        } else {
+          console.warn(`[GoogleHealth] Failed to delete ${dataPointId}:`, err);
+        }
+      }
+    }
+
+    return deletedCount;
+  }
 }
 
 export const googleHealthService = new GoogleHealthService();

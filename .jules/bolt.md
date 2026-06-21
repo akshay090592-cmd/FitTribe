@@ -25,3 +25,7 @@
 ## 2026-06-03 - Timezone-Safe Early Exit in Hot Loops
 **Learning:** Implementing an early exit in log processing loops based on `new Date().toISOString()` can be dangerous if not buffered. Since `toISOString()` includes the current time, a naive check against "yesterday" (e.g., `new Date(now - 24h).toISOString()`) will skip any logs from yesterday morning if it is currently afternoon.
 **Action:** Always use a generous buffer (e.g., 48 hours) when implementing early breaks for "recent" activity checks, or normalize both operands to midnight UTC to ensure no data is lost across timezone boundaries or time-of-day shifts.
+
+## 2026-06-21 - Stabilized Root-Level Fetching State
+**Learning:** Root-level state updates that don't change the UI logic (like transitioning from 1 fetching request to 2) cause unnecessary reconciliation of the entire application tree. In a dashboard with 8+ parallel fetches, this can trigger 16+ redundant root re-renders in seconds.
+**Action:** Use `useRef` for tracking numeric counts of background operations and only update boolean `useState` when the count transitions between zero and non-zero. This ensures the root component only re-renders when the loading spinner's visibility actually needs to change.

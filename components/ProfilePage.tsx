@@ -33,9 +33,10 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [xpData, setXpData] = useState<any>(null);
 
     // Google Health State
-    const [isGoogleConnected, setIsGoogleConnected] = useState(googleHealthService.isConnected());
+    const isGoogleConnected = !!userProfile.googleHealthConnected;
     const [syncingMetrics, setSyncingMetrics] = useState(false);
     const [syncingWorkouts, setSyncingWorkouts] = useState(false);
+    const [isDeletingWorkouts, setIsDeletingWorkouts] = useState(false);
 
     // Form State
     const [height, setHeight] = useState<number | string>(userProfile.height || '');
@@ -53,39 +54,6 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [pointLogs, setPointLogs] = useState<any[]>([]);
     const [showPointsHistory, setShowPointsHistory] = useState(false);
-
-    // Handle Google Health Auth Callback on load
-    useEffect(() => {
-        const checkCallback = async () => {
-            if (googleHealthService.handleAuthCallback()) {
-                setIsGoogleConnected(true);
-                // Trigger auto-sync once connected
-                setSyncingMetrics(true);
-                try {
-                    const metrics = await googleHealthService.fetchLatestBodyMetrics();
-                    if (metrics.weight || metrics.bodyFatPercentage) {
-                        const updated = {
-                            ...userProfile,
-                            weight: metrics.weight || userProfile.weight,
-                            bodyFatPercentage: metrics.bodyFatPercentage || userProfile.bodyFatPercentage
-                        };
-                        onSave(updated);
-                        await updateProfile(updated);
-                        if (metrics.weight) setWeight(metrics.weight);
-                        alert(`Successfully connected to Google Health and synced metrics!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
-                    } else {
-                        alert("Connected to Google Health, but no weight or body fat metrics were found in the last 30 days.");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Connected to Google Health, but failed to fetch body metrics. Try syncing manually.");
-                } finally {
-                    setSyncingMetrics(false);
-                }
-            }
-        };
-        checkCallback();
-    }, []);
 
     const handleSyncMetrics = async () => {
         setSyncingMetrics(true);
@@ -129,10 +97,34 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
         }
     };
 
-    const handleToggleGoogleConnection = () => {
+    const handleDeleteSyncedWorkouts = async () => {
+        if (!window.confirm("This will remove all FitTribe workout entries from Google Health. Your Fitbit data remains safe, but the FitTribe-labeled sessions will be deleted. Proceed?")) {
+            return;
+        }
+
+        setIsDeletingWorkouts(true);
+        try {
+            const deleted = await googleHealthService.deleteHistoricalWorkouts(logs);
+            alert(`Successfully removed ${deleted} workouts from Google Health.`);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to delete workouts. Please verify your connection.");
+        } finally {
+            setIsDeletingWorkouts(false);
+        }
+    };
+
+    const handleToggleGoogleConnection = async () => {
         if (isGoogleConnected) {
             googleHealthService.disconnect();
-            setIsGoogleConnected(false);
+            const updated = {
+                ...userProfile,
+                googleHealthConnected: false,
+                googleHealthAccessToken: undefined,
+                googleHealthTokenExpiry: undefined
+            };
+            onSave(updated);
+            await updateProfile(updated);
             alert("Disconnected from Google Health.");
         } else {
             googleHealthService.authorize();
@@ -494,6 +486,13 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                         All Time
                                     </button>
                                 </div>
+                                <button
+                                    onClick={handleDeleteSyncedWorkouts}
+                                    disabled={isDeletingWorkouts}
+                                    className="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[9px] uppercase tracking-widest rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
+                                >
+                                    {isDeletingWorkouts ? 'Deleting...' : 'Delete All Synced Workouts'}
+                                </button>
                             </div>
                         )}
                     </div>

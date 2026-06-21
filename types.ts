@@ -30,6 +30,9 @@ export interface UserProfile {
   goals?: UserGoals;
   customPlans?: WorkoutPlan[];
   bodyFatPercentage?: number; // Fetched from Google Health
+  googleHealthConnected?: boolean;
+  googleHealthAccessToken?: string;
+  googleHealthTokenExpiry?: number; // Timestamp
 }
 
 export interface WorkoutTemplate {

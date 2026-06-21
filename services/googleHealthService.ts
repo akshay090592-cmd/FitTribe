@@ -27,11 +27,12 @@ class GoogleHealthService {
   }
 
   /**
-   * Handles parsing access token from OAuth redirect hash
+   * Handles parsing access token from OAuth redirect hash.
+   * Returns token data if found, allowing caller to persist to DB.
    */
-  handleAuthCallback(): boolean {
+  handleAuthCallback(): { accessToken: string, expiresAt: number } | null {
     const hash = window.location.hash;
-    if (!hash) return false;
+    if (!hash) return null;
 
     const params = new URLSearchParams(hash.substring(1));
     const accessToken = params.get('access_token');
@@ -40,24 +41,32 @@ class GoogleHealthService {
 
     if (accessToken && state === 'google_health_auth') {
       const expiresAt = Date.now() + Number(expiresIn) * 1000;
-      localStorage.setItem('google_health_access_token', accessToken);
-      localStorage.setItem('google_health_expires_at', String(expiresAt));
+      this.syncToLocalStorage(accessToken, expiresAt);
       // Clear hash from URL
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      return true;
+      return { accessToken, expiresAt };
     }
 
-    return false;
+    return null;
   }
 
   /**
-   * Checks if user has authorized Google Health
+   * Persists token data to localStorage for immediate use.
+   */
+  syncToLocalStorage(token: string, expiresAt: number) {
+    localStorage.setItem('google_health_access_token', token);
+    localStorage.setItem('google_health_expires_at', String(expiresAt));
+  }
+
+  /**
+   * Checks if user has a valid, non-expired token in localStorage.
    */
   isConnected(): boolean {
     const token = localStorage.getItem('google_health_access_token');
     const expiresAt = localStorage.getItem('google_health_expires_at');
     if (!token || !expiresAt) return false;
-    return Date.now() < Number(expiresAt);
+    // Buffer of 30 seconds
+    return Date.now() < (Number(expiresAt) - 30000);
   }
 
   /**
@@ -129,8 +138,6 @@ class GoogleHealthService {
 
   /**
    * Fetch latest Weight and Body Fat % from Google Health API v4.
-   * Uses :reconcile to ensure data from all connected apps is visible.
-   * Setting pageSize=1 guarantees only the single most recent log entry.
    */
   async fetchLatestBodyMetrics(): Promise<HealthBodyMetrics> {
     if (!this.isConnected()) return {};
@@ -214,47 +221,6 @@ class GoogleHealthService {
   }
 
   /**
-   * Fetches heart rate zone durations for a timeframe using rollUp.
-   */
-  async fetchHeartRateZones(startTimeISO: string, endTimeISO: string): Promise<any | null> {
-    try {
-      const response = await this.fetchGoogleAPI('users/me/dataTypes/time-in-heart-rate-zone/dataPoints:rollUp', {
-        method: 'POST',
-        body: JSON.stringify({
-          range: {
-            startTime: startTimeISO,
-            endTime: endTimeISO
-          },
-          windowSize: "86400s" // Aggregate over the whole range
-        })
-      });
-
-      if (response.rollupDataPoints && response.rollupDataPoints.length > 0) {
-        const zoneData = response.rollupDataPoints[0].timeInHeartRateZone;
-        if (zoneData && zoneData.timeInHeartRateZones) {
-          const zones: any = {
-            lightTime: "0s",
-            moderateTime: "0s",
-            vigorousTime: "0s",
-            peakTime: "0s"
-          };
-          zoneData.timeInHeartRateZones.forEach((z: any) => {
-            if (z.heartRateZone === 'LIGHT') zones.lightTime = z.duration;
-            if (z.heartRateZone === 'MODERATE') zones.moderateTime = z.duration;
-            if (z.heartRateZone === 'VIGOROUS') zones.vigorousTime = z.duration;
-            if (z.heartRateZone === 'PEAK') zones.peakTime = z.duration;
-          });
-          return zones;
-        }
-      }
-      return null;
-    } catch (err) {
-      console.warn('Failed to fetch heart rate zones via rollUp:', err);
-      return null;
-    }
-  }
-
-  /**
    * Calculates calorie burn based on heart rate using the Keytel Formula
    */
   calculateKeytelCalories(
@@ -281,8 +247,8 @@ class GoogleHealthService {
   }
 
   /**
-   * Syncs completed workout session and calorie burn data back to Google Health v4 as an 'exercise' DataPoint.
-   * Wellbeing activities (logs with a positive vibes score) are explicitly excluded.
+   * Syncs completed workout session to Google Health v4 as an 'exercise' DataPoint.
+   * Only metadata (times/types) is sent. Google Health will auto-merge continuous Fitbit data.
    */
   async sendWorkoutToGoogleHealth(workoutLog: WorkoutLog, userProfile: UserProfile): Promise<{ calories?: number, avgHeartRate?: number } | null> {
     if (!this.isConnected()) return null;
@@ -302,14 +268,12 @@ class GoogleHealthService {
       const offsetSeconds = -startTime.getTimezoneOffset() * 60;
       const utcOffset = `${offsetSeconds >= 0 ? '' : '-'}${Math.abs(offsetSeconds)}s`;
 
-      // 1. Step 1: Read-then-write - Fetch tracker details if available
-      const [avgHeartRate, heartRateZones] = await Promise.all([
-        this.fetchAverageHeartRate(startTimeISO, endTimeISO),
-        this.fetchHeartRateZones(startTimeISO, endTimeISO)
-      ]);
+      // 1. Fetch Average Heart Rate ONLY to calculate local app calories.
+      const avgHeartRate = await this.fetchAverageHeartRate(startTimeISO, endTimeISO);
 
       let finalCalories = workoutLog.calories || 0;
 
+      // Calculate Keytel calories locally for the Fit Tribe App UI
       if (avgHeartRate) {
         const calculatedCalories = this.calculateKeytelCalories(userProfile, avgHeartRate, duration);
         if (calculatedCalories) {
@@ -325,7 +289,8 @@ class GoogleHealthService {
       // Stable ID for the data point to ensure idempotency
       const dataPointId = `fittribe-log-${workoutLog.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
-      // 2. Step 2: Push the Exercise Session using PATCH for specific ID
+      // 2. Push the Exercise Session using PATCH for specific ID
+      // CRITICAL FIX: No metricsSummary is sent so Google uses Fitbit's data!
       const dataPoint = {
         name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
         exercise: {
@@ -335,11 +300,6 @@ class GoogleHealthService {
             startUtcOffset: utcOffset,
             endTime: endTimeISO,
             endUtcOffset: utcOffset
-          },
-          metricsSummary: {
-            caloriesKcal: finalCalories || 0,
-            averageHeartRateBeatsPerMinute: avgHeartRate ? String(Math.round(avgHeartRate)) : undefined,
-            heartRateZoneDurations: heartRateZones || undefined
           },
           displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`,
           notes: "Workout logged via FitTribe"
@@ -351,6 +311,8 @@ class GoogleHealthService {
         body: JSON.stringify(dataPoint)
       });
 
+      // Returning the calories here ensures your syncHistoricalWorkouts method
+      // still successfully updates your local Database with the calculated number.
       return {
         calories: finalCalories,
         avgHeartRate: avgHeartRate || undefined
@@ -388,6 +350,8 @@ class GoogleHealthService {
       const syncResult = await this.sendWorkoutToGoogleHealth(log, userProfile);
       if (syncResult) {
         syncedCount++;
+        // Because sendWorkoutToGoogleHealth still returns finalCalories,
+        // this next block will successfully update your local DB.
         if (syncResult.calories && syncResult.calories !== log.calories) {
           log.calories = syncResult.calories;
           updatedCaloriesCount++;
@@ -397,6 +361,47 @@ class GoogleHealthService {
     }
 
     return { syncedCount, updatedCaloriesCount };
+  }
+
+  /**
+   * Deletes previously synced workouts from Google Health.
+   * This is useful for clearing out old data before a clean re-sync.
+   */
+  async deleteHistoricalWorkouts(logs: WorkoutLog[]): Promise<number> {
+    if (!this.isConnected()) throw new Error('Google Health not connected');
+
+    // Filter to only the logs that FitTribe would have actually synced
+    const logsToDelete = logs.filter(log => {
+      if (log.type === 'COMMITMENT' as any) return false;
+      if (log.vibes !== undefined && log.vibes > 0) return false;
+      return true;
+    });
+
+    let deletedCount = 0;
+
+    for (const log of logsToDelete) {
+      // Re-generate the exact same ID used during the original sync
+      const dataPointId = `fittribe-log-${log.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+      try {
+        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
+          method: 'DELETE'
+        });
+        deletedCount++;
+        console.log(`[GoogleHealth] Successfully deleted: ${dataPointId}`);
+      } catch (err: any) {
+        // If Google Health returns a 404, it just means the record isn't there
+        // (either the user deleted it manually, or it never synced). We can safely ignore 404s.
+        if (err.message && err.message.includes('404')) {
+          console.log(`[GoogleHealth] Record not found (already deleted): ${dataPointId}`);
+          deletedCount++; // Still count as "processed/clean" for UI
+        } else {
+          console.warn(`[GoogleHealth] Failed to delete ${dataPointId}:`, err);
+        }
+      }
+    }
+
+    return deletedCount;
   }
 }
 

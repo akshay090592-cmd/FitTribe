@@ -2,6 +2,7 @@ import { ExerciseSet, User, WorkoutLog, PRStats, UserGamificationState, GiftTran
 import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './gamification';
 import { supabase, isSupabaseConfigured, isSessionValid } from './supabaseClient';
 import { compareISODates } from './dateUtils';
+import { googleHealthService } from '../services/googleHealthService';
 
 // --- SECURITY & VALIDATION ---
 
@@ -247,8 +248,16 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
     customPlans: [], // Not stored in DB yet, but part of interface
     workoutTemplates: data.workout_templates || [],
     goals: data.goals || {},
-    bodyFatPercentage: data.goals?.bodyFatPercentage
+    bodyFatPercentage: data.goals?.bodyFatPercentage,
+    googleHealthConnected: data.goals?.googleHealthConnected,
+    googleHealthAccessToken: data.goals?.googleHealthAccessToken,
+    googleHealthTokenExpiry: data.goals?.googleHealthTokenExpiry
   };
+
+  // Restore Google Health session if present in profile
+  if (profile.googleHealthAccessToken && profile.googleHealthTokenExpiry) {
+    googleHealthService.syncToLocalStorage(profile.googleHealthAccessToken, profile.googleHealthTokenExpiry);
+  }
 
   setInCache(cacheKey, profile);
   // Persist for optimistic load on restart
@@ -466,7 +475,13 @@ export const updateProfile = async (profile: UserProfile) => {
     custom_challenge: profile.customChallenges,
     completed_challenges: profile.completedChallenges,
     workout_templates: profile.workoutTemplates,
-    goals: { ...(profile.goals || {}), bodyFatPercentage: profile.bodyFatPercentage }
+    goals: {
+      ...(profile.goals || {}),
+      bodyFatPercentage: profile.bodyFatPercentage,
+      googleHealthConnected: profile.googleHealthConnected,
+      googleHealthAccessToken: profile.googleHealthAccessToken,
+      googleHealthTokenExpiry: profile.googleHealthTokenExpiry
+    }
   }).eq('id', profile.id);
 
   if (error) {

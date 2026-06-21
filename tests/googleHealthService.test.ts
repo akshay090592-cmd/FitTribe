@@ -133,7 +133,6 @@ describe('Google Health Service', () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({ dataPoints: [] });
       vi.spyOn(googleHealthService as any, 'fetchAverageHeartRate').mockResolvedValue(null);
-      vi.spyOn(googleHealthService as any, 'fetchHeartRateZones').mockResolvedValue(null);
 
       const fitnessLog = {
         id: 'fit-1',
@@ -242,23 +241,11 @@ describe('Google Health Service', () => {
       expect(avg).toBe(145);
     });
 
-    it('should perform rollUp and inject HR zones into Exercise payload', async () => {
+    it('should NOT inject HR zones into Exercise payload and should strip metricsSummary', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
       fetchSpy.mockImplementation(async (endpoint: string) => {
-        if (endpoint.includes('time-in-heart-rate-zone/dataPoints:rollUp')) {
-          return {
-            rollupDataPoints: [{
-              timeInHeartRateZone: {
-                timeInHeartRateZones: [
-                  { heartRateZone: 'LIGHT', duration: '300s' },
-                  { heartRateZone: 'MODERATE', duration: '1200s' }
-                ]
-              }
-            }]
-          };
-        }
         if (endpoint.includes('heart-rate/dataPoints')) {
           return { dataPoints: [{ heartRate: { beatsPerMinute: '140' } }] };
         }
@@ -277,16 +264,14 @@ describe('Google Health Service', () => {
       const profile = { id: '123', displayName: 'User', weight: 70, dob: '1990-01-01', gender: 'male' } as any;
       await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
 
-      // Verify that the PATCH call to exercise dataPoints included the zones
-      const exerciseCall = fetchSpy.mock.calls.find(call => call[0].includes('dataTypes/exercise/dataPoints/fittribe-log-fit-2') && call[1]?.method === 'PATCH');
-      const dataPoint = JSON.parse(exerciseCall[1].body);
+      // Verify that the PATCH call to exercise dataPoints did NOT include metricsSummary
+      const exerciseCall = fetchSpy.mock.calls.find((call: any) =>
+        (call[0] as string).includes('dataTypes/exercise/dataPoints/fittribe-log-fit-2') &&
+        call[1]?.method === 'PATCH'
+      );
+      const dataPoint = JSON.parse((exerciseCall as any)[1].body);
 
-      expect(dataPoint.exercise.metricsSummary.heartRateZoneDurations).toEqual({
-        lightTime: '300s',
-        moderateTime: '1200s',
-        vigorousTime: '0s',
-        peakTime: '0s'
-      });
+      expect(dataPoint.exercise.metricsSummary).toBeUndefined();
       expect(dataPoint.exercise.interval.startTime).toBeDefined();
       expect(dataPoint.exercise.interval.endTime).toBeDefined();
       expect(dataPoint.exercise.displayName).toBeDefined();

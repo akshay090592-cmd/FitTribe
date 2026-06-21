@@ -33,7 +33,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [xpData, setXpData] = useState<any>(null);
 
     // Google Health State
-    const [isGoogleConnected, setIsGoogleConnected] = useState(googleHealthService.isConnected());
+    const isGoogleConnected = !!userProfile.googleHealthConnected;
     const [syncingMetrics, setSyncingMetrics] = useState(false);
     const [syncingWorkouts, setSyncingWorkouts] = useState(false);
 
@@ -53,39 +53,6 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [pointLogs, setPointLogs] = useState<any[]>([]);
     const [showPointsHistory, setShowPointsHistory] = useState(false);
-
-    // Handle Google Health Auth Callback on load
-    useEffect(() => {
-        const checkCallback = async () => {
-            if (googleHealthService.handleAuthCallback()) {
-                setIsGoogleConnected(true);
-                // Trigger auto-sync once connected
-                setSyncingMetrics(true);
-                try {
-                    const metrics = await googleHealthService.fetchLatestBodyMetrics();
-                    if (metrics.weight || metrics.bodyFatPercentage) {
-                        const updated = {
-                            ...userProfile,
-                            weight: metrics.weight || userProfile.weight,
-                            bodyFatPercentage: metrics.bodyFatPercentage || userProfile.bodyFatPercentage
-                        };
-                        onSave(updated);
-                        await updateProfile(updated);
-                        if (metrics.weight) setWeight(metrics.weight);
-                        alert(`Successfully connected to Google Health and synced metrics!\nWeight: ${metrics.weight || 'N/A'} kg\nBody Fat: ${metrics.bodyFatPercentage || 'N/A'}%`);
-                    } else {
-                        alert("Connected to Google Health, but no weight or body fat metrics were found in the last 30 days.");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Connected to Google Health, but failed to fetch body metrics. Try syncing manually.");
-                } finally {
-                    setSyncingMetrics(false);
-                }
-            }
-        };
-        checkCallback();
-    }, []);
 
     const handleSyncMetrics = async () => {
         setSyncingMetrics(true);
@@ -129,10 +96,17 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
         }
     };
 
-    const handleToggleGoogleConnection = () => {
+    const handleToggleGoogleConnection = async () => {
         if (isGoogleConnected) {
             googleHealthService.disconnect();
-            setIsGoogleConnected(false);
+            const updated = {
+                ...userProfile,
+                googleHealthConnected: false,
+                googleHealthAccessToken: undefined,
+                googleHealthTokenExpiry: undefined
+            };
+            onSave(updated);
+            await updateProfile(updated);
             alert("Disconnected from Google Health.");
         } else {
             googleHealthService.authorize();

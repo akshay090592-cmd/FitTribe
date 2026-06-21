@@ -20,6 +20,7 @@ import { QuestBoard } from './components/QuestBoard';
 import { getDailyQuests, getOnboardingQuests, completeManualQuest } from './utils/questUtils';
 import { NotificationPopup } from './components/NotificationPopup';
 import { getAvatarPath } from './utils/avatar';
+import { googleHealthService } from './services/googleHealthService';
 import { formatTimeAgo, compareISODates } from './utils/dateUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { WeeklyStatsWidget } from './components/WeeklyStatsWidget';
@@ -786,6 +787,24 @@ const App: React.FC = () => {
       window.removeEventListener('sync-end', handleSyncEnd);
     };
   }, []);
+
+  useEffect(() => {
+    // Handle Google Health Auth Callback
+    if (userProfile && session) {
+      const tokenData = googleHealthService.handleAuthCallback();
+      if (tokenData) {
+        const updatedProfile = {
+          ...userProfile,
+          googleHealthConnected: true,
+          googleHealthAccessToken: tokenData.accessToken,
+          googleHealthTokenExpiry: tokenData.expiresAt
+        };
+        setUserProfile(updatedProfile);
+        updateProfile(updatedProfile);
+        showToast("Connected to Google Health!", "success");
+      }
+    }
+  }, [userProfile, session]);
 
   useEffect(() => {
     // Check for URL params (Cold Start via Notification Click)

@@ -289,6 +289,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   // Persistence Effect
   useEffect(() => {
     if (!loading && records.length > 0 && step !== 'analysis' && !isFinishing) {
+      // BOLT: Optimized to reduce localStorage I/O.
+      // We exclude workoutTimer.seconds and restTimer.seconds from the dependency array.
+      // The session is only persisted when structural state changes (records, step, etc.).
+      // Session recovery uses 'lastUpdated' to calculate elapsed time since the last save,
+      // ensuring accuracy without per-second disk writes.
       const stateToSave = {
         records,
         step,
@@ -298,12 +303,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         showRestTimer,
         restDuration,
         restTimerSeconds: restTimer.seconds,
-        expandedExerciseId, // Save this!
+        expandedExerciseId,
         lastUpdated: Date.now()
       };
       localStorage.setItem(`workout_session_${plan.id}`, JSON.stringify(stateToSave));
     }
-  }, [records, step, warmupDone, cooldownDone, workoutTimer.seconds, loading, plan.id, showRestTimer, restDuration, restTimer.seconds, expandedExerciseId, isFinishing]);
+  }, [records, step, warmupDone, cooldownDone, loading, plan.id, showRestTimer, restDuration, expandedExerciseId, isFinishing]);
 
   useEffect(() => {
     if (step !== 'analysis') {

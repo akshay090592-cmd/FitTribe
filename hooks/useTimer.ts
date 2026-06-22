@@ -107,8 +107,12 @@ export const useTimer = ({
 
     // Persist state
     useEffect(() => {
+        // BOLT: Optimized to reduce sessionStorage I/O.
+        // We exclude 'state' (which contains frequently changing 'seconds') from the dependency array.
+        // Instead, we only persist when structural properties change (isActive, startTime, pauseTime).
+        // Initialization logic correctly reconstructs 'seconds' for active timers using 'startTime'.
         sessionStorage.setItem(timerId, JSON.stringify({ ...state, initialSecondsManaged }));
-    }, [state, timerId, initialSecondsManaged]);
+    }, [state.isActive, state.startTime, state.pauseTime, timerId, initialSecondsManaged]);
 
     // Timer logic
     useEffect(() => {

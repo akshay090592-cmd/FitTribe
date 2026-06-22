@@ -29,3 +29,7 @@
 ## 2026-06-21 - Stabilized Root-Level Fetching State
 **Learning:** Root-level state updates that don't change the UI logic (like transitioning from 1 fetching request to 2) cause unnecessary reconciliation of the entire application tree. In a dashboard with 8+ parallel fetches, this can trigger 16+ redundant root re-renders in seconds.
 **Action:** Use `useRef` for tracking numeric counts of background operations and only update boolean `useState` when the count transitions between zero and non-zero. This ensures the root component only re-renders when the loading spinner's visibility actually needs to change.
+
+## 2026-06-22 - Optimized Timer Persistence
+**Learning:** Frequent synchronous I/O to localStorage/sessionStorage (e.g., every second during a workout) can cause significant battery drain and minor UI stutters on low-end devices. If the application already has "restoration" logic that uses a stable timestamp (like 'startTime' or 'lastUpdated') to calculate offsets, the frequently changing 'seconds' state can be safely excluded from the persistence effect's dependency array.
+**Action:** Always check if persistence logic is triggered by high-frequency UI updates. If reconstruction from a reference timestamp is possible, remove the high-frequency state from dependencies and rely on structural state changes to trigger disk writes.

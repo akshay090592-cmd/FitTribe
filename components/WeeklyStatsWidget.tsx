@@ -16,22 +16,39 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
     // Get start of week (Sunday) to match getTeamStats logic in gamification.ts
     const weekStart = startOfWeek(now); // default starts on Sunday
     weekStart.setHours(0, 0, 0, 0);
+    const weekStartTime = weekStart.getTime();
 
-    const weekLogs = logs.filter(l => new Date(l.date) >= weekStart && l.type !== WorkoutType.COMMITMENT);
+    let duration = 0;
+    let calories = 0;
+    let volume = 0;
 
-    const duration = weekLogs.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
-    const calories = weekLogs.reduce((acc, l) => acc + (l.calories || 0), 0);
+    // BOLT: Optimize using a single-pass for loop with an early break.
+    // Since logs are provided in descending order, we stop processing once we hit a log from before this week.
+    // This improves performance from O(N_total) to O(N_week), eliminating redundant iterations and allocations.
+    for (let i = 0, len = logs.length; i < len; i++) {
+      const l = logs[i];
+      const logTime = new Date(l.date).getTime();
 
-    // Calculate total volume for gym workouts
-    const volume = weekLogs.reduce((acc, l) => {
-      if (l.type === WorkoutType.CUSTOM) return acc;
+      if (logTime < weekStartTime) break;
+      if (l.type === WorkoutType.COMMITMENT) continue;
 
-      const logVolume = l.exercises.reduce((eAcc, ex) =>
-        eAcc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-      , 0);
+      duration += (l.durationMinutes || 0);
+      calories += (l.calories || 0);
 
-      return acc + logVolume;
-    }, 0);
+      // Calculate total volume for gym workouts (non-custom)
+      if (l.type !== WorkoutType.CUSTOM && l.exercises) {
+        for (let j = 0, exLen = l.exercises.length; j < exLen; j++) {
+          const ex = l.exercises[j];
+          const sets = ex.sets || [];
+          for (let k = 0, setLen = sets.length; k < setLen; k++) {
+            const s = sets[k];
+            if (s.completed) {
+              volume += (s.weight * s.reps);
+            }
+          }
+        }
+      }
+    }
 
     return { duration, calories, volume };
   }, [logs]);

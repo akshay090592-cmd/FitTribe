@@ -33,3 +33,7 @@
 ## 2026-06-22 - Optimized Timer Persistence
 **Learning:** Frequent synchronous I/O to localStorage/sessionStorage (e.g., every second during a workout) can cause significant battery drain and minor UI stutters on low-end devices. If the application already has "restoration" logic that uses a stable timestamp (like 'startTime' or 'lastUpdated') to calculate offsets, the frequently changing 'seconds' state can be safely excluded from the persistence effect's dependency array.
 **Action:** Always check if persistence logic is triggered by high-frequency UI updates. If reconstruction from a reference timestamp is possible, remove the high-frequency state from dependencies and rely on structural state changes to trigger disk writes.
+
+## 2026-06-23 - Single-Pass Chronological Early Break
+**Learning:** Performing multiple linear scans (filter, reduce, map) over large workout histories in render components (like WeeklyStatsWidget) creates O(N_total) overhead that scales poorly. Since the application standardizes on descending chronological order for log arrays, a single-pass for loop with an early 'break' can reduce complexity to O(N_recent).
+**Action:** Always prefer standard for loops with an early break condition when processing chronological logs against a timeframe cutoff. Consolidate multiple metrics (duration, volume, calories) into a single pass to eliminate redundant iterations and function allocations.

@@ -223,8 +223,8 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
     // BOLT: Use standard for loops to minimize array iterations and allocations
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
-      // BOLT: Filter logs by timeframe
-      if (log.date < cutoffStr) continue;
+      // BOLT: Filter logs by timeframe. Since logs are sorted DESC, we stop processing once we hit the cutoff.
+      if (log.date < cutoffStr) break;
 
       if (log.exercises) {
         for (let j = 0; j < log.exercises.length; j++) {

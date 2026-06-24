@@ -17,21 +17,37 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
     const weekStart = startOfWeek(now); // default starts on Sunday
     weekStart.setHours(0, 0, 0, 0);
 
-    const weekLogs = logs.filter(l => new Date(l.date) >= weekStart && l.type !== WorkoutType.COMMITMENT);
+    // BOLT: Optimize weekly stats calculation using a single-pass loop with early break.
+    // Leveraging descending chronological order of logs to avoid O(N) scan.
+    const weekStartISO = weekStart.toISOString();
+    let duration = 0;
+    let calories = 0;
+    let volume = 0;
 
-    const duration = weekLogs.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
-    const calories = weekLogs.reduce((acc, l) => acc + (l.calories || 0), 0);
+    for (let i = 0; i < logs.length; i++) {
+      const l = logs[i];
+      // Early break if logs are older than the current week
+      if (l.date < weekStartISO) break;
+      if (l.type === WorkoutType.COMMITMENT) continue;
 
-    // Calculate total volume for gym workouts
-    const volume = weekLogs.reduce((acc, l) => {
-      if (l.type === WorkoutType.CUSTOM) return acc;
+      duration += (l.durationMinutes || 0);
+      calories += (l.calories || 0);
 
-      const logVolume = l.exercises.reduce((eAcc, ex) =>
-        eAcc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-      , 0);
-
-      return acc + logVolume;
-    }, 0);
+      // Calculate total volume for gym workouts
+      if (l.type !== WorkoutType.CUSTOM) {
+        const exercises = l.exercises || [];
+        for (let j = 0; j < exercises.length; j++) {
+          const ex = exercises[j];
+          const sets = ex.sets || [];
+          for (let k = 0; k < sets.length; k++) {
+            const s = sets[k];
+            if (s.completed) {
+              volume += (s.weight * s.reps);
+            }
+          }
+        }
+      }
+    }
 
     return { duration, calories, volume };
   }, [logs]);

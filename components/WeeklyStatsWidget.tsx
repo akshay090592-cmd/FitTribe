@@ -12,26 +12,41 @@ interface Props {
 
 export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onClick, weeklyProgress }) => {
   const stats = useMemo(() => {
+    // BOLT: Optimized using a single-pass loop with an early break.
+    // Since logs are sorted descending, we can stop as soon as we hit a log older than the current week.
+    // Performance: Improves from O(N_total) to O(N_week).
     const now = new Date();
-    // Get start of week (Sunday) to match getTeamStats logic in gamification.ts
-    const weekStart = startOfWeek(now); // default starts on Sunday
+    const weekStart = startOfWeek(now);
     weekStart.setHours(0, 0, 0, 0);
+    const weekStartISO = weekStart.toISOString();
 
-    const weekLogs = logs.filter(l => new Date(l.date) >= weekStart && l.type !== WorkoutType.COMMITMENT);
+    let duration = 0;
+    let calories = 0;
+    let volume = 0;
 
-    const duration = weekLogs.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
-    const calories = weekLogs.reduce((acc, l) => acc + (l.calories || 0), 0);
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      // Early exit: logs are sorted DESC by date
+      if (log.date < weekStartISO) break;
+      if (log.type === WorkoutType.COMMITMENT) continue;
 
-    // Calculate total volume for gym workouts
-    const volume = weekLogs.reduce((acc, l) => {
-      if (l.type === WorkoutType.CUSTOM) return acc;
+      duration += (log.durationMinutes || 0);
+      calories += (log.calories || 0);
 
-      const logVolume = l.exercises.reduce((eAcc, ex) =>
-        eAcc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-      , 0);
-
-      return acc + logVolume;
-    }, 0);
+      if (log.type !== WorkoutType.CUSTOM && log.exercises) {
+        for (let j = 0; j < log.exercises.length; j++) {
+          const ex = log.exercises[j];
+          if (ex.sets) {
+            for (let k = 0; k < ex.sets.length; k++) {
+              const set = ex.sets[k];
+              if (set.completed) {
+                volume += (set.weight * set.reps);
+              }
+            }
+          }
+        }
+      }
+    }
 
     return { duration, calories, volume };
   }, [logs]);

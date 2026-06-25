@@ -973,6 +973,17 @@ const App: React.FC = () => {
 
   const lastWorkout = React.useMemo(() => allLogs.find(l => l.type !== WorkoutType.COMMITMENT), [allLogs]);
 
+  /**
+   * BOLT: Memoize "tomorrow commitment" check to avoid O(N) search and
+   * repeated Date object allocations during frequent timer-driven re-renders.
+   */
+  const hasTomorrowCommitment = React.useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toDateString();
+    return allLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
+  }, [allLogs]);
+
   if (loading) {
     return <LoadingSpinner fullScreen />;
   }

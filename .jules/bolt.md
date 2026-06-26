@@ -33,3 +33,7 @@
 ## 2026-06-22 - Optimized Timer Persistence
 **Learning:** Frequent synchronous I/O to localStorage/sessionStorage (e.g., every second during a workout) can cause significant battery drain and minor UI stutters on low-end devices. If the application already has "restoration" logic that uses a stable timestamp (like 'startTime' or 'lastUpdated') to calculate offsets, the frequently changing 'seconds' state can be safely excluded from the persistence effect's dependency array.
 **Action:** Always check if persistence logic is triggered by high-frequency UI updates. If reconstruction from a reference timestamp is possible, remove the high-frequency state from dependencies and rely on structural state changes to trigger disk writes.
+
+## 2026-06-26 - O(Streak) Streak and Mood Calculation
+**Learning:** Performing full array traversals (filter, sort, map) over a user's entire workout history for streak and mood calculation creates an O(N log N) or O(N) bottleneck that grows as the user remains active. Since streaks are typically short and depend only on recent activity, integrating filtering into a single-pass loop with an early exit reduces the cost to O(Streak) for active users and O(Inactive Gap) for others.
+**Action:** For chronological time-series data like workout logs, always prefer single-pass loops with early breaks once a boundary or "broken" condition is met, rather than pre-filtering the entire set. Reusing the result of these optimized loops for related states (like mood) eliminates redundant processing.

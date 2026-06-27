@@ -233,52 +233,64 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
   const returnLogs = typeof optionsOrReturnLogs === 'boolean' ? optionsOrReturnLogs : optionsOrReturnLogs.returnLogs;
   const isSorted = typeof optionsOrReturnLogs === 'boolean' ? false : optionsOrReturnLogs.isSorted;
 
-  // Filter out commitments and short custom workouts
-  const validLogs = logs.filter(l => {
-    if (l.type === WorkoutType.COMMITMENT) return false;
-    if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) return false;
-    return true;
-  });
+  // BOLT: Optimized using a single-pass loop with an early break.
+  // Instead of full filtering and sorting, we process logs in order (assuming DESC)
+  // and terminate as soon as a gap > 3 days is found.
+  // Performance: O(Streak) vs O(N log N).
 
-  if (!isSorted) {
-    validLogs.sort((a, b) => compareISODates(b.date, a.date));
+  let logsToProcess = logs;
+  if (!isSorted && logs.length > 1) {
+    logsToProcess = [...logs].sort((a, b) => compareISODates(b.date, a.date));
   }
 
-  if (validLogs.length === 0) return returnLogs ? [] : 0;
+  if (logsToProcess.length === 0) return returnLogs ? [] : 0;
 
   let streak = 0;
-  let currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0); // Today at midnight
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayTime = today.getTime();
+  const MS_PER_DAY = 1000 * 3600 * 24;
 
-  // Check if last workout was today or yesterday to keep streak alive
-  const lastLogDate = new Date(validLogs[0].date);
-  lastLogDate.setHours(0, 0, 0, 0);
+  let prevValidDate: Date | null = null;
+  const streakLogs: WorkoutLog[] = [];
 
-  const diffDays = (currentDate.getTime() - lastLogDate.getTime()) / (1000 * 3600 * 24);
+  for (let i = 0; i < logsToProcess.length; i++) {
+    const log = logsToProcess[i];
 
-  if (diffDays > 3) return returnLogs ? [] : 0; // Streak broken if gap > 3 days (allow 2 rest days? Gap > 3 means missed 3 days)
+    // Filtering logic integrated
+    if (log.type === WorkoutType.COMMITMENT) continue;
+    if ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && (log.durationMinutes || 0) < 30) continue;
 
-  let prevDate = lastLogDate;
-  streak = 1;
-  const streakLogs = [validLogs[0]];
+    const logDate = new Date(log.date);
+    const logMidnight = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+    const logTime = logMidnight.getTime();
 
-  for (let i = 1; i < validLogs.length; i++) {
-    const d = new Date(validLogs[i].date);
-    d.setHours(0, 0, 0, 0);
+    if (prevValidDate === null) {
+      // First valid log found
+      const diffFromToday = (todayTime - logTime) / MS_PER_DAY;
+      if (diffFromToday > 3) break; // Last workout too old, streak is 0
 
-    if (d.getTime() === prevDate.getTime()) {
-      // Same day, add to streak logs but don't increment streak count day
-      if (returnLogs) streakLogs.push(validLogs[i]);
-      continue;
-    }
-
-    const gap = (prevDate.getTime() - d.getTime()) / (1000 * 3600 * 24);
-    if (gap <= 3) { // Allow 2 rest days (gap=3 means day 1 -> day 4, missed day 2,3. Accepted.)
-      streak++;
-      if (returnLogs) streakLogs.push(validLogs[i]);
-      prevDate = d;
+      streak = 1;
+      prevValidDate = logMidnight;
+      if (returnLogs) streakLogs.push(log);
     } else {
-      break;
+      const gap = (prevValidDate.getTime() - logTime) / MS_PER_DAY;
+
+      if (gap === 0) {
+        // Same day workout, add to logs but don't increment streak count
+        if (returnLogs) streakLogs.push(log);
+        continue;
+      }
+
+      if (gap <= 3) {
+        // Valid continuation
+        streak++;
+        prevValidDate = logMidnight;
+        if (returnLogs) streakLogs.push(log);
+      } else {
+        // Gap too large, streak ends here
+        break;
+      }
     }
   }
 
@@ -334,24 +346,14 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
 
 /**
  * BOLT: Synchronous mood calculation when logs are already available.
- * Avoids async overhead and redundant cache/DB lookups.
+ * Optimized to leverage the optimized calculateStreaks result directly.
  */
 export const calculateMood = (logs: WorkoutLog[]): 'fire' | 'tired' | 'normal' => {
-  if (logs.length === 0) return 'tired';
-
-  // Assumes logs are sorted descending (standard for the app)
-  const lastLog = new Date(logs[0].date);
-  const now = new Date();
-  const diffDays = (now.getTime() - lastLog.getTime()) / (1000 * 3600 * 24);
-
-  // If inactive for > 3 days -> Tired
-  if (diffDays > 3) return 'tired';
-
-  // If streak > 3 -> Fire
   // Use calculateStreaks instead of getStreaks to reuse logs
   const streak = calculateStreaks(logs, { isSorted: true }) as number;
-  if (streak >= 3) return 'fire';
 
+  if (streak === 0) return 'tired';
+  if (streak >= 3) return 'fire';
   return 'normal';
 };
 

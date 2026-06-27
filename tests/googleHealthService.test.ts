@@ -89,6 +89,80 @@ describe('Google Health Service', () => {
         .rejects.toThrow('Google Health not connected');
     });
 
+    it('should use server-side filter if it is successful', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('fake-token');
+
+      const startTimeISO = new Date().toISOString();
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          dataPoints: [{ name: 'server-filtered' }]
+        })
+      });
+      global.fetch = fetchMock;
+
+      // @ts-ignore
+      const res = await googleHealthService.safelyFetchExercisePoints(startTimeISO);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=interval.start_time'), expect.anything());
+      expect(res.dataPoints[0].name).toBe('server-filtered');
+    });
+
+    it('should use the client-side fallback if server-side filtering is rejected', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('fake-token');
+
+      const startTime = new Date();
+      startTime.setDate(startTime.getDate() - 1);
+      const startTimeISO = startTime.toISOString();
+
+      const oldTime = new Date();
+      oldTime.setDate(oldTime.getDate() - 5);
+      const oldTimeISO = oldTime.toISOString();
+
+      const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('filter=')) {
+          return {
+            ok: false,
+            json: async () => ({
+              error: {
+                details: [{ reason: 'INVALID_DATA_POINT_FILTER' }],
+                message: 'Invalid filter'
+              }
+            })
+          };
+        }
+        if (url.includes('pageSize=100')) {
+          return {
+            ok: true,
+            json: async () => ({
+              dataPoints: [
+                {
+                  exercise: { interval: { startTime: startTimeISO } },
+                  name: 'users/me/dataTypes/exercise/dataPoints/recent'
+                },
+                {
+                  exercise: { interval: { startTime: oldTimeISO } },
+                  name: 'users/me/dataTypes/exercise/dataPoints/old'
+                }
+              ]
+            })
+          };
+        }
+        return { ok: false };
+      });
+      global.fetch = fetchMock;
+
+      // @ts-ignore - accessing private method for testing
+      const res = await googleHealthService.safelyFetchExercisePoints(startTimeISO);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(res.dataPoints.length).toBe(1);
+      expect(res.dataPoints[0].name).toContain('recent');
+    });
+
     it('should fetch bare sessions, rollUp metrics, and patch them', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
@@ -96,19 +170,19 @@ describe('Google Health Service', () => {
       const startTime = new Date().toISOString();
       const endTime = new Date(Date.now() + 30 * 60000).toISOString();
 
+      // Mock safelyFetchExercisePoints to avoid global fetch mock in this test
+      vi.spyOn(googleHealthService as any, 'safelyFetchExercisePoints').mockResolvedValue({
+        dataPoints: [{
+          name: 'users/me/dataTypes/exercise/dataPoints/test-id-123',
+          dataSource: { platform: 'FitTribe' },
+          exercise: {
+            interval: { startTime, endTime },
+            metricsSummary: {} // bare
+          }
+        }]
+      });
+
       fetchSpy.mockImplementation(async (endpoint: string) => {
-        if (endpoint.includes('dataTypes/exercise/dataPoints?filter=')) {
-          return {
-            dataPoints: [{
-              name: 'users/me/dataTypes/exercise/dataPoints/test-id-123',
-              dataSource: { platform: 'FitTribe' },
-              exercise: {
-                interval: { startTime, endTime },
-                metricsSummary: {} // bare
-              }
-            }]
-          };
-        }
         if (endpoint.includes('active-energy-burned/dataPoints:rollUp')) {
           return { activeEnergyBurned: { kcal: 342.5 } };
         }

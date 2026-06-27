@@ -315,6 +315,58 @@ class GoogleHealthService {
   }
 
   /**
+   * Safe-Fetch Fallback Wrapper for Exercise Data Points.
+   * Handles AIP-160 filter syntax rejection with a client-side fallback.
+   */
+  private async safelyFetchExercisePoints(filterStartTime: string): Promise<any> {
+    const accessToken = this.getAccessToken();
+    if (!accessToken) throw new Error('Not connected to Google Health');
+
+    const baseUrl = `${this.BASE_URL}users/me/dataTypes/exercise/dataPoints`;
+
+    // Attempt A: Standard AIP-160 Server Filter
+    try {
+      const url = `${baseUrl}?filter=interval.start_time >= "${filterStartTime}"&pageSize=100`;
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.ok) return await res.json();
+
+      const err = await res.json();
+      // If it failed for any reason other than a syntax filter rejection, throw it up the stack
+      if (err.error?.details?.[0]?.reason !== 'INVALID_DATA_POINT_FILTER') {
+        throw new Error(err.error?.message || 'Google Health API Error');
+      }
+    } catch (e) {
+      console.warn('[GoogleHealth] Server filter rejected, executing client-side fallback...', e);
+    }
+
+    // Attempt B: Client-Side Fallback (Pull latest 100 bare records and filter in JS memory)
+    const fallbackRes = await fetch(`${baseUrl}?pageSize=100`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!fallbackRes.ok) throw new Error('Google Health fallback fetch failed');
+
+    const data = await fallbackRes.json();
+    const minTime = new Date(filterStartTime).getTime();
+
+    const clientFiltered = (data.dataPoints || []).filter((point: any) => {
+      const startStr = point.exercise?.interval?.startTime || point.interval?.startTime || point.startTime;
+      return new Date(startStr).getTime() >= minTime;
+    });
+
+    return { dataPoints: clientFiltered };
+  }
+
+  /**
    * Workflow 2: Manual Resync Trigger (Batch Enrichment)
    * Fetches historical bare sessions, calculates metrics via rollUp, and patches them.
    */
@@ -335,9 +387,8 @@ class GoogleHealthService {
       filterStartTime = date.toISOString();
     }
 
-    // Step 2: Fetch Target Exercise Data Points
-    const filter = `exercise.interval.start_time >= "${filterStartTime}"`;
-    const response = await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=100`);
+    // Step 2: Fetch Target Exercise Data Points (with Safe-Fetch Fallback)
+    const response = await this.safelyFetchExercisePoints(filterStartTime);
 
     const dataPoints = response.dataPoints || [];
 

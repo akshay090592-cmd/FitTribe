@@ -326,10 +326,13 @@ class GoogleHealthService {
     // Strip milliseconds from ISO string for better filter compatibility
     const cleanStartTime = filterStartTime.split('.')[0] + 'Z';
 
+    // Note: If the Google Cloud console throws a red HTTP 400 network log for this GET call,
+    // it means this specific Google Health regional backend does not support server-side
+    // AIP-160 filtering. The try/catch block will silently absorb it and run Attempt B.
     // Attempt A: Standard AIP-160 Server Filter
     try {
       // Use pageSize=25 as it is the official limit for exercise dataPoints
-      const filterStr = `interval.start_time >= "${cleanStartTime}"`;
+      const filterStr = `start_time >= "${cleanStartTime}"`;
       const url = `${baseUrl}?filter=${encodeURIComponent(filterStr)}&pageSize=25`;
       const res = await fetch(url, {
         headers: {
@@ -363,8 +366,10 @@ class GoogleHealthService {
     const minTime = new Date(filterStartTime).getTime();
 
     const clientFiltered = (data.dataPoints || []).filter((point: any) => {
-      const startStr = point.exercise?.interval?.startTime || point.interval?.startTime || point.startTime;
-      return new Date(startStr).getTime() >= minTime;
+      const rawStart = point.startTime || point.start_time || point.exercise?.interval?.startTime;
+      if (!rawStart) return false;
+
+      return new Date(rawStart).getTime() >= minTime;
     });
 
     return { dataPoints: clientFiltered };

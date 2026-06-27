@@ -106,7 +106,7 @@ describe('Google Health Service', () => {
       const res = await googleHealthService.safelyFetchExercisePoints(startTimeISO);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=interval.start_time'), expect.anything());
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=start_time'), expect.anything());
       expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('pageSize=25'), expect.anything());
       expect(res.dataPoints[0].name).toBe('server-filtered');
     });

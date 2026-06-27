@@ -23,6 +23,7 @@ class GoogleHealthService {
   authorize() {
     const redirectUri = window.location.origin + window.location.pathname;
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPES.join(' '))}&state=google_health_auth`;
+    sessionStorage.setItem('google_health_last_redirect', String(Date.now()));
     window.location.href = authUrl;
   }
 
@@ -289,8 +290,9 @@ class GoogleHealthService {
       // Stable ID for the data point to ensure idempotency
       const dataPointId = `fittribe-log-${workoutLog.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
-      // 2. Push the Exercise Session using PATCH for specific ID
-      // CRITICAL FIX: No metricsSummary is sent so Google uses Fitbit's data!
+      // 2. Push the Exercise Session
+      // We send metricsSummary as empty to satisfy the required field in Google Health API v4
+      // schema, while leaving it empty so Google Health reconciles heart rate/calories from trackers automatically.
       const dataPoint = {
         name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
         exercise: {
@@ -302,14 +304,27 @@ class GoogleHealthService {
             endUtcOffset: utcOffset
           },
           displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`,
-          notes: "Workout logged via FitTribe"
+          notes: "Workout logged via FitTribe",
+          metricsSummary: {}
         }
       };
 
-      await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(dataPoint)
-      });
+      try {
+        // Try updating the data point first using PATCH (fails if data point doesn't exist)
+        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(dataPoint)
+        });
+        console.log(`[GoogleHealth] Successfully patched exercise: ${dataPointId}`);
+      } catch (patchErr) {
+        // If PATCH fails (e.g. data point doesn't exist), create it using POST to parent collection
+        console.warn(`[GoogleHealth] PATCH failed, falling back to POST:`, patchErr);
+        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints`, {
+          method: 'POST',
+          body: JSON.stringify(dataPoint)
+        });
+        console.log(`[GoogleHealth] Successfully created exercise via POST: ${dataPointId}`);
+      }
 
       // Returning the calories here ensures your syncHistoricalWorkouts method
       // still successfully updates your local Database with the calculated number.

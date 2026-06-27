@@ -331,6 +331,7 @@ class GoogleHealthService {
     // AIP-160 filtering. The try/catch block will silently absorb it and run Attempt B.
     // Attempt A: Standard AIP-160 Server Filter
     try {
+      console.log('[GoogleHealth] Attempt A firing with fixed root start_time v2.1');
       // Use pageSize=25 as it is the official limit for exercise dataPoints
       const filterStr = `start_time >= "${cleanStartTime}"`;
       const url = `${baseUrl}?filter=${encodeURIComponent(filterStr)}&pageSize=25`;

@@ -3,6 +3,7 @@ import { calculateAge } from '../utils/profileUtils';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id';
 const SCOPES = [
+  'https://www.googleapis.com/auth/googlehealth.activity_and_fitness',
   'https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly',
   'https://www.googleapis.com/auth/googlehealth.activity_and_fitness.writeonly',
   'https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly',
@@ -85,6 +86,7 @@ class GoogleHealthService {
 
   /**
    * Helper to perform authenticated Google Health API v4 requests
+   * with exponential backoff for rate limiting (429).
    */
   private async fetchGoogleAPI(endpoint: string, options: RequestInit = {}): Promise<any> {
     const token = this.getAccessToken();
@@ -98,20 +100,38 @@ class GoogleHealthService {
 
     const url = endpoint.startsWith('http') ? endpoint : `${this.BASE_URL}${endpoint}`;
 
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      // LOG ERROR for debugging in sandbox
-      console.warn(`[GoogleHealth] API Error: ${response.status} URL: ${url}`, errText);
-      throw new Error(`Google Health API error: ${response.status} - ${errText}`);
+        const response = await fetch(url, {
+          ...options,
+          headers
+        });
+
+        if (response.status === 429 && attempt < 3) {
+          console.warn(`[GoogleHealth] 429 Too Many Requests, retrying... (attempt ${attempt + 1})`);
+          continue;
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.warn(`[GoogleHealth] API Error: ${response.status} URL: ${url}`, errText);
+          throw new Error(`Google Health API error: ${response.status} - ${errText}`);
+        }
+
+        if (response.status === 204) return null;
+        return await response.json();
+      } catch (err: any) {
+        lastError = err;
+        if (attempt === 3) throw err;
+      }
     }
-
-    if (response.status === 204) return null;
-    return response.json();
+    throw lastError || new Error('Fetch failed');
   }
 
   /**
@@ -248,15 +268,15 @@ class GoogleHealthService {
   }
 
   /**
-   * Syncs completed workout session to Google Health v4 as an 'exercise' DataPoint.
-   * Only metadata (times/types) is sent. Google Health will auto-merge continuous Fitbit data.
+   * Workflow 1: Real-Time Sync (Lightweight Write)
+   * Immediately write a bare session record when a workout finishes.
    */
-  async sendWorkoutToGoogleHealth(workoutLog: WorkoutLog, userProfile: UserProfile): Promise<{ calories?: number, avgHeartRate?: number } | null> {
-    if (!this.isConnected()) return null;
+  async sendWorkoutToGoogleHealth(workoutLog: WorkoutLog): Promise<void> {
+    if (!this.isConnected()) return;
 
     if (workoutLog.vibes !== undefined && workoutLog.vibes > 0) {
       console.log(`[GoogleHealth] Skipping wellbeing activity "${workoutLog.customActivity || workoutLog.type}" — not a fitness workout.`);
-      return null;
+      return;
     }
 
     try {
@@ -266,80 +286,37 @@ class GoogleHealthService {
 
       const startTimeISO = startTime.toISOString();
       const endTimeISO = endTime.toISOString();
-      const offsetSeconds = -startTime.getTimezoneOffset() * 60;
-      const utcOffset = `${offsetSeconds >= 0 ? '' : '-'}${Math.abs(offsetSeconds)}s`;
-
-      // 1. Fetch Average Heart Rate ONLY to calculate local app calories.
-      const avgHeartRate = await this.fetchAverageHeartRate(startTimeISO, endTimeISO);
-
-      let finalCalories = workoutLog.calories || 0;
-
-      // Calculate Keytel calories locally for the Fit Tribe App UI
-      if (avgHeartRate) {
-        const calculatedCalories = this.calculateKeytelCalories(userProfile, avgHeartRate, duration);
-        if (calculatedCalories) {
-          finalCalories = calculatedCalories;
-          workoutLog.calories = finalCalories;
-        }
-      } else if (!finalCalories) {
-        finalCalories = this.calculateKeytelCalories(userProfile, 130, duration) || 300;
-      }
-
       const activityType = this.mapWorkoutActivityType(workoutLog.type, workoutLog.customActivity);
 
-      // Stable ID for the data point to ensure idempotency
-      const dataPointId = `fittribe-log-${workoutLog.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-      // 2. Push the Exercise Session
-      // We send metricsSummary as empty to satisfy the required field in Google Health API v4
-      // schema, while leaving it empty so Google Health reconciles heart rate/calories from trackers automatically.
       const dataPoint = {
-        name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
+        dataSource: {
+          recordingMethod: "AUTOMATIC",
+          platform: "FitTribe"
+        },
         exercise: {
           exerciseType: activityType,
           interval: {
             startTime: startTimeISO,
-            startUtcOffset: utcOffset,
-            endTime: endTimeISO,
-            endUtcOffset: utcOffset
+            endTime: endTimeISO
           },
           displayName: workoutLog.customActivity || `FitTribe Workout - ${workoutLog.type}`,
-          notes: "Workout logged via FitTribe",
           metricsSummary: {}
         }
       };
 
-      try {
-        // Try updating the data point first using PATCH (fails if data point doesn't exist)
-        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${dataPointId}`, {
-          method: 'PATCH',
-          body: JSON.stringify(dataPoint)
-        });
-        console.log(`[GoogleHealth] Successfully patched exercise: ${dataPointId}`);
-      } catch (patchErr) {
-        // If PATCH fails (e.g. data point doesn't exist), create it using POST to parent collection
-        console.warn(`[GoogleHealth] PATCH failed, falling back to POST:`, patchErr);
-        await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints`, {
-          method: 'POST',
-          body: JSON.stringify(dataPoint)
-        });
-        console.log(`[GoogleHealth] Successfully created exercise via POST: ${dataPointId}`);
-      }
-
-      // Returning the calories here ensures your syncHistoricalWorkouts method
-      // still successfully updates your local Database with the calculated number.
-      return {
-        calories: finalCalories,
-        avgHeartRate: avgHeartRate || undefined
-      };
+      await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints`, {
+        method: 'POST',
+        body: JSON.stringify(dataPoint)
+      });
+      console.log(`[GoogleHealth] Successfully created bare exercise session.`);
     } catch (err) {
-      console.error('Failed to sync workout to Google Health:', err);
-      return null;
+      console.error('Failed to sync bare workout to Google Health:', err);
     }
   }
 
   /**
-   * Syncs historical workouts in the selected time range (1 week, 1 month, or all time)
+   * Workflow 2: Manual Resync Trigger (Batch Enrichment)
+   * Fetches historical bare sessions, calculates metrics via rollUp, and patches them.
    */
   async syncHistoricalWorkouts(
     logs: WorkoutLog[],
@@ -348,31 +325,97 @@ class GoogleHealthService {
   ): Promise<{ syncedCount: number; updatedCaloriesCount: number }> {
     if (!this.isConnected()) throw new Error('Google Health not connected');
 
-    const now = Date.now();
-    const cutoffTime = days === 'all' ? 0 : now - days * 24 * 60 * 60 * 1000;
+    // Step 1: Calculate the Time Window
+    let filterStartTime: string;
+    if (days === 'all') {
+      filterStartTime = '2020-01-01T00:00:00Z';
+    } else {
+      const date = new Date();
+      date.setDate(date.getDate() - (days as number));
+      filterStartTime = date.toISOString();
+    }
 
-    const logsToSync = logs.filter(log => {
-      if (log.type === 'COMMITMENT' as any) return false;
-      if (log.vibes !== undefined && log.vibes > 0) return false;
-      const logTime = new Date(log.date).getTime();
-      return logTime >= cutoffTime;
+    // Step 2: Fetch Target Exercise Data Points
+    const filter = `exercise.interval.start_time >= "${filterStartTime}"`;
+    const response = await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints?filter=${encodeURIComponent(filter)}&pageSize=100`);
+
+    const dataPoints = response.dataPoints || [];
+
+    // Identify bare sessions created by FitTribe
+    const bareSessions = dataPoints.filter((dp: any) => {
+      const isFitTribe = dp.dataSource?.platform === 'FitTribe';
+      const isBare = !dp.exercise?.metricsSummary || Object.keys(dp.exercise.metricsSummary).length === 0;
+      return isFitTribe && isBare;
+    }).map((dp: any) => {
+      const nameParts = dp.name.split('/');
+      return {
+        dataPointId: nameParts[nameParts.length - 1],
+        startTime: dp.exercise.interval.startTime,
+        endTime: dp.exercise.interval.endTime
+      };
     });
 
     let syncedCount = 0;
     let updatedCaloriesCount = 0;
 
-    for (const log of logsToSync) {
-      const syncResult = await this.sendWorkoutToGoogleHealth(log, userProfile);
-      if (syncResult) {
-        syncedCount++;
-        // Because sendWorkoutToGoogleHealth still returns finalCalories,
-        // this next block will successfully update your local DB.
-        if (syncResult.calories && syncResult.calories !== log.calories) {
-          log.calories = syncResult.calories;
-          updatedCaloriesCount++;
-          await import('../utils/storage').then(({ updateLog }) => updateLog(log, userProfile));
+    // Step 3 & 4: Roll Up Metrics and Patch (Enrichment Loop)
+    const chunkSize = 5;
+    for (let i = 0; i < bareSessions.length; i += chunkSize) {
+      const chunk = bareSessions.slice(i, i + chunkSize);
+      await Promise.all(chunk.map(async (session) => {
+        try {
+          // Call A: Active Calories Burned & Call B: Time in Heart Rate Zones
+          const [caloriesData, hrZoneData] = await Promise.all([
+            this.fetchGoogleAPI(`users/me/dataTypes/active-energy-burned/dataPoints:rollUp`, {
+              method: 'POST',
+              body: JSON.stringify({
+                range: { startTime: session.startTime, endTime: session.endTime }
+              })
+            }),
+            this.fetchGoogleAPI(`users/me/dataTypes/time-in-heart-rate-zone/dataPoints:rollUp`, {
+              method: 'POST',
+              body: JSON.stringify({
+                range: { startTime: session.startTime, endTime: session.endTime }
+              })
+            })
+          ]);
+
+          const kcal = caloriesData?.activeEnergyBurned?.kcal || 0;
+          const zones = hrZoneData?.timeInHeartRateZones || [];
+
+          // Patch even if data is zero/empty to mark as "enriched" and prevent infinite resync loops
+          const metricsSummary = {
+            activeEnergyBurned: { kcal },
+            timeInHeartRateZones: zones
+          };
+
+          await this.fetchGoogleAPI(`users/me/dataTypes/exercise/dataPoints/${session.dataPointId}?updateMask=exercise.metricsSummary`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              exercise: { metricsSummary }
+            })
+          });
+
+          syncedCount++;
+
+          // Step 4.2: Update local database if actual metrics were found
+          if (kcal > 0) {
+            const localLog = logs.find(l => {
+              const logDate = new Date(l.date).toISOString();
+              // Compare ISO strings, allowing for slight precision differences if necessary
+              return logDate.substring(0, 19) === session.startTime.substring(0, 19);
+            });
+
+            if (localLog && localLog.calories !== kcal) {
+              localLog.calories = kcal;
+              updatedCaloriesCount++;
+              await import('../utils/storage').then(({ updateLog }) => updateLog(localLog, userProfile));
+            }
+          }
+        } catch (err) {
+          console.error(`[GoogleHealth] Failed to enrich session ${session.dataPointId}:`, err);
         }
-      }
+      }));
     }
 
     return { syncedCount, updatedCaloriesCount };

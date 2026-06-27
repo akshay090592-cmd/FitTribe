@@ -107,7 +107,28 @@ describe('Google Health Service', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=interval.start_time'), expect.anything());
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('pageSize=25'), expect.anything());
       expect(res.dataPoints[0].name).toBe('server-filtered');
+    });
+
+    it('should strip milliseconds from the filter start time', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('fake-token');
+
+      const startTimeWithMillis = '2026-06-20T08:22:02.758Z';
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ dataPoints: [] })
+      });
+      global.fetch = fetchMock;
+
+      // @ts-ignore
+      await googleHealthService.safelyFetchExercisePoints(startTimeWithMillis);
+
+      // Expected: "2026-06-20T08:22:02Z" (encoded)
+      const expectedFilterPart = encodeURIComponent('2026-06-20T08:22:02Z');
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(expectedFilterPart), expect.anything());
+      expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('758'), expect.anything());
     });
 
     it('should use the client-side fallback if server-side filtering is rejected', async () => {
@@ -126,15 +147,15 @@ describe('Google Health Service', () => {
         if (url.includes('filter=')) {
           return {
             ok: false,
+            status: 400,
             json: async () => ({
               error: {
-                details: [{ reason: 'INVALID_DATA_POINT_FILTER' }],
                 message: 'Invalid filter'
               }
             })
           };
         }
-        if (url.includes('pageSize=100')) {
+        if (url.includes('pageSize=25')) {
           return {
             ok: true,
             json: async () => ({

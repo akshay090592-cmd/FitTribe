@@ -807,6 +807,26 @@ const App: React.FC = () => {
   }, [userProfile, session]);
 
   useEffect(() => {
+    // Auto-reauthorize if Google Health is connected but the token has expired
+    if (
+      navigator.onLine &&
+      session &&
+      userProfile &&
+      userProfile.googleHealthConnected &&
+      !googleHealthService.isConnected()
+    ) {
+      const lastRedirect = sessionStorage.getItem('google_health_last_redirect');
+      const timeSinceLastRedirect = lastRedirect ? Date.now() - Number(lastRedirect) : Infinity;
+
+      // Only redirect if we haven't attempted a redirect in the last 15 seconds to prevent loops
+      if (timeSinceLastRedirect > 15000) {
+        console.log("[GoogleHealth] Token expired/missing and online. Auto-reauthorizing connection...");
+        googleHealthService.authorize();
+      }
+    }
+  }, [userProfile, session]);
+
+  useEffect(() => {
     // Check for URL params (Cold Start via Notification Click)
     const params = new URLSearchParams(window.location.search);
     if (params.get('notification_click') === 'true') {

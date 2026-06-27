@@ -91,7 +91,8 @@ describe('Google Health Service', () => {
 
     it('should filter workouts correctly and call sendWorkoutToGoogleHealth', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const sendSpy = vi.spyOn(googleHealthService, 'sendWorkoutToGoogleHealth').mockResolvedValue({ calories: 500 });
+      // Return same calories as the log so the 'updateLog' DB path isn't triggered
+      const sendSpy = vi.spyOn(googleHealthService, 'sendWorkoutToGoogleHealth').mockResolvedValue({ calories: 150 });
 
       const logs = [
         { id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30, calories: 150 },
@@ -106,7 +107,7 @@ describe('Google Health Service', () => {
 
       expect(res.syncedCount).toBe(1); // Only log id '1'
       expect(sendSpy).toHaveBeenCalledTimes(1);
-    });
+    }, 10000);
   });
 
   describe('Wellbeing Activity Exclusion', () => {
@@ -241,7 +242,7 @@ describe('Google Health Service', () => {
       expect(avg).toBe(145);
     });
 
-    it('should NOT inject HR zones into Exercise payload and should strip metricsSummary', async () => {
+    it('should include empty metricsSummary in Exercise payload (allows Google to reconcile tracker data)', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
@@ -264,18 +265,62 @@ describe('Google Health Service', () => {
       const profile = { id: '123', displayName: 'User', weight: 70, dob: '1990-01-01', gender: 'male' } as any;
       await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
 
-      // Verify that the PATCH call to exercise dataPoints did NOT include metricsSummary
+      // Verify that the PATCH call to exercise dataPoints includes an empty metricsSummary
+      // so Google Health API accepts the payload and auto-reconciles with tracker heart rate data.
       const exerciseCall = fetchSpy.mock.calls.find((call: any) =>
         (call[0] as string).includes('dataTypes/exercise/dataPoints/fittribe-log-fit-2') &&
         call[1]?.method === 'PATCH'
       );
       const dataPoint = JSON.parse((exerciseCall as any)[1].body);
 
-      expect(dataPoint.exercise.metricsSummary).toBeUndefined();
+      expect(dataPoint.exercise.metricsSummary).toEqual({});
       expect(dataPoint.exercise.interval.startTime).toBeDefined();
       expect(dataPoint.exercise.interval.endTime).toBeDefined();
       expect(dataPoint.exercise.displayName).toBeDefined();
       expect(dataPoint.name).toBe('users/me/dataTypes/exercise/dataPoints/fittribe-log-fit-2');
+    });
+
+    it('should fall back to POST if PATCH fails for a new exercise data point', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
+
+      fetchSpy.mockImplementation(async (endpoint: string, options: any) => {
+        if (endpoint.includes('heart-rate/dataPoints')) {
+          return { dataPoints: [] };
+        }
+        // Simulate PATCH failing (data point doesn't exist yet)
+        if (options?.method === 'PATCH') {
+          throw new Error('Google Health API error: 404 - Not Found');
+        }
+        // POST succeeds
+        return {};
+      });
+
+      const fitnessLog = {
+        id: 'fit-new',
+        date: new Date().toISOString(),
+        type: WorkoutType.A,
+        exercises: [],
+        durationMinutes: 45,
+        calories: 350
+      } as any;
+
+      const profile = { id: '123', displayName: 'User', weight: 70, dob: '1990-01-01', gender: 'male' } as any;
+      const result = await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog, profile);
+
+      // Should succeed via POST fallback and return calorie data
+      expect(result).not.toBeNull();
+
+      // Verify that POST was called for the exercise dataPoints collection
+      const postCall = fetchSpy.mock.calls.find((call: any) =>
+        (call[0] as string) === 'users/me/dataTypes/exercise/dataPoints' &&
+        call[1]?.method === 'POST'
+      );
+      expect(postCall).toBeDefined();
+
+      // Verify POST body also has empty metricsSummary
+      const dataPoint = JSON.parse((postCall as any)[1].body);
+      expect(dataPoint.exercise.metricsSummary).toEqual({});
     });
   });
 

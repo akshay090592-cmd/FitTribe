@@ -56,6 +56,10 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [showPointsHistory, setShowPointsHistory] = useState(false);
 
     const handleSyncMetrics = async () => {
+        if (!googleHealthService.isConnected()) {
+            googleHealthService.authorize();
+            return;
+        }
         setSyncingMetrics(true);
         try {
             const metrics = await googleHealthService.fetchLatestBodyMetrics();
@@ -81,6 +85,10 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     };
 
     const handleHistoricalSync = async (days: number | 'all') => {
+        if (!googleHealthService.isConnected()) {
+            googleHealthService.authorize();
+            return;
+        }
         setSyncingWorkouts(true);
         try {
             const result = await googleHealthService.syncHistoricalWorkouts(logs, userProfile, days);
@@ -98,6 +106,10 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     };
 
     const handleDeleteSyncedWorkouts = async () => {
+        if (!googleHealthService.isConnected()) {
+            googleHealthService.authorize();
+            return;
+        }
         if (!window.confirm("This will remove all FitTribe workout entries from Google Health. Your Fitbit data remains safe, but the FitTribe-labeled sessions will be deleted. Proceed?")) {
             return;
         }

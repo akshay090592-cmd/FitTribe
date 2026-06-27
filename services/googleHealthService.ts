@@ -323,10 +323,14 @@ class GoogleHealthService {
     if (!accessToken) throw new Error('Not connected to Google Health');
 
     const baseUrl = `${this.BASE_URL}users/me/dataTypes/exercise/dataPoints`;
+    // Strip milliseconds from ISO string for better filter compatibility
+    const cleanStartTime = filterStartTime.split('.')[0] + 'Z';
 
     // Attempt A: Standard AIP-160 Server Filter
     try {
-      const url = `${baseUrl}?filter=interval.start_time >= "${filterStartTime}"&pageSize=100`;
+      // Use pageSize=25 as it is the official limit for exercise dataPoints
+      const filterStr = `interval.start_time >= "${cleanStartTime}"`;
+      const url = `${baseUrl}?filter=${encodeURIComponent(filterStr)}&pageSize=25`;
       const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -337,16 +341,16 @@ class GoogleHealthService {
       if (res.ok) return await res.json();
 
       const err = await res.json();
-      // If it failed for any reason other than a syntax filter rejection, throw it up the stack
-      if (err.error?.details?.[0]?.reason !== 'INVALID_DATA_POINT_FILTER') {
-        throw new Error(err.error?.message || 'Google Health API Error');
+      // If it failed with a 400 (Bad Request), we trigger the client-side fallback
+      if (res.status !== 400) {
+        throw new Error(err.error?.message || `Google Health API Error: ${res.status}`);
       }
-    } catch (e) {
-      console.warn('[GoogleHealth] Server filter rejected, executing client-side fallback...', e);
+    } catch (e: any) {
+      console.warn('[GoogleHealth] Server filter rejected, executing client-side fallback...', e.message);
     }
 
-    // Attempt B: Client-Side Fallback (Pull latest 100 bare records and filter in JS memory)
-    const fallbackRes = await fetch(`${baseUrl}?pageSize=100`, {
+    // Attempt B: Client-Side Fallback (Pull latest 25 bare records and filter in JS memory)
+    const fallbackRes = await fetch(`${baseUrl}?pageSize=25`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'

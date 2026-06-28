@@ -968,7 +968,7 @@ const App: React.FC = () => {
           logsToUse = await getUserLogs(currentUser, userProfile?.tribeId);
         }
 
-        const breakdown = calculateLogXPBreakdown(logsToUse);
+        const breakdown = calculateLogXPBreakdown(logsToUse, { isSortedDesc: true });
         setAllLogs(logsToUse);
         setActiveStatsPopup({ type, isOpen: true, xpBreakdown: breakdown });
       });

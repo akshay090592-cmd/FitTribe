@@ -22,14 +22,32 @@ export const Calendar: React.FC<Props> = ({ logs }) => {
 
         const monthLabel = monthLongYearFormatter.format(currentDate);
 
-        // Identify days with workouts
+        // BOLT: Optimized identifying workout days using a single-pass loop with an early break.
+        // Since logs are sorted DESC, we stop processing once we hit logs older than the current month.
+        // We also skip expensive Date instantiations for logs far in the future (newer months).
         const workoutDays = new Set<number>();
-        logs.forEach(log => {
+
+        // Boundaries with 48h buffer for timezone safety
+        const lowerBound = new Date(year, month, 1, 0, 0, 0);
+        lowerBound.setHours(lowerBound.getHours() - 48);
+        const lowerBoundISO = lowerBound.toISOString();
+
+        const upperBound = new Date(year, month + 1, 0, 23, 59, 59);
+        upperBound.setHours(upperBound.getHours() + 48);
+        const upperBoundISO = upperBound.toISOString();
+
+        for (let i = 0; i < logs.length; i++) {
+            const log = logs[i];
+            // Early break: logs are sorted DESC
+            if (log.date < lowerBoundISO) break;
+            // Skip logs far in the future
+            if (log.date > upperBoundISO) continue;
+
             const logDate = new Date(log.date);
             if (logDate.getFullYear() === year && logDate.getMonth() === month) {
                 workoutDays.add(logDate.getDate());
             }
-        });
+        }
 
         return { daysInMonth, startDay, monthLabel, workoutDays };
     }, [currentDate, logs]);

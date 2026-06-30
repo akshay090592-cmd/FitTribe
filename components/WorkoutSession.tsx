@@ -139,12 +139,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     }
   }
 
+  const handleRestComplete = useCallback(() => setShowRestTimer(false), []);
+
   const restTimer = useTimer({
     timerId: 'rest-timer',
     initialSeconds: initialRestSeconds,
     autoStart: shouldStartRestTimer,
     type: 'countdown',
-    onComplete: () => setShowRestTimer(false)
+    onComplete: handleRestComplete
   });
 
   // Ensure rest timer visibility is consistent with calculation
@@ -355,6 +357,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     });
   }, []);
 
+  const restTimerReset = restTimer.reset;
   const handleSetComplete = useCallback((exerciseIndex: number, setIndex: number) => {
     const currentEx = plan.exercises[exerciseIndex];
     let nextRest = currentEx.restSeconds || 60;
@@ -398,9 +401,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
     setRestDuration(nextRest);
     // Explicitly reset and start the timer
-    restTimer.reset(nextRest, true);
+    restTimerReset(nextRest, true);
     setShowRestTimer(true);
-  }, [plan.exercises, restTimer, records]);
+  }, [plan.exercises, restTimerReset, records]);
 
   const toggleAccordion = useCallback((name: string) => {
     setExpandedExerciseId(prev => prev === name ? null : name);

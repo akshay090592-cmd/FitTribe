@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 export interface TimerState {
     seconds: number;
@@ -159,41 +159,76 @@ export const useTimer = ({
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [state.isActive, state.startTime, initialSecondsManaged, type]);
 
+    /**
+     * BOLT: Optimized callback. Uses functional update to remove dependency on 'state',
+     * ensuring the function reference remains stable across timer ticks.
+     */
     const start = useCallback(() => {
-        if (!state.isActive) {
-            const elapsedSincePause = state.pauseTime ? Date.now() - state.pauseTime : 0;
-            let newStartTime = state.startTime ? state.startTime + elapsedSincePause : Date.now();
+        const now = Date.now();
+        setState(prev => {
+            if (prev.isActive) return prev;
             
-            if (!state.startTime && type === 'stopwatch') {
-                newStartTime = Date.now() - (state.seconds * 1000);
+            const elapsedSincePause = prev.pauseTime ? now - prev.pauseTime : 0;
+            let newStartTime = prev.startTime ? prev.startTime + elapsedSincePause : now;
+
+            if (!prev.startTime && type === 'stopwatch') {
+                newStartTime = now - (prev.seconds * 1000);
             }
 
-            setState(prev => ({
+            return {
                 ...prev,
                 isActive: true,
                 startTime: newStartTime,
                 pauseTime: null
-            }));
-        }
-    }, [state.isActive, state.pauseTime, state.startTime, type, state.seconds]);
+            };
+        });
+    }, [type]);
 
+    /**
+     * BOLT: Optimized callback. Uses functional update to remove dependency on 'state'.
+     */
     const pause = useCallback(() => {
-        if (state.isActive) {
-            setState(prev => ({
+        const now = Date.now();
+        setState(prev => {
+            if (!prev.isActive) return prev;
+            return {
                 ...prev,
                 isActive: false,
-                pauseTime: Date.now()
-            }));
-        }
-    }, [state.isActive]);
+                pauseTime: now
+            };
+        });
+    }, []);
 
+    /**
+     * BOLT: Optimized callback. Consolidates start/pause logic within a single functional
+     * update to maintain reference stability without external state dependencies.
+     */
     const toggle = useCallback(() => {
-        if (state.isActive) {
-            pause();
-        } else {
-            start();
-        }
-    }, [state.isActive, pause, start]);
+        const now = Date.now();
+        setState(prev => {
+            if (prev.isActive) {
+                return {
+                    ...prev,
+                    isActive: false,
+                    pauseTime: now
+                };
+            } else {
+                const elapsedSincePause = prev.pauseTime ? now - prev.pauseTime : 0;
+                let newStartTime = prev.startTime ? prev.startTime + elapsedSincePause : now;
+
+                if (!prev.startTime && type === 'stopwatch') {
+                    newStartTime = now - (prev.seconds * 1000);
+                }
+
+                return {
+                    ...prev,
+                    isActive: true,
+                    startTime: newStartTime,
+                    pauseTime: null
+                };
+            }
+        });
+    }, [type]);
 
     const reset = useCallback((newSeconds?: number, shouldStart: boolean = false) => {
         const resetTo = newSeconds !== undefined ? newSeconds : initialSeconds;
@@ -223,7 +258,9 @@ export const useTimer = ({
         }
     }, [type]);
 
-    return {
+    // BOLT: Memoize the returned object to prevent redundant re-renders of consumers
+    // when the timer state (like 'seconds') hasn't changed.
+    return useMemo(() => ({
         seconds: state.seconds,
         totalSeconds: initialSecondsManaged,
         isActive: state.isActive,
@@ -232,5 +269,5 @@ export const useTimer = ({
         toggle,
         reset,
         addTime
-    };
+    }), [state.seconds, initialSecondsManaged, state.isActive, start, pause, toggle, reset, addTime]);
 };

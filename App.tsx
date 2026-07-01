@@ -260,10 +260,12 @@ const App: React.FC = () => {
     [allLogs]
   );
 
-  // BOLT: Memoize "tomorrow commitment" check to avoid O(N) search and Date allocations on every render.
-  // Performance Impact: Eliminates ~2000 Date allocations per minute during active workouts.
+  // BOLT: Memoize "tomorrow commitment" check.
+  // Reverted to toDateString() for timezone safety as ISO strings use UTC.
   const hasTomorrowCommitment = React.useMemo(() => {
-    const tomorrowStr = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toDateString();
     return allLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
   }, [allLogs]);
   const [quests, setQuests] = useState<any[]>([]);
@@ -498,11 +500,6 @@ const App: React.FC = () => {
         setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
         setAllLogs(logs);
 
-        // 2. Process Mood (Reusing logs)
-        // BOLT: Use synchronous calculateMood directly to avoid redundant lookups in getMood
-        const m = calculateMood(logs);
-        setMood(m);
-
         // 3. Process Stats
         setTeamStats(stats);
         setWeeklyProgress(stats.userStats[profile.displayName] || 0);
@@ -517,14 +514,19 @@ const App: React.FC = () => {
         }
 
         // 5. Process Streaks & Risk (Reusing logs)
-        // Optimization: Use precalculated streak from database if available (> 0)
-        // Fallback to calculation for existing users with 0 in the new column or if missing
+        // BOLT: Process streak first to reuse it for mood calculation, avoiding redundant passes.
+        let s = 0;
         if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
-          setStreak(gameState[profile.displayName].streak);
+          s = gameState[profile.displayName].streak;
         } else {
-          setStreak(calculateStreaks(logs, { isSorted: true }) as number);
+          s = calculateStreaks(logs, { isSorted: true }) as number;
         }
+        setStreak(s);
         setStreakRisk(await getStreakRisk(profile.displayName, logs));
+
+        // 2. Process Mood (Reusing logs and pre-calculated streak)
+        const m = calculateMood(logs, s);
+        setMood(m);
 
         // 6. Load Quests (Uses profile)
         setQuests(getDailyQuests(profile.displayName, profile));

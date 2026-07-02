@@ -498,11 +498,6 @@ const App: React.FC = () => {
         setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
         setAllLogs(logs);
 
-        // 2. Process Mood (Reusing logs)
-        // BOLT: Use synchronous calculateMood directly to avoid redundant lookups in getMood
-        const m = calculateMood(logs);
-        setMood(m);
-
         // 3. Process Stats
         setTeamStats(stats);
         setWeeklyProgress(stats.userStats[profile.displayName] || 0);
@@ -519,11 +514,18 @@ const App: React.FC = () => {
         // 5. Process Streaks & Risk (Reusing logs)
         // Optimization: Use precalculated streak from database if available (> 0)
         // Fallback to calculation for existing users with 0 in the new column or if missing
+        let currentStreak = 0;
         if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
-          setStreak(gameState[profile.displayName].streak);
+          currentStreak = gameState[profile.displayName].streak;
         } else {
-          setStreak(calculateStreaks(logs, { isSorted: true }) as number);
+          currentStreak = calculateStreaks(logs, { isSorted: true }) as number;
         }
+        setStreak(currentStreak);
+
+        // BOLT: Re-process Mood using the pre-calculated streak to avoid redundant pass over logs
+        const m = calculateMood(logs, currentStreak);
+        setMood(m);
+
         setStreakRisk(await getStreakRisk(profile.displayName, logs));
 
         // 6. Load Quests (Uses profile)

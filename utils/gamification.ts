@@ -88,7 +88,9 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
   const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
-  let lastLogDate: Date | null = null;
+  let lastLogTime: number | null = null;
+  // BOLT: Cache normalized midnight timestamps to avoid redundant Date object allocations in loops
+  const midnightCache: Record<string, number> = {};
 
   for (let i = 0; i < len; i++) {
     const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
@@ -114,13 +116,19 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
     const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
-      const logDate = new Date(log.date);
-      logDate.setHours(0, 0, 0, 0);
+      const dateStr = log.date.substring(0, 10);
+      let logTime = midnightCache[dateStr];
+      if (!logTime) {
+        const logDate = new Date(log.date);
+        logDate.setHours(0, 0, 0, 0);
+        logTime = logDate.getTime();
+        midnightCache[dateStr] = logTime;
+      }
 
-      if (!lastLogDate) {
+      if (lastLogTime === null) {
         currentStreak = 1;
       } else {
-        const diffTime = Math.abs(logDate.getTime() - lastLogDate.getTime());
+        const diffTime = Math.abs(logTime - lastLogTime);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays === 0) {
@@ -131,7 +139,7 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
           currentStreak = 1;
         }
       }
-      lastLogDate = logDate;
+      lastLogTime = logTime;
     }
 
     // 3. Add Streak Bonus (only if eligible and streak > 1)
@@ -152,7 +160,9 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
   const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
-  let lastLogDate: Date | null = null;
+  let lastLogTime: number | null = null;
+  // BOLT: Cache normalized midnight timestamps
+  const midnightCache: Record<string, number> = {};
 
   for (let i = 0; i < len; i++) {
     const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
@@ -180,13 +190,19 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
     const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
-      const logDate = new Date(log.date);
-      logDate.setHours(0, 0, 0, 0);
+      const dateStr = log.date.substring(0, 10);
+      let logTime = midnightCache[dateStr];
+      if (!logTime) {
+        const logDate = new Date(log.date);
+        logDate.setHours(0, 0, 0, 0);
+        logTime = logDate.getTime();
+        midnightCache[dateStr] = logTime;
+      }
 
-      if (!lastLogDate) {
+      if (lastLogTime === null) {
         currentStreak = 1;
       } else {
-        const diffTime = Math.abs(logDate.getTime() - lastLogDate.getTime());
+        const diffTime = Math.abs(logTime - lastLogTime);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays === 0) {
@@ -197,7 +213,7 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
           currentStreak = 1;
         }
       }
-      lastLogDate = logDate;
+      lastLogTime = logTime;
     }
 
     // 3. Add Streak Bonus (only if eligible and streak > 1)
@@ -251,8 +267,10 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
   const todayTime = today.getTime();
   const MS_PER_DAY = 1000 * 3600 * 24;
 
-  let prevValidDate: Date | null = null;
+  let prevValidTime: number | null = null;
   const streakLogs: WorkoutLog[] = [];
+  // BOLT: Cache normalized midnight timestamps
+  const midnightCache: Record<string, number> = {};
 
   for (let i = 0; i < logsToProcess.length; i++) {
     const log = logsToProcess[i];
@@ -261,20 +279,25 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
     if (log.type === WorkoutType.COMMITMENT) continue;
     if ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && (log.durationMinutes || 0) < 30) continue;
 
-    const logDate = new Date(log.date);
-    const logMidnight = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
-    const logTime = logMidnight.getTime();
+    const dateStr = log.date.substring(0, 10);
+    let logTime = midnightCache[dateStr];
+    if (!logTime) {
+      const logDate = new Date(log.date);
+      const logMidnight = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+      logTime = logMidnight.getTime();
+      midnightCache[dateStr] = logTime;
+    }
 
-    if (prevValidDate === null) {
+    if (prevValidTime === null) {
       // First valid log found
       const diffFromToday = (todayTime - logTime) / MS_PER_DAY;
       if (diffFromToday > 3) break; // Last workout too old, streak is 0
 
       streak = 1;
-      prevValidDate = logMidnight;
+      prevValidTime = logTime;
       if (returnLogs) streakLogs.push(log);
     } else {
-      const gap = (prevValidDate.getTime() - logTime) / MS_PER_DAY;
+      const gap = (prevValidTime - logTime) / MS_PER_DAY;
 
       if (gap === 0) {
         // Same day workout, add to logs but don't increment streak count
@@ -285,7 +308,7 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
       if (gap <= 3) {
         // Valid continuation
         streak++;
-        prevValidDate = logMidnight;
+        prevValidTime = logTime;
         if (returnLogs) streakLogs.push(log);
       } else {
         // Gap too large, streak ends here
@@ -347,10 +370,13 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
 /**
  * BOLT: Synchronous mood calculation when logs are already available.
  * Optimized to leverage the optimized calculateStreaks result directly.
+ * Now accepts optional preCalculatedStreak to avoid redundant passes.
  */
-export const calculateMood = (logs: WorkoutLog[]): 'fire' | 'tired' | 'normal' => {
-  // Use calculateStreaks instead of getStreaks to reuse logs
-  const streak = calculateStreaks(logs, { isSorted: true }) as number;
+export const calculateMood = (logs: WorkoutLog[], preCalculatedStreak?: number): 'fire' | 'tired' | 'normal' => {
+  // Use preCalculatedStreak if provided, otherwise compute it
+  const streak = preCalculatedStreak !== undefined
+    ? preCalculatedStreak
+    : (calculateStreaks(logs, { isSorted: true }) as number);
 
   if (streak === 0) return 'tired';
   if (streak >= 3) return 'fire';

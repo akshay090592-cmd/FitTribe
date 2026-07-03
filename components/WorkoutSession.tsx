@@ -506,14 +506,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         calories: estimatedCalories
       };
 
-      // If Google Health is connected, sync workout (Bare session - real-time sync)
-      if (googleHealthService.isConnected()) {
-        try {
-          await googleHealthService.sendWorkoutToGoogleHealth(currentLog);
-        } catch (fitErr) {
-          console.warn("Failed to sync workout to Google Health:", fitErr);
-        }
-      }
+
 
       // Fetch all logs to find previous workout and commitment log
       const allLogs = await getUserLogs(user);

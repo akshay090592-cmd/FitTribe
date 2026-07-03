@@ -389,13 +389,19 @@ class GoogleHealthService {
         const activityType = this.mapWorkoutActivityType(log.type, log.customActivity);
         const dataPointId = `fittribe-log-${log.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   
+        const offsetSeconds = -new Date().getTimezoneOffset() * 60;
         const dataPoint = {
           name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
+          dataSource: {
+            recordingMethod: "ACTIVELY_RECORDED"
+          },
           exercise: {
             exerciseType: activityType,
             interval: {
               startTime: startTimeISO,
-              endTime: endTimeISO
+              endTime: endTimeISO,
+              startUtcOffset: `${offsetSeconds}s`,
+              endUtcOffset: `${offsetSeconds}s`
             },
             displayName: log.customActivity || `FitTribe Workout - ${log.type}`
           }

@@ -393,13 +393,17 @@ class GoogleHealthService {
           this.fetchGoogleAPI(`users/me/dataTypes/active-energy-burned/dataPoints:rollUp`, {
             method: 'POST',
             body: JSON.stringify({
-              range: { startTime: startTimeISO, endTime: endTimeISO }
+              range: { startTime: startTimeISO, endTime: endTimeISO },
+              windowSize: `${duration * 60}s`,
+              window_size: `${duration * 60}s` // Add snake_case to satisfy the strict validation
             })
           }),
           this.fetchGoogleAPI(`users/me/dataTypes/time-in-heart-rate-zone/dataPoints:rollUp`, {
             method: 'POST',
             body: JSON.stringify({
-              range: { startTime: startTimeISO, endTime: endTimeISO }
+              range: { startTime: startTimeISO, endTime: endTimeISO },
+              windowSize: `${duration * 60}s`,
+              window_size: `${duration * 60}s`
             })
           })
         ]);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 export interface TimerState {
     seconds: number;
@@ -160,40 +160,61 @@ export const useTimer = ({
     }, [state.isActive, state.startTime, initialSecondsManaged, type]);
 
     const start = useCallback(() => {
-        if (!state.isActive) {
-            const elapsedSincePause = state.pauseTime ? Date.now() - state.pauseTime : 0;
-            let newStartTime = state.startTime ? state.startTime + elapsedSincePause : Date.now();
+        setState(prev => {
+            if (prev.isActive) return prev;
             
-            if (!state.startTime && type === 'stopwatch') {
-                newStartTime = Date.now() - (state.seconds * 1000);
+            const elapsedSincePause = prev.pauseTime ? Date.now() - prev.pauseTime : 0;
+            let newStartTime = prev.startTime ? prev.startTime + elapsedSincePause : Date.now();
+
+            if (!prev.startTime && type === 'stopwatch') {
+                newStartTime = Date.now() - (prev.seconds * 1000);
             }
 
-            setState(prev => ({
+            return {
                 ...prev,
                 isActive: true,
                 startTime: newStartTime,
                 pauseTime: null
-            }));
-        }
-    }, [state.isActive, state.pauseTime, state.startTime, type, state.seconds]);
+            };
+        });
+    }, [type]);
 
     const pause = useCallback(() => {
-        if (state.isActive) {
-            setState(prev => ({
+        setState(prev => {
+            if (!prev.isActive) return prev;
+            return {
                 ...prev,
                 isActive: false,
                 pauseTime: Date.now()
-            }));
-        }
-    }, [state.isActive]);
+            };
+        });
+    }, []);
 
     const toggle = useCallback(() => {
-        if (state.isActive) {
-            pause();
-        } else {
-            start();
-        }
-    }, [state.isActive, pause, start]);
+        setState(prev => {
+            if (prev.isActive) {
+                return {
+                    ...prev,
+                    isActive: false,
+                    pauseTime: Date.now()
+                };
+            } else {
+                const elapsedSincePause = prev.pauseTime ? Date.now() - prev.pauseTime : 0;
+                let newStartTime = prev.startTime ? prev.startTime + elapsedSincePause : Date.now();
+
+                if (!prev.startTime && type === 'stopwatch') {
+                    newStartTime = Date.now() - (prev.seconds * 1000);
+                }
+
+                return {
+                    ...prev,
+                    isActive: true,
+                    startTime: newStartTime,
+                    pauseTime: null
+                };
+            }
+        });
+    }, [type]);
 
     const reset = useCallback((newSeconds?: number, shouldStart: boolean = false) => {
         const resetTo = newSeconds !== undefined ? newSeconds : initialSeconds;
@@ -223,7 +244,10 @@ export const useTimer = ({
         }
     }, [type]);
 
-    return {
+    // BOLT: Memoize returned timer object to stabilize references for structural properties and methods.
+    // This prevents cascading re-renders in components that depend on the timer but only care
+    // about its controls or status, not the ticking seconds.
+    return useMemo(() => ({
         seconds: state.seconds,
         totalSeconds: initialSecondsManaged,
         isActive: state.isActive,
@@ -232,5 +256,5 @@ export const useTimer = ({
         toggle,
         reset,
         addTime
-    };
+    }), [state.seconds, initialSecondsManaged, state.isActive, start, pause, toggle, reset, addTime]);
 };

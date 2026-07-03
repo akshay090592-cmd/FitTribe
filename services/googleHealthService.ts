@@ -362,7 +362,7 @@ class GoogleHealthService {
     try {
       const nextDate = new Date(dateStr);
       nextDate.setDate(nextDate.getDate() + 1);
-      const filter = `daily-heart-rate-zones.date >= "${dateStr}" AND daily-heart-rate-zones.date < "${nextDate.toISOString().split('T')[0]}"`;
+      const filter = `daily_heart_rate_zones.date >= "${dateStr}" AND daily_heart_rate_zones.date < "${nextDate.toISOString().split('T')[0]}"`;
       const res = await this.fetchGoogleAPI(`users/me/dataTypes/daily-heart-rate-zones/dataPoints?filter=${encodeURIComponent(filter)}`);
       if (res.dataPoints && res.dataPoints.length > 0) {
         return res.dataPoints[0].dailyHeartRateZones?.heartRateZones || null;

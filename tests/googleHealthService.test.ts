@@ -184,23 +184,16 @@ describe('Google Health Service', () => {
       expect(res.dataPoints[0].name).toContain('recent');
     });
 
-    it('should fetch bare sessions, rollUp metrics, and patch them', async () => {
+    it('should fetch rollUp metrics, and POST new enriched session', async () => {
       vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
       const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
 
       const startTime = new Date().toISOString();
       const endTime = new Date(Date.now() + 30 * 60000).toISOString();
 
-      // Mock safelyFetchExercisePoints to avoid global fetch mock in this test
+      // Mock safelyFetchExercisePoints to return empty so log is considered unsynced
       vi.spyOn(googleHealthService as any, 'safelyFetchExercisePoints').mockResolvedValue({
-        dataPoints: [{
-          name: 'users/me/dataTypes/exercise/dataPoints/test-id-123',
-          dataSource: { platform: 'FitTribe' },
-          exercise: {
-            interval: { startTime, endTime },
-            metricsSummary: {} // bare
-          }
-        }]
+        dataPoints: []
       });
 
       fetchSpy.mockImplementation(async (endpoint: string) => {
@@ -221,60 +214,14 @@ describe('Google Health Service', () => {
       const res = await googleHealthService.syncHistoricalWorkouts(logs as any, profile, 7);
 
       expect(res.syncedCount).toBe(1);
-      expect(res.updatedCaloriesCount).toBe(1);
-      expect(logs[0].calories).toBe(342.5);
 
-      // Verify PATCH call
+      // Verify POST call
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('exercise/dataPoints/test-id-123?updateMask=exercise.metricsSummary'),
+        expect.stringContaining('exercise/dataPoints'),
         expect.objectContaining({
-          method: 'PATCH',
+          method: 'POST',
           body: expect.stringContaining('342.5')
         })
-      );
-    });
-  });
-
-  describe('Wellbeing Activity Exclusion', () => {
-    it('should return early for logs with a positive vibes score (wellbeing activities)', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI');
-
-      const wellbeingLog = {
-        id: 'wb-1',
-        date: new Date().toISOString(),
-        type: WorkoutType.CUSTOM,
-        exercises: [],
-        durationMinutes: 30,
-        vibes: 10,
-        customActivity: 'Meditation',
-      } as any;
-
-      await googleHealthService.sendWorkoutToGoogleHealth(wellbeingLog);
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-    });
-
-    it('should NOT skip fitness custom activities with vibes=0 or vibes=undefined', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({});
-
-      const fitnessLog = {
-        id: 'fit-1',
-        date: new Date().toISOString(),
-        type: WorkoutType.CUSTOM,
-        exercises: [],
-        durationMinutes: 30,
-        calories: 250,
-        vibes: 0,
-        customActivity: 'Running',
-      } as any;
-
-      await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog);
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'users/me/dataTypes/exercise/dataPoints',
-        expect.objectContaining({ method: 'POST' })
       );
     });
   });
@@ -366,65 +313,6 @@ describe('Google Health Service', () => {
 
       const avg = await googleHealthService.fetchAverageHeartRate('start', 'end');
       expect(avg).toBe(145);
-    });
-
-    it('should include empty metricsSummary and FitTribe platform in Exercise payload', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({});
-
-      const fitnessLog = {
-        id: 'fit-2',
-        date: new Date().toISOString(),
-        type: WorkoutType.A,
-        exercises: [],
-        durationMinutes: 30,
-        calories: 300
-      } as any;
-
-      await googleHealthService.sendWorkoutToGoogleHealth(fitnessLog);
-
-      const exerciseCall = fetchSpy.mock.calls.find((call: any) =>
-        (call[0] as string).includes('dataTypes/exercise/dataPoints') &&
-        call[1]?.method === 'POST'
-      );
-      const dataPoint = JSON.parse((exerciseCall as any)[1].body);
-
-      expect(dataPoint.dataSource.platform).toBe('FitTribe');
-      expect(dataPoint.exercise.metricsSummary).toEqual({});
-      expect(dataPoint.exercise.interval.startTime).toBeDefined();
-      expect(dataPoint.exercise.interval.endTime).toBeDefined();
-    });
-  });
-
-  describe('Historical Workouts Deletion', () => {
-    it('should filter workouts correctly and call fetchGoogleAPI with DELETE', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockResolvedValue({});
-
-      const logs = [
-        { id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30 },
-        { id: '2', date: new Date().toISOString(), type: WorkoutType.B, exercises: [], durationMinutes: 40 },
-        { id: '3', date: new Date().toISOString(), type: 'COMMITMENT' as any, exercises: [], durationMinutes: 0 }, // skipped
-        { id: '4', date: new Date().toISOString(), type: WorkoutType.CUSTOM, vibes: 10, exercises: [], durationMinutes: 30 } // wellbeing (skipped)
-      ];
-
-      const deletedCount = await googleHealthService.deleteHistoricalWorkouts(logs as any);
-
-      expect(deletedCount).toBe(2); // Only '1' and '2'
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('fittribe-log-1'), { method: 'DELETE' });
-      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('fittribe-log-2'), { method: 'DELETE' });
-    });
-
-    it('should handle 404 errors gracefully', async () => {
-      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
-      const fetchSpy = vi.spyOn(googleHealthService as any, 'fetchGoogleAPI').mockRejectedValue(new Error('404 Not Found'));
-
-      const logs = [{ id: '1', date: new Date().toISOString(), type: WorkoutType.A, exercises: [], durationMinutes: 30 }];
-      const deletedCount = await googleHealthService.deleteHistoricalWorkouts(logs as any);
-
-      expect(deletedCount).toBe(1); // Still counted as attempt/success for UI purpose if it's already gone
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

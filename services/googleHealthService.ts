@@ -212,7 +212,8 @@ class GoogleHealthService {
    */
   async fetchAverageHeartRate(startTimeISO: string, endTimeISO: string): Promise<number | null> {
     try {
-      const filter = `heartRate.sample_time.physical_time >= "${startTimeISO}" AND heartRate.sample_time.physical_time <= "${endTimeISO}"`;
+      // Example filter: heart_rate.sample_time.physical_time >= "2024-05-10T12:00:00Z" AND heart_rate.sample_time.physical_time <= "2024-05-10T13:00:00Z"
+      const filter = `heart_rate.sample_time.physical_time >= "${startTimeISO}" AND heart_rate.sample_time.physical_time <= "${endTimeISO}"`;
       let hrData = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints:reconcile?filter=${encodeURIComponent(filter)}`);
 
       if (!hrData.dataPoints || hrData.dataPoints.length === 0) {
@@ -375,7 +376,7 @@ class GoogleHealthService {
 
   private async fetchRawHeartRate(startISO: string, endISO: string): Promise<any[]> {
     try {
-      const filter = `heartRate.sample_time.physical_time >= "${startISO}" AND heartRate.sample_time.physical_time <= "${endISO}"`;
+      const filter = `heart_rate.sample_time.physical_time >= "${startISO}" AND heart_rate.sample_time.physical_time <= "${endISO}"`;
       let res = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints:reconcile?filter=${encodeURIComponent(filter)}`);
       if (!res.dataPoints || res.dataPoints.length === 0) {
         res = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints?filter=${encodeURIComponent(filter)}`);

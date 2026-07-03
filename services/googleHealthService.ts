@@ -393,7 +393,7 @@ class GoogleHealthService {
         const dataPoint = {
           name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
           dataSource: {
-            recordingMethod: "ACTIVELY_RECORDED"
+            recordingMethod: "ACTIVELY_MEASURED"
           },
           exercise: {
             exerciseType: activityType,

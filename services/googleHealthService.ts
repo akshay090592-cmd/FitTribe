@@ -389,47 +389,15 @@ class GoogleHealthService {
         const activityType = this.mapWorkoutActivityType(log.type, log.customActivity);
         const dataPointId = `fittribe-log-${log.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   
-        const [caloriesData, hrZoneData] = await Promise.all([
-          this.fetchGoogleAPI(`users/me/dataTypes/active-energy-burned/dataPoints:rollUp`, {
-            method: 'POST',
-            body: JSON.stringify({
-              range: { startTime: startTimeISO, endTime: endTimeISO },
-              windowSize: `${duration * 60}s`,
-              window_size: `${duration * 60}s` // Add snake_case to satisfy the strict validation
-            })
-          }),
-          this.fetchGoogleAPI(`users/me/dataTypes/time-in-heart-rate-zone/dataPoints:rollUp`, {
-            method: 'POST',
-            body: JSON.stringify({
-              range: { startTime: startTimeISO, endTime: endTimeISO },
-              windowSize: `${duration * 60}s`,
-              window_size: `${duration * 60}s`
-            })
-          })
-        ]);
-
-        const kcal = caloriesData?.activeEnergyBurned?.kcal || 0;
-        const zones = hrZoneData?.timeInHeartRateZones || [];
-
-        const metricsSummary = {
-          activeEnergyBurned: { kcal },
-          timeInHeartRateZones: zones
-        };
-
         const dataPoint = {
           name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
-          dataSource: {
-            recordingMethod: "AUTOMATIC",
-            platform: "FitTribe"
-          },
           exercise: {
             exerciseType: activityType,
             interval: {
               startTime: startTimeISO,
               endTime: endTimeISO
             },
-            displayName: log.customActivity || `FitTribe Workout - ${log.type}`,
-            metricsSummary: metricsSummary
+            displayName: log.customActivity || `FitTribe Workout - ${log.type}`
           }
         };
   
@@ -439,12 +407,6 @@ class GoogleHealthService {
         });
         
         syncedCount++;
-
-        if (kcal > 0 && log.calories !== kcal) {
-          log.calories = kcal;
-          updatedCaloriesCount++;
-          await import('../utils/storage').then(({ updateLog }) => updateLog(log, userProfile));
-        }
       } catch (err) {
         console.error(`[GoogleHealth] Failed to create session for log ${log.id}:`, err);
       }

@@ -355,6 +355,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     });
   }, []);
 
+  // BOLT: Extract reset to a stable reference to prevent handleSetComplete from changing every second.
+  const restTimerReset = restTimer.reset;
+
   const handleSetComplete = useCallback((exerciseIndex: number, setIndex: number) => {
     const currentEx = plan.exercises[exerciseIndex];
     let nextRest = currentEx.restSeconds || 60;
@@ -398,9 +401,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
     setRestDuration(nextRest);
     // Explicitly reset and start the timer
-    restTimer.reset(nextRest, true);
+    restTimerReset(nextRest, true);
     setShowRestTimer(true);
-  }, [plan.exercises, restTimer, records]);
+  }, [plan.exercises, restTimerReset, records]);
 
   const toggleAccordion = useCallback((name: string) => {
     setExpandedExerciseId(prev => prev === name ? null : name);

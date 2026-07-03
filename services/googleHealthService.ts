@@ -278,8 +278,8 @@ class GoogleHealthService {
     if (!accessToken) throw new Error('Not connected to Google Health');
 
     const baseUrl = `${this.BASE_URL}users/me/dataTypes/exercise/dataPoints`;
-    // Strip milliseconds from ISO string for better filter compatibility
-    const cleanStartTime = filterStartTime.split('.')[0] + 'Z';
+    // Strip milliseconds and the Z from ISO string for civil time filter format expected by the schema
+    const civilStartTime = filterStartTime.split('.')[0];
 
     // Note: If the Google Cloud console throws a red HTTP 400 network log for this GET call,
     // it means this specific Google Health regional backend does not support server-side
@@ -287,7 +287,7 @@ class GoogleHealthService {
     // Attempt A: Standard AIP-160 Server Filter
     try {
       // Use pageSize=25 as it is the official limit for exercise dataPoints
-      const filterStr = `start_time >= "${cleanStartTime}"`;
+      const filterStr = `exercise.interval.civil_start_time >= "${civilStartTime}"`;
       const url = `${baseUrl}?filter=${encodeURIComponent(filterStr)}&pageSize=25`;
       const res = await fetch(url, {
         headers: {
@@ -329,6 +329,160 @@ class GoogleHealthService {
 
     return { dataPoints: clientFiltered };
   }
+
+  private async fetchHeartRateRollup(startISO: string, endISO: string, durationSeconds: number): Promise<{ avg: number; min?: number; max?: number } | null> {
+    try {
+      const body = {
+        range: { startTime: startISO, endTime: endISO },
+        windowSize: `${durationSeconds}s`
+      };
+      const res = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints:rollUp`, {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+      if (res.rollupDataPoints && res.rollupDataPoints.length > 0 && res.rollupDataPoints[0].heartRate) {
+        const hr = res.rollupDataPoints[0].heartRate;
+        if (hr.beatsPerMinuteAvg) {
+          return {
+            avg: Math.round(hr.beatsPerMinuteAvg),
+            min: hr.beatsPerMinuteMin ? Math.round(hr.beatsPerMinuteMin) : undefined,
+            max: hr.beatsPerMinuteMax ? Math.round(hr.beatsPerMinuteMax) : undefined
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Heart rate rollup failed, falling back to raw average:', err);
+    }
+    // Fallback
+    const avg = await this.fetchAverageHeartRate(startISO, endISO);
+    return avg ? { avg: Math.round(avg) } : null;
+  }
+
+  private async fetchDailyHeartRateZones(dateStr: string): Promise<any[] | null> {
+    try {
+      const nextDate = new Date(dateStr);
+      nextDate.setDate(nextDate.getDate() + 1);
+      const filter = `daily-heart-rate-zones.date >= "${dateStr}" AND daily-heart-rate-zones.date < "${nextDate.toISOString().split('T')[0]}"`;
+      const res = await this.fetchGoogleAPI(`users/me/dataTypes/daily-heart-rate-zones/dataPoints?filter=${encodeURIComponent(filter)}`);
+      if (res.dataPoints && res.dataPoints.length > 0) {
+        return res.dataPoints[0].dailyHeartRateZones?.heartRateZones || null;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch daily heart rate zones:', err);
+    }
+    return null;
+  }
+
+  private async fetchRawHeartRate(startISO: string, endISO: string): Promise<any[]> {
+    try {
+      const filter = `heartRate.sample_time.physical_time >= "${startISO}" AND heartRate.sample_time.physical_time <= "${endISO}"`;
+      let res = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints:reconcile?filter=${encodeURIComponent(filter)}`);
+      if (!res.dataPoints || res.dataPoints.length === 0) {
+        res = await this.fetchGoogleAPI(`users/me/dataTypes/heart-rate/dataPoints?filter=${encodeURIComponent(filter)}`);
+      }
+      return res.dataPoints || [];
+    } catch (err) {
+      console.warn('Failed to fetch raw heart rate:', err);
+      return [];
+    }
+  }
+
+  private calculateHeartRateZoneDurations(rawHRData: any[], zones: any[]) {
+    if (!rawHRData.length || !zones || zones.length === 0) return null;
+
+    const durations = {
+      lightTime: 0,
+      moderateTime: 0,
+      vigorousTime: 0,
+      peakTime: 0
+    };
+
+    const getZone = (bpm: number) => {
+      // Find matching zone
+      for (const z of zones) {
+        const min = parseInt(z.minBeatsPerMinute || '0');
+        const max = parseInt(z.maxBeatsPerMinute || '999');
+        if (bpm >= min && bpm < max) {
+          return z.heartRateZoneType;
+        }
+      }
+      return 'HEART_RATE_ZONE_TYPE_UNSPECIFIED';
+    };
+
+    for (let i = 0; i < rawHRData.length - 1; i++) {
+      const p1 = rawHRData[i];
+      const p2 = rawHRData[i+1];
+      
+      const t1 = new Date(p1.startTime || p1.start_time || p1.heartRate?.sampleTime?.physicalTime).getTime();
+      const t2 = new Date(p2.startTime || p2.start_time || p2.heartRate?.sampleTime?.physicalTime).getTime();
+      
+      if (!isNaN(t1) && !isNaN(t2)) {
+        const deltaSeconds = (t2 - t1) / 1000;
+        // Guard against gaps > 2 minutes (120 seconds)
+        if (deltaSeconds > 0 && deltaSeconds <= 120) {
+          const bpm = parseInt(p1.heartRate?.beatsPerMinute || '0');
+          const zoneType = getZone(bpm);
+          if (zoneType === 'LIGHT') durations.lightTime += deltaSeconds;
+          else if (zoneType === 'MODERATE') durations.moderateTime += deltaSeconds;
+          else if (zoneType === 'VIGOROUS') durations.vigorousTime += deltaSeconds;
+          else if (zoneType === 'PEAK') durations.peakTime += deltaSeconds;
+        }
+      }
+    }
+
+    const hasAnyTime = durations.lightTime > 0 || durations.moderateTime > 0 || durations.vigorousTime > 0 || durations.peakTime > 0;
+    if (!hasAnyTime) return null;
+
+    return {
+      ...(durations.lightTime > 0 ? { lightTime: `${Math.round(durations.lightTime)}s` } : {}),
+      ...(durations.moderateTime > 0 ? { moderateTime: `${Math.round(durations.moderateTime)}s` } : {}),
+      ...(durations.vigorousTime > 0 ? { vigorousTime: `${Math.round(durations.vigorousTime)}s` } : {}),
+      ...(durations.peakTime > 0 ? { peakTime: `${Math.round(durations.peakTime)}s` } : {})
+    };
+  }
+
+  private async fetchActiveZoneMinutes(startISO: string, endISO: string, durationSeconds: number): Promise<number | null> {
+    try {
+      const body = {
+        range: { startTime: startISO, endTime: endISO },
+        windowSize: `${durationSeconds}s`
+      };
+      const res = await this.fetchGoogleAPI(`users/me/dataTypes/active-zone-minutes/dataPoints:rollUp`, {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+      if (res.rollupDataPoints && res.rollupDataPoints.length > 0 && res.rollupDataPoints[0].activeZoneMinutes) {
+        const azmStr = res.rollupDataPoints[0].activeZoneMinutes.activeZoneMinutes;
+        if (azmStr) return parseInt(azmStr);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch active zone minutes:', err);
+    }
+    return null;
+  }
+
+  private calculateActiveZoneMinutesFallback(zoneDurations: any): number {
+    if (!zoneDurations) return 0;
+    const parseS = (s?: string) => s ? parseInt(s.replace('s', '')) : 0;
+    const moderate = parseS(zoneDurations.moderateTime) / 60;
+    const vigorous = parseS(zoneDurations.vigorousTime) / 60;
+    const peak = parseS(zoneDurations.peakTime) / 60;
+    return Math.round(moderate + (vigorous * 2) + (peak * 2));
+  }
+
+  private async fetchRunVo2Max(startISO: string, endISO: string): Promise<number | null> {
+    try {
+      const filter = `run_vo2_max.sample_time.physical_time >= "${startISO}" AND run_vo2_max.sample_time.physical_time <= "${endISO}"`;
+      const res = await this.fetchGoogleAPI(`users/me/dataTypes/run-vo2-max/dataPoints?filter=${encodeURIComponent(filter)}`);
+      if (res.dataPoints && res.dataPoints.length > 0) {
+        return res.dataPoints[0].runVo2Max?.runVo2Max || null;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch run VO2 max:', err);
+    }
+    return null;
+  }
+
 
   /**
    * Manual Resync Trigger
@@ -389,6 +543,42 @@ class GoogleHealthService {
         const activityType = this.mapWorkoutActivityType(log.type, log.customActivity);
         const dataPointId = `fittribe-log-${log.id}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   
+        const metricsSummary: any = {
+          caloriesKcal: log.calories || 0
+        };
+
+        // Compute HR metrics
+        const hrRollup = await this.fetchHeartRateRollup(startTimeISO, endTimeISO, duration * 60);
+        if (hrRollup && hrRollup.avg) {
+          metricsSummary.averageHeartRateBeatsPerMinute = String(hrRollup.avg);
+        }
+
+        const dateStr = startTimeISO.split('T')[0];
+        const zones = await this.fetchDailyHeartRateZones(dateStr);
+        let zoneDurations = null;
+        if (zones && zones.length > 0) {
+          const rawHR = await this.fetchRawHeartRate(startTimeISO, endTimeISO);
+          zoneDurations = this.calculateHeartRateZoneDurations(rawHR, zones);
+          if (zoneDurations) {
+            metricsSummary.heartRateZoneDurations = zoneDurations;
+          }
+        }
+
+        let azm = await this.fetchActiveZoneMinutes(startTimeISO, endTimeISO, duration * 60);
+        if (azm === null && zoneDurations) {
+          azm = this.calculateActiveZoneMinutesFallback(zoneDurations);
+        }
+        if (azm !== null && azm > 0) {
+          metricsSummary.activeZoneMinutes = String(azm);
+        }
+
+        if (activityType === 'RUNNING') {
+          const vo2Max = await this.fetchRunVo2Max(startTimeISO, endTimeISO);
+          if (vo2Max !== null) {
+            metricsSummary.runVo2Max = vo2Max;
+          }
+        }
+
         const offsetSeconds = -new Date().getTimezoneOffset() * 60;
         const dataPoint = {
           name: `users/me/dataTypes/exercise/dataPoints/${dataPointId}`,
@@ -404,9 +594,7 @@ class GoogleHealthService {
               endUtcOffset: `${offsetSeconds}s`
             },
             displayName: log.customActivity || `FitTribe Workout - ${log.type}`,
-            metricsSummary: {
-              caloriesKcal: log.calories || 0
-            }
+            metricsSummary
           }
         };
   

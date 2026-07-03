@@ -403,7 +403,10 @@ class GoogleHealthService {
               startUtcOffset: `${offsetSeconds}s`,
               endUtcOffset: `${offsetSeconds}s`
             },
-            displayName: log.customActivity || `FitTribe Workout - ${log.type}`
+            displayName: log.customActivity || `FitTribe Workout - ${log.type}`,
+            metricsSummary: {
+              caloriesKcal: log.calories || 0
+            }
           }
         };
   

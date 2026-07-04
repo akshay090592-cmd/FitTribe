@@ -43,6 +43,8 @@ export const POINTS_PER_WORKOUT = 10;
 export const XP_PER_GIFT = 20;
 export const XP_STREAK_BONUS = 50;
 
+const MS_PER_DAY = 1000 * 3600 * 24;
+
 export const getStreakBonus = (streak: number) => {
   // Streak 1: 0, Streak 2: 10, Streak 3: 20... Streak 6+: 50
   if (streak <= 1) return 0;
@@ -116,12 +118,14 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
     if (isStreakEligible) {
       const logDate = new Date(log.date);
       logDate.setHours(0, 0, 0, 0);
+      const logTime = logDate.getTime();
 
       if (!lastLogDate) {
         currentStreak = 1;
       } else {
-        const diffTime = Math.abs(logDate.getTime() - lastLogDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const lastLogTime = lastLogDate.getTime();
+        const diffTime = Math.abs(logTime - lastLogTime);
+        const diffDays = Math.round(diffTime / MS_PER_DAY);
 
         if (diffDays === 0) {
           // Same day
@@ -182,12 +186,14 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
     if (isStreakEligible) {
       const logDate = new Date(log.date);
       logDate.setHours(0, 0, 0, 0);
+      const logTime = logDate.getTime();
 
       if (!lastLogDate) {
         currentStreak = 1;
       } else {
-        const diffTime = Math.abs(logDate.getTime() - lastLogDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const lastLogTime = lastLogDate.getTime();
+        const diffTime = Math.abs(logTime - lastLogTime);
+        const diffDays = Math.round(diffTime / MS_PER_DAY);
 
         if (diffDays === 0) {
           // Same day
@@ -247,11 +253,11 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
 
   let streak = 0;
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayTime = today.getTime();
-  const MS_PER_DAY = 1000 * 3600 * 24;
+  // BOLT: Avoid multiple Date allocations for 'today' by calculating timestamp once.
+  now.setHours(0, 0, 0, 0);
+  const todayTime = now.getTime();
 
-  let prevValidDate: Date | null = null;
+  let prevValidTime: number | null = null;
   const streakLogs: WorkoutLog[] = [];
 
   for (let i = 0; i < logsToProcess.length; i++) {
@@ -261,20 +267,23 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
     if (log.type === WorkoutType.COMMITMENT) continue;
     if ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && (log.durationMinutes || 0) < 30) continue;
 
+    // BOLT: Reuse a single Date object and modify hours to get midnight timestamp.
+    // This reduces Date object allocations by 50% in the hot loop.
     const logDate = new Date(log.date);
-    const logMidnight = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
-    const logTime = logMidnight.getTime();
+    logDate.setHours(0, 0, 0, 0);
+    const logTime = logDate.getTime();
 
-    if (prevValidDate === null) {
+    if (prevValidTime === null) {
       // First valid log found
-      const diffFromToday = (todayTime - logTime) / MS_PER_DAY;
+      // BOLT: Use Math.round for DST resilience when calculating day gaps.
+      const diffFromToday = Math.round((todayTime - logTime) / MS_PER_DAY);
       if (diffFromToday > 3) break; // Last workout too old, streak is 0
 
       streak = 1;
-      prevValidDate = logMidnight;
+      prevValidTime = logTime;
       if (returnLogs) streakLogs.push(log);
     } else {
-      const gap = (prevValidDate.getTime() - logTime) / MS_PER_DAY;
+      const gap = Math.round((prevValidTime - logTime) / MS_PER_DAY);
 
       if (gap === 0) {
         // Same day workout, add to logs but don't increment streak count
@@ -285,7 +294,7 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
       if (gap <= 3) {
         // Valid continuation
         streak++;
-        prevValidDate = logMidnight;
+        prevValidTime = logTime;
         if (returnLogs) streakLogs.push(log);
       } else {
         // Gap too large, streak ends here
@@ -330,7 +339,7 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const diffDays = (today.getTime() - lastLogDate.getTime()) / (1000 * 3600 * 24);
+  const diffDays = Math.round((today.getTime() - lastLogDate.getTime()) / MS_PER_DAY);
 
   // If gap is 2 days, and limit is 3 (from getStreaks logic where gap <= 3 keeps it), 
   // then day 3 is the LAST day. 
@@ -512,14 +521,14 @@ export const getTeamStats = async (tribeId?: string) => {
     today.setHours(0, 0, 0, 0);
     let tPrev = uniqueDates[0];
     tPrev.setHours(0, 0, 0, 0);
-    const daysSinceLastWorkout = (today.getTime() - tPrev.getTime()) / (1000 * 3600 * 24);
+    const daysSinceLastWorkout = Math.round((today.getTime() - tPrev.getTime()) / MS_PER_DAY);
 
     if (daysSinceLastWorkout <= 1) {
       teamStreak = 1;
       for (let i = 1; i < uniqueDates.length; i++) {
         const currentDate = new Date(uniqueDates[i]);
         currentDate.setHours(0, 0, 0, 0);
-        const gap = (tPrev.getTime() - currentDate.getTime()) / (1000 * 3600 * 24);
+        const gap = Math.round((tPrev.getTime() - currentDate.getTime()) / MS_PER_DAY);
         if (gap === 1) {
           teamStreak++;
           tPrev = currentDate;

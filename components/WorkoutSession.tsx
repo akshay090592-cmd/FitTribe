@@ -20,7 +20,6 @@ import { geminiClient, Type } from '../services/geminiClient';
 import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
-import { googleHealthService } from '../services/googleHealthService';
 
 interface Props {
   user: User;

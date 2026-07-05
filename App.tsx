@@ -498,9 +498,20 @@ const App: React.FC = () => {
         setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
         setAllLogs(logs);
 
-        // 2. Process Mood (Reusing logs)
-        // BOLT: Use synchronous calculateMood directly to avoid redundant lookups in getMood
-        const m = calculateMood(logs);
+        // 2. Process Streaks & Risk (Reusing logs)
+        // BOLT: Calculate streak once and reuse it for mood and risk to avoid redundant O(N) passes.
+        let calculatedStreak = 0;
+        if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
+          calculatedStreak = gameState[profile.displayName].streak;
+        } else {
+          calculatedStreak = calculateStreaks(logs, { isSorted: true }) as number;
+        }
+        setStreak(calculatedStreak);
+        setStreakRisk(await getStreakRisk(profile.displayName, logs));
+
+        // 3. Process Mood (Reusing logs)
+        // BOLT: Pass pre-calculated streak to avoid redundant O(N) pass inside calculateMood.
+        const m = calculateMood(logs, calculatedStreak);
         setMood(m);
 
         // 3. Process Stats
@@ -516,15 +527,7 @@ const App: React.FC = () => {
           setXpData(getLevelProgress(xpToUse));
         }
 
-        // 5. Process Streaks & Risk (Reusing logs)
-        // Optimization: Use precalculated streak from database if available (> 0)
-        // Fallback to calculation for existing users with 0 in the new column or if missing
-        if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
-          setStreak(gameState[profile.displayName].streak);
-        } else {
-          setStreak(calculateStreaks(logs, { isSorted: true }) as number);
-        }
-        setStreakRisk(await getStreakRisk(profile.displayName, logs));
+        // 5. (Completed in step 2)
 
         // 6. Load Quests (Uses profile)
         setQuests(getDailyQuests(profile.displayName, profile));

@@ -90,7 +90,11 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
   const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
-  let lastLogDate: Date | null = null;
+  let lastLogTime = 0;
+  let lastLogDateStr = '';
+
+  // BOLT: Reuse single Date object to minimize allocations
+  const logDateObj = new Date();
 
   for (let i = 0; i < len; i++) {
     const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
@@ -116,26 +120,31 @@ export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolea
     const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
-      const logDate = new Date(log.date);
-      logDate.setHours(0, 0, 0, 0);
-      const logTime = logDate.getTime();
+      // BOLT: Use substring for ultra-fast same-day check
+      const dateStr = log.date.substring(0, 10);
 
-      if (!lastLogDate) {
-        currentStreak = 1;
+      if (dateStr === lastLogDateStr) {
+        // Same day, streak doesn't change
       } else {
-        const lastLogTime = lastLogDate.getTime();
-        const diffTime = Math.abs(logTime - lastLogTime);
-        const diffDays = Math.round(diffTime / MS_PER_DAY);
+        logDateObj.setTime(Date.parse(log.date));
+        logDateObj.setHours(0, 0, 0, 0);
+        const logTime = logDateObj.getTime();
 
-        if (diffDays === 0) {
-          // Same day
-        } else if (diffDays <= 3) {
-          currentStreak++;
-        } else {
+        if (lastLogTime === 0) {
           currentStreak = 1;
+        } else {
+          const diffTime = Math.abs(logTime - lastLogTime);
+          const diffDays = Math.round(diffTime / MS_PER_DAY);
+
+          if (diffDays <= 3) {
+            currentStreak++;
+          } else {
+            currentStreak = 1;
+          }
         }
+        lastLogTime = logTime;
+        lastLogDateStr = dateStr;
       }
-      lastLogDate = logDate;
     }
 
     // 3. Add Streak Bonus (only if eligible and streak > 1)
@@ -156,7 +165,11 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
   const sortedLogs = isSortedDesc ? null : [...logs].sort((a, b) => compareISODates(a.date, b.date));
 
   let currentStreak = 0;
-  let lastLogDate: Date | null = null;
+  let lastLogTime = 0;
+  let lastLogDateStr = '';
+
+  // BOLT: Reuse single Date object to minimize allocations
+  const logDateObj = new Date();
 
   for (let i = 0; i < len; i++) {
     const log = isSortedDesc ? logs[len - 1 - i] : sortedLogs![i];
@@ -184,26 +197,31 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
     const isStreakEligible = !((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && log.durationMinutes < 30);
 
     if (isStreakEligible) {
-      const logDate = new Date(log.date);
-      logDate.setHours(0, 0, 0, 0);
-      const logTime = logDate.getTime();
+      // BOLT: Use substring for ultra-fast same-day check
+      const dateStr = log.date.substring(0, 10);
 
-      if (!lastLogDate) {
-        currentStreak = 1;
+      if (dateStr === lastLogDateStr) {
+        // Same day, streak doesn't change
       } else {
-        const lastLogTime = lastLogDate.getTime();
-        const diffTime = Math.abs(logTime - lastLogTime);
-        const diffDays = Math.round(diffTime / MS_PER_DAY);
+        logDateObj.setTime(Date.parse(log.date));
+        logDateObj.setHours(0, 0, 0, 0);
+        const logTime = logDateObj.getTime();
 
-        if (diffDays === 0) {
-          // Same day
-        } else if (diffDays <= 3) {
-          currentStreak++;
-        } else {
+        if (lastLogTime === 0) {
           currentStreak = 1;
+        } else {
+          const diffTime = Math.abs(logTime - lastLogTime);
+          const diffDays = Math.round(diffTime / MS_PER_DAY);
+
+          if (diffDays <= 3) {
+            currentStreak++;
+          } else {
+            currentStreak = 1;
+          }
         }
+        lastLogTime = logTime;
+        lastLogDateStr = dateStr;
       }
-      lastLogDate = logDate;
     }
 
     // 3. Add Streak Bonus (only if eligible and streak > 1)
@@ -258,7 +276,11 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
   const todayTime = now.getTime();
 
   let prevValidTime: number | null = null;
+  let prevValidDateStr = '';
   const streakLogs: WorkoutLog[] = [];
+
+  // BOLT: Reuse a single Date object and modify hours to get midnight timestamp.
+  const logDateObj = new Date();
 
   for (let i = 0; i < logsToProcess.length; i++) {
     const log = logsToProcess[i];
@@ -267,11 +289,18 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
     if (log.type === WorkoutType.COMMITMENT) continue;
     if ((log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE) && (log.durationMinutes || 0) < 30) continue;
 
-    // BOLT: Reuse a single Date object and modify hours to get midnight timestamp.
-    // This reduces Date object allocations by 50% in the hot loop.
-    const logDate = new Date(log.date);
-    logDate.setHours(0, 0, 0, 0);
-    const logTime = logDate.getTime();
+    // BOLT: Use substring for ultra-fast same-day check
+    const dateStr = log.date.substring(0, 10);
+
+    if (prevValidTime !== null && dateStr === prevValidDateStr) {
+      // Same day workout, add to logs but don't increment streak count
+      if (returnLogs) streakLogs.push(log);
+      continue;
+    }
+
+    logDateObj.setTime(Date.parse(log.date));
+    logDateObj.setHours(0, 0, 0, 0);
+    const logTime = logDateObj.getTime();
 
     if (prevValidTime === null) {
       // First valid log found
@@ -281,20 +310,16 @@ export const calculateStreaks = (logs: WorkoutLog[], optionsOrReturnLogs: boolea
 
       streak = 1;
       prevValidTime = logTime;
+      prevValidDateStr = dateStr;
       if (returnLogs) streakLogs.push(log);
     } else {
       const gap = Math.round((prevValidTime - logTime) / MS_PER_DAY);
-
-      if (gap === 0) {
-        // Same day workout, add to logs but don't increment streak count
-        if (returnLogs) streakLogs.push(log);
-        continue;
-      }
 
       if (gap <= 3) {
         // Valid continuation
         streak++;
         prevValidTime = logTime;
+        prevValidDateStr = dateStr;
         if (returnLogs) streakLogs.push(log);
       } else {
         // Gap too large, streak ends here
@@ -357,9 +382,9 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
  * BOLT: Synchronous mood calculation when logs are already available.
  * Optimized to leverage the optimized calculateStreaks result directly.
  */
-export const calculateMood = (logs: WorkoutLog[]): 'fire' | 'tired' | 'normal' => {
-  // Use calculateStreaks instead of getStreaks to reuse logs
-  const streak = calculateStreaks(logs, { isSorted: true }) as number;
+export const calculateMood = (logs: WorkoutLog[], preCalculatedStreak?: number): 'fire' | 'tired' | 'normal' => {
+  // Use calculateStreaks instead of getStreaks to reuse logs, or use precalculated value if available
+  const streak = preCalculatedStreak !== undefined ? preCalculatedStreak : (calculateStreaks(logs, { isSorted: true }) as number);
 
   if (streak === 0) return 'tired';
   if (streak >= 3) return 'fire';

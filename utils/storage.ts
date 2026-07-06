@@ -816,10 +816,20 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
   const cacheKey = tribeId ? `logs_user_${user}_${tribeId}_p${page || 0}` : `logs_user_${user}_p${page || 0}`;
 
   return deduplicateRequest(cacheKey, async () => {
-  const cached = getFromCache<WorkoutLog[]>(cacheKey);
-  // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
-  if (cached) return [...cached];
+    const cached = getFromCache<WorkoutLog[]>(cacheKey);
+    // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
+    if (cached) return [...cached];
 
+    // BOLT: Check standardized tribe/global activity cache for page 0
+    if (!page || page === 0) {
+      const standardizedKey = tribeId ? `logs_tribe_${tribeId}_p0_s100` : `logs_global_p0_s100`;
+      const globalCached = getFromCache<WorkoutLog[]>(standardizedKey);
+      if (globalCached) {
+        const userLogs = globalCached.filter(l => l.user === user);
+        setInCache(cacheKey, userLogs);
+        return [...userLogs];
+      }
+    }
 
   // BOLT: Only select required columns
   let query = supabase
@@ -906,18 +916,18 @@ export const getUserLogsById = async (userId: string, displayName?: string, page
 
 
 
-export const calculateStats = async (user: User): Promise<PRStats> => {
+export const calculateStats = async (user: User, logs?: WorkoutLog[]): Promise<PRStats> => {
   const cacheKey = `stats_${user}`;
   const cached = getFromCache<PRStats>(cacheKey);
   if (cached) return cached;
 
-  const logs = await getUserLogs(user);
+  const logsToProcess = logs || await getUserLogs(user);
   const stats: PRStats = {};
 
   // BOLT: Optimized using index-based for loops and hoisted property lookups.
   // Reduces function invocation overhead and object access latency in large datasets.
-  for (let i = 0, len = logs.length; i < len; i++) {
-    const log = logs[i];
+  for (let i = 0, len = logsToProcess.length; i < len; i++) {
+    const log = logsToProcess[i];
     const exercises = log.exercises;
     if (!exercises) continue;
 

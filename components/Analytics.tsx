@@ -272,11 +272,18 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       else onFetching?.(true);
 
       try {
-        // BOLT: Parallelize independent data fetches to reduce loading time
+        // BOLT: Standardizing log fetching to use tribeId ensures cache alignment with the Social Feed/Dashboard.
+        const logsPromise = getUserLogs(user, userProfile?.tribeId || undefined);
+
+        // BOLT: Run independent fetches in parallel to avoid network waterfalls.
+        // calculateStats uses pre-fetched logs to eliminate redundant internal fetches.
+        const membersPromise = userProfile?.tribeId ? getTribeMembers(userProfile.tribeId) : Promise.resolve([]);
+        const statsPromise = logsPromise.then(l => calculateStats(user, l));
+
         const [l, s, members] = await Promise.all([
-          getUserLogs(user),
-          calculateStats(user),
-          userProfile?.tribeId ? getTribeMembers(userProfile.tribeId) : Promise.resolve([])
+          logsPromise,
+          statsPromise,
+          membersPromise
         ]);
 
         if (mounted) {

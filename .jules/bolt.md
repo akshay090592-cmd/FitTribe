@@ -33,3 +33,7 @@
 ## 2026-06-22 - Optimized Timer Persistence
 **Learning:** Frequent synchronous I/O to localStorage/sessionStorage (e.g., every second during a workout) can cause significant battery drain and minor UI stutters on low-end devices. If the application already has "restoration" logic that uses a stable timestamp (like 'startTime' or 'lastUpdated') to calculate offsets, the frequently changing 'seconds' state can be safely excluded from the persistence effect's dependency array.
 **Action:** Always check if persistence logic is triggered by high-frequency UI updates. If reconstruction from a reference timestamp is possible, remove the high-frequency state from dependencies and rely on structural state changes to trigger disk writes.
+
+## 2026-07-06 - Avoiding Concurrency Waterfalls in Multi-Request Effects
+**Learning:** Naively chaining async calls to avoid redundant internal processing (e.g., passing pre-fetched logs to a statistics utility) can inadvertently create network waterfalls if unrelated parallel requests are moved outside of a Promise.all block. This increases the total Time to Interactive even if individual calls are slightly faster.
+**Action:** Use independent promise variables for each data dependency and await them collectively with Promise.all. If one request depends on another, chain it (.then) within its own promise variable so it doesn't block unrelated parallel requests.

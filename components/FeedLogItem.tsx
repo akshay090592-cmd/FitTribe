@@ -212,7 +212,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                 </button>
             </div>
 
-            {isCommentsOpen && <CommentSection logId={log.id} currentUser={currentUser} logOwner={log.user} />}
+            {isCommentsOpen && <CommentSection logId={log.id} currentUser={currentUser} logOwner={log.user} profile={profile} />}
 
         </div>
     );

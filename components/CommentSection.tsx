@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, memo } from 'react';
 import { User, SocialComment, UserProfile } from '../types';
-import { getComments, addComment, getCurrentProfile } from '../utils/storage';
+import { getComments, addComment } from '../utils/storage';
 import { MessageCircle, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { getAvatarPath } from '../utils/avatar';
@@ -10,23 +10,24 @@ interface Props {
     logId: string;
     currentUser: User;
     logOwner: string;
+    profile: UserProfile;
 }
 
-export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOwner }) => {
+/**
+ * BOLT: Optimized CommentSection component.
+ * - Eliminated redundant async profile fetching by hoisting the dependency to props.
+ * - Since the parent (FeedLogItem) already possesses the UserProfile, passing it down
+ *   removes unnecessary lifecycle effects and state management in this sub-component.
+ * Performance Impact: Reduces mounting overhead for every comment section in the feed.
+ */
+export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOwner, profile }) => {
     const [comments, setComments] = useState<SocialComment[]>([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
 
     useEffect(() => {
         loadComments();
-        loadProfile();
     }, [logId]);
-
-    const loadProfile = async () => {
-        const p = await getCurrentProfile();
-        setProfile(p);
-    };
 
     const loadComments = async () => {
         const data = await getComments(logId);
@@ -35,6 +36,7 @@ export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOw
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        // BOLT: Basic safety check for profile and text
         if (!text.trim() || !profile) return;
 
         setLoading(true);

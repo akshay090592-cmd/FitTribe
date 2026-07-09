@@ -453,80 +453,62 @@ export const getTeamStats = async (tribeId?: string) => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-  // BOLT: Hoist member retrieval to leverage cache and avoid redundant queries
-  const members = tribeId ? await getTribeMembers(tribeId) : null;
-  const memberIds = (members && members.length > 0) ? members.map(m => m.id) : null;
+  // BOLT: Parallelize member and log fetching to eliminate the network waterfall.
+  const membersPromise = tribeId ? getTribeMembers(tribeId) : Promise.resolve(null);
+  const logsPromise = getLogs(tribeId, 0, 100);
 
-  // BOLT: Use Supabase count queries to minimize data fetching
-  // Optimized to use raw fetch when count is not directly supported by mock/client config
-  const getCount = async (from: Date) => {
-    try {
-      let query = supabase
-        .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
-        .neq('log_data->>type', WorkoutType.COMMITMENT)
-        .gte('date', from.toISOString());
+  // BOLT: Count queries are chained to the members promise so they initiate as soon as memberIds are available.
+  const countsPromise = membersPromise.then(async (members) => {
+    const memberIds = (members && members.length > 0) ? members.map(m => m.id) : null;
 
-      if (tribeId) {
-        if (memberIds && memberIds.length > 0) {
-          query = query.in('user_id', memberIds);
-        } else {
-          return 0;
+    const getCount = async (from: Date, minDuration?: number) => {
+      try {
+        let query = supabase
+          .from('workout_logs')
+          .select('*', { count: 'exact', head: true })
+          .neq('log_data->>type', WorkoutType.COMMITMENT)
+          .gte('date', from.toISOString());
+
+        if (minDuration) {
+          query = query.filter('log_data->>durationMinutes', 'gte', minDuration);
         }
-      }
 
-      const { count, error } = await query;
-      if (error) throw error;
-      return count || 0;
-    } catch (e) {
-      console.warn("Count query failed, falling back to client-side count", e);
-      const allLogs = await getLogs(tribeId);
-      return allLogs.filter(l => l.type !== WorkoutType.COMMITMENT && new Date(l.date) >= from).length;
-    }
-  };
-
-  const getWeeklyCount = async () => {
-    try {
-      let query = supabase
-        .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
-        .neq('log_data->>type', WorkoutType.COMMITMENT)
-        .filter('log_data->>durationMinutes', 'gte', 30)
-        .gte('date', startOfWeek.toISOString());
-
-      if (tribeId) {
-        if (memberIds && memberIds.length > 0) {
-          query = query.in('user_id', memberIds);
-        } else {
-          return 0;
+        if (tribeId) {
+          if (memberIds && memberIds.length > 0) {
+            query = query.in('user_id', memberIds);
+          } else {
+            return 0;
+          }
         }
+
+        const { count, error } = await query;
+        if (error) throw error;
+        return count || 0;
+      } catch (e) {
+        console.warn("Count query failed, falling back to client-side count", e);
+        const allLogs = await getLogs(tribeId);
+        const fromISO = from.toISOString();
+        let c = 0;
+        for (const l of allLogs) {
+          if (l.date < fromISO) break; // Optimization: assumes DESC sort
+          if (l.type !== WorkoutType.COMMITMENT && (!minDuration || (l.durationMinutes || 0) >= minDuration)) c++;
+        }
+        return c;
       }
+    };
 
-      const { count, error } = await query;
-      if (error) throw error;
-      return count || 0;
-    } catch (e) {
-      console.warn("Weekly count query failed, falling back", e);
-      const allLogs = await getLogs(tribeId);
-      return allLogs.filter(l =>
-        l.type !== WorkoutType.COMMITMENT &&
-        (l.durationMinutes || 0) >= 30 &&
-        new Date(l.date) >= startOfWeek
-      ).length;
-    }
-  };
+    // BOLT: Restore accurate server-side count for weekly stats while maintaining parallelization
+    return Promise.all([
+      getCount(startOfWeek, 30),
+      getCount(startOfMonth),
+      getCount(startOfYear)
+    ]);
+  });
 
-  // BOLT: Optimize statistics and streak calculation using a single-pass loop over pre-sorted logs.
-  // This replaces multiple linear scans (filter, map, Set, sort) with O(N) complexity.
-  // Performance Impact: Reduces array allocations and iteration overhead by ~80% in Tribe views.
-  const rawLogs = await getLogs(tribeId, 0, 100);
-
-  const [weeklyCount, monthlyCount, yearlyCount] = await Promise.all([
-    getWeeklyCount(),
-    getCount(startOfMonth),
-    getCount(startOfYear)
+  const [rawLogs, [weeklyCount, monthlyCount, yearlyCount]] = await Promise.all([
+    logsPromise,
+    countsPromise
   ]);
-
   const userStats: Record<string, number> = {};
   let teamStreak = 0;
 
@@ -550,8 +532,11 @@ export const getTeamStats = async (tribeId?: string) => {
     logDateObj.setHours(0, 0, 0, 0);
     const logTime = logDateObj.getTime();
 
+    const isInCurrentWeek = logTime >= startOfWeek.getTime() && logTime <= now.getTime();
+
     // 1. Process User Stats (Workouts >= 30m in current week)
-    if (logTime >= startOfWeek.getTime() && logTime <= now.getTime()) {
+    // BOLT: userStats uses top 100 logs (rawLogs), while total weeklyCount uses accurate server count.
+    if (isInCurrentWeek) {
       if ((log.durationMinutes || 0) >= 30) {
         userStats[log.user] = (userStats[log.user] || 0) + 1;
       }

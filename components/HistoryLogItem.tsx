@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { WorkoutLog, WorkoutType } from '../types';
 import { Trash2, Calendar, Clock, Flame, Dumbbell, AlertTriangle, ChevronDown, ChevronUp, Heart } from 'lucide-react';
 import { ImageModal } from './ImageModal';
+import { ConfirmPopup } from './ConfirmPopup';
 
 export interface ProcessedLog extends WorkoutLog {
   isFailedCommitment: boolean;
@@ -22,6 +23,7 @@ export const HistoryLogItem = React.memo(({
   onDelete
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
     <div
@@ -91,11 +93,9 @@ export const HistoryLogItem = React.memo(({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm('Are you sure you want to delete this log? This cannot be undone.')) {
-                onDelete(log.id);
-              }
+              setShowDeleteConfirm(true);
             }}
-            className="w-10 h-10 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center transition-all"
+            className="w-10 h-10 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center transition-all cursor-pointer"
             title="Delete Log"
             aria-label={`Delete log from ${log.formattedDate}`}
           >
@@ -103,6 +103,20 @@ export const HistoryLogItem = React.memo(({
           </button>
         </div>
       </div>
+
+      <ConfirmPopup
+        isOpen={showDeleteConfirm}
+        title="Delete Log?"
+        message="Are you sure you want to delete this log? This cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDelete(log.id);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       {/* Expanded Details View */}
       {isExpanded && (

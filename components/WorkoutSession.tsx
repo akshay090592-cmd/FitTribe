@@ -20,6 +20,7 @@ import { geminiClient, Type } from '../services/geminiClient';
 import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
+import { ConfirmPopup } from './ConfirmPopup';
 
 interface Props {
   user: User;
@@ -180,6 +181,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [earnedXp, setEarnedXp] = useState(0);
 
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showCooldownConfirm, setShowCooldownConfirm] = useState(false);
   const [isStreakAtRisk, setIsStreakAtRisk] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -755,7 +757,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   if (step === 'workout') {
     return (
-      <div className="min-h-screen bg-[#F0FDF4] pb-32 relative">
+      <div className="min-h-screen bg-[#F0FDF4] pb-12 relative">
         {showExitModal && createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="glass-panel p-6 w-full max-w-sm animate-scale-up" style={{ background: 'hsla(140,50%,98%,0.95)' }}>
@@ -817,8 +819,20 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           </div>
         </div>
 
-        <div className="p-4 space-y-4">
-          {renderExercises()}
+        <div className="p-4 space-y-6">
+          <div className="space-y-4">
+            {renderExercises()}
+          </div>
+
+          <div className="pt-4 pb-8">
+            <button
+              onClick={() => setShowCooldownConfirm(true)}
+              className="w-full bg-emerald-800 text-emerald-50 py-4 rounded-3xl font-bold text-lg shadow-xl active:scale-95 transition-transform border-b-4 border-emerald-950 cursor-pointer"
+              data-testid="finish-cooldown-btn"
+            >
+              Finish & Cool Down
+            </button>
+          </div>
         </div>
 
         {showRestTimer && (
@@ -833,14 +847,19 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           />
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-20 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4] to-transparent pb-6 pt-10">
-          <button
-            onClick={() => setStep('cooldown')}
-            className="w-full bg-emerald-800 text-emerald-50 py-4 rounded-3xl font-bold text-lg shadow-xl active:scale-95 transition-transform border-b-4 border-emerald-950"
-          >
-            Finish & Cool Down
-          </button>
-        </div>
+        <ConfirmPopup
+          isOpen={showCooldownConfirm}
+          title="Finish and Cool Down?"
+          message="Are you sure you want to finish your training session and start cooling down?"
+          confirmText="Yes, Cool Down"
+          cancelText="Keep Training"
+          type="info"
+          onConfirm={() => {
+            setShowCooldownConfirm(false);
+            setStep('cooldown');
+          }}
+          onCancel={() => setShowCooldownConfirm(false)}
+        />
       </div>
     );
   }

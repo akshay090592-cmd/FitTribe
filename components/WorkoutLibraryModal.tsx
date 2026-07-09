@@ -4,6 +4,7 @@ import { WorkoutTemplate, UserProfile } from '../types';
 import { TemplateEditor } from './TemplateEditor';
 import { updateProfile } from '../utils/storage';
 import { X, Plus, Play, Edit, Trash2, Library } from 'lucide-react';
+import { ConfirmPopup } from './ConfirmPopup';
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface Props {
 export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProfile, onStartTemplate, onUpdateProfile }) => {
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | undefined>(undefined);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
 
   if (!isOpen || !userProfile) return null;
 
@@ -36,11 +38,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!confirm("Delete this workout template?")) return;
-    const updatedTemplates = templates.filter(t => t.id !== id);
-    const updatedProfile = { ...userProfile, workoutTemplates: updatedTemplates };
-    onUpdateProfile(updatedProfile);
-    await updateProfile(updatedProfile);
+    setDeletingTemplateId(id);
   };
 
   if (view === 'create' || view === 'edit') {
@@ -135,6 +133,24 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
           )}
         </div>
       </div>
+      <ConfirmPopup
+        isOpen={deletingTemplateId !== null}
+        title="Delete Template?"
+        message="Are you sure you want to delete this workout template?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={async () => {
+          if (deletingTemplateId) {
+            const updatedTemplates = templates.filter(t => t.id !== deletingTemplateId);
+            const updatedProfile = { ...userProfile, workoutTemplates: updatedTemplates };
+            onUpdateProfile(updatedProfile);
+            await updateProfile(updatedProfile);
+          }
+          setDeletingTemplateId(null);
+        }}
+        onCancel={() => setDeletingTemplateId(null)}
+      />
     </div>,
     document.body
   );

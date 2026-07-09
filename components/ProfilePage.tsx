@@ -13,6 +13,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
 import { googleHealthService } from '../services/googleHealthService';
+import { ConfirmPopup } from './ConfirmPopup';
 
 interface Props {
     userProfile: UserProfile;
@@ -31,6 +32,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const [gamificationState, setGamificationState] = useState<UserGamificationState | null>(null);
     const [streaks, setStreaks] = useState(0);
     const [xpData, setXpData] = useState<any>(null);
+    const [deletingChallengeId, setDeletingChallengeId] = useState<string | null>(null);
 
     // Google Health State
     const isGoogleConnected = !!userProfile.googleHealthConnected;
@@ -142,15 +144,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     }, [userProfile]);
 
     const handleDeleteChallenge = async (challengeId: string) => {
-        if (!userProfile.customChallenges) return;
-
-        if (window.confirm("Are you sure you want to delete this challenge?")) {
-            const updatedChallenges = userProfile.customChallenges.filter(c => c.id !== challengeId);
-            const updatedProfile = { ...userProfile, customChallenges: updatedChallenges };
-            // Optimistically update
-            onSave(updatedProfile);
-            await updateProfile(updatedProfile);
-        }
+        setDeletingChallengeId(challengeId);
     };
 
     useEffect(() => {
@@ -709,6 +703,25 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                 onClose={() => setShowPointsHistory(false)}
                 type="points"
                 logs={pointLogs}
+            />
+
+            <ConfirmPopup
+                isOpen={deletingChallengeId !== null}
+                title="Delete Challenge?"
+                message="Are you sure you want to delete this challenge?"
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={async () => {
+                    if (deletingChallengeId && userProfile.customChallenges) {
+                        const updatedChallenges = userProfile.customChallenges.filter(c => c.id !== deletingChallengeId);
+                        const updatedProfile = { ...userProfile, customChallenges: updatedChallenges };
+                        onSave(updatedProfile);
+                        await updateProfile(updatedProfile);
+                    }
+                    setDeletingChallengeId(null);
+                }}
+                onCancel={() => setDeletingChallengeId(null)}
             />
         </div>
     );

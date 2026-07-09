@@ -14,6 +14,7 @@ import { FeedLogItem } from './FeedLogItem';
 import { StatsDetailPopup } from './StatsDetailPopup';
 import { TribeVictoryPhoto } from './TribeVictoryPhoto';
 import { getAvatarPath } from '../utils/avatar';
+import { ConfirmPopup } from './ConfirmPopup';
 
 interface Props {
     currentUser: User;
@@ -90,6 +91,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
     const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
     const [userMoods, setUserMoods] = useState<Record<string, 'fire' | 'tired' | 'normal'>>({});
     const [gamificationState, setGamificationState] = useState<any>(null);
+    const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
 
     const [tribeMembers, setTribeMembers] = useState<string[]>([]);
     const [tribeInfo, setTribeInfo] = useState<Tribe | null>(null);
@@ -230,12 +232,8 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
     }, []);
 
     const handleDelete = useCallback(async (logId: string) => {
-        if (confirm("Are you sure you want to delete this workout? All associated points and badges will be reverted.")) {
-            await deleteLog(logId, profile);
-            loadData(true);
-            alert("Workout deleted successfully.");
-        }
-    }, [profile, loadData]);
+        setDeletingLogId(logId);
+    }, []);
 
     // Memoized Filtered List
     const displayedItems = useMemo(() => {
@@ -595,6 +593,24 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                     </div>
                 )}
             </div>
+
+            <ConfirmPopup
+                isOpen={deletingLogId !== null}
+                title="Delete Workout?"
+                message="Are you sure you want to delete this workout? All associated points and badges will be reverted."
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={async () => {
+                    if (deletingLogId) {
+                        await deleteLog(deletingLogId, profile);
+                        loadData(true);
+                        alert("Workout deleted successfully.");
+                    }
+                    setDeletingLogId(null);
+                }}
+                onCancel={() => setDeletingLogId(null)}
+            />
         </div >
     );
 });

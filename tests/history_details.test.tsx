@@ -97,10 +97,6 @@ describe('HistoryModal Detailed View', () => {
   });
 
   it('does not trigger expansion when delete button is clicked', () => {
-    // Mock window.confirm
-    const confirmSpy = vi.spyOn(window, 'confirm');
-    confirmSpy.mockImplementation(() => true);
-
     render(
       <HistoryModal
         isOpen={true}
@@ -112,16 +108,19 @@ describe('HistoryModal Detailed View', () => {
 
     const deleteBtn = within(screen.getByTestId('log-item-log1')).getByLabelText(/Delete log/i);
 
-    // Click delete button
+    // Click delete button (should show ConfirmPopup)
     fireEvent.click(deleteBtn);
+
+    // ConfirmPopup should be visible. Let's find the confirm button and click it
+    const confirmBtn = screen.getByTestId('confirm-popup-confirm-btn');
+    expect(confirmBtn).toBeInTheDocument();
+    fireEvent.click(confirmBtn);
 
     // Delete handler should be called
     expect(mockOnDelete).toHaveBeenCalledWith('log1');
 
     // Details should NOT expand (assumes propagation stopped)
     expect(screen.queryByTestId('log-details-log1')).toBeNull();
-
-    confirmSpy.mockRestore();
   });
 
   it('renders sets correctly with completed/failed styling', () => {

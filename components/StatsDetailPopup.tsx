@@ -84,7 +84,22 @@ export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs,
             const startOfWeek = new Date(now);
             startOfWeek.setDate(now.getDate() - now.getDay());
             startOfWeek.setHours(0, 0, 0, 0);
-            return (logs as WorkoutLog[]).filter(l => new Date(l.date) >= startOfWeek);
+            const startOfWeekISO = startOfWeek.toISOString();
+
+            // BOLT: Optimized using a single-pass loop with an early break.
+            // Since logs are sorted descending, we can stop as soon as we hit a log older than the current week.
+            // Performance: Improves from O(N_total) to O(N_week).
+            const filtered: WorkoutLog[] = [];
+            const workoutLogs = logs as WorkoutLog[];
+            for (let i = 0; i < workoutLogs.length; i++) {
+                const log = workoutLogs[i];
+                if (log.date >= startOfWeekISO) {
+                    filtered.push(log);
+                } else {
+                    break;
+                }
+            }
+            return filtered;
         }
 
         return logs;

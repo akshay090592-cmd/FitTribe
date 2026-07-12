@@ -6,15 +6,18 @@ import { supabase } from '../utils/supabaseClient';
 // Mock localStorage
 const localStorageMock = (() => {
     let store: Record<string, string> = {};
-    return {
+    const mock: any = {
         getItem: vi.fn((key: string) => store[key] || null),
         setItem: vi.fn((key: string, value: string) => {
             store[key] = value.toString();
+            mock[key] = value.toString();
         }),
         removeItem: vi.fn((key: string) => {
             delete store[key];
+            delete mock[key];
         }),
         clear: vi.fn(() => {
+            Object.keys(store).forEach(key => delete mock[key]);
             store = {};
         }),
         key: vi.fn((i: number) => Object.keys(store)[i] || null),
@@ -22,6 +25,7 @@ const localStorageMock = (() => {
             return Object.keys(store).length;
         }
     };
+    return mock;
 })();
 
 Object.defineProperty(window, 'localStorage', {
@@ -93,11 +97,27 @@ describe('Storage Utils Caching', () => {
         // expect(localStorageMock.getItem).not.toHaveBeenCalled(); // This is the goal
     });
 
-    it('should invalidate cache correctly', () => {
+    it('should invalidate cache correctly with a single pattern', () => {
         const key = 'test_invalidate';
         setInCache(key, 'value');
         invalidateCache(key);
         expect(getFromCache(key)).toBeNull();
+    });
+
+    it('should invalidate multiple cache entries with batched patterns', () => {
+        const key1 = 'batch_1';
+        const key2 = 'batch_2';
+        const key3 = 'other_key';
+
+        setInCache(key1, 'val1');
+        setInCache(key2, 'val2');
+        setInCache(key3, 'val3');
+
+        invalidateCache(['batch_1', 'batch_2']);
+
+        expect(getFromCache(key1)).toBeNull();
+        expect(getFromCache(key2)).toBeNull();
+        expect(getFromCache(key3)).toEqual('val3');
     });
 
     it('should cache getTeamStats results', async () => {

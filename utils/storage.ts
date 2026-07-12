@@ -105,23 +105,40 @@ export const setInCache = (key: string, data: any) => {
   }
 };
 
-export const invalidateCache = (keyPattern: string) => {
-  // Clear from Memory
-  Object.keys(memoryCache).forEach(key => {
-    if (key.includes(keyPattern)) {
-      delete memoryCache[key];
-    }
-  });
+/**
+ * BOLT: Optimized cache invalidation.
+ * - Supports batching multiple patterns to reduce synchronous localStorage scans (O(K*N) -> O(N)).
+ * - Uses Object.keys() to avoid repeated calls to the expensive localStorage.key() method.
+ */
+export const invalidateCache = (patterns: string | string[]) => {
+  const patternList = Array.isArray(patterns) ? patterns : [patterns];
 
-  // Clear from Persistence
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(CACHE_PREFIX) && (key.includes(keyPattern) || key === CACHE_PREFIX + keyPattern)) {
-      keysToRemove.push(key);
+  // Clear from Memory
+  const memoryKeys = Object.keys(memoryCache);
+  for (let i = 0; i < memoryKeys.length; i++) {
+    const key = memoryKeys[i];
+    for (let j = 0; j < patternList.length; j++) {
+      if (key.includes(patternList[j])) {
+        delete memoryCache[key];
+        break;
+      }
     }
   }
-  keysToRemove.forEach(key => localStorage.removeItem(key));
+
+  // Clear from Persistence
+  const localKeys = Object.keys(localStorage);
+  for (let i = 0; i < localKeys.length; i++) {
+    const key = localKeys[i];
+    if (key.startsWith(CACHE_PREFIX)) {
+      for (let j = 0; j < patternList.length; j++) {
+        const pattern = patternList[j];
+        if (key.includes(pattern) || key === CACHE_PREFIX + pattern) {
+          localStorage.removeItem(key);
+          break;
+        }
+      }
+    }
+  }
 };
 
 // --- REQUEST DEDUPLICATION ---
@@ -440,9 +457,8 @@ export const createProfile = async (
     points: 0
   });
 
-  invalidateCache(`profile_${userId}`);
-  invalidateCache('gamification');
-  invalidateCache(`tribe_members_${tribeId}`);
+  // BOLT: Batch invalidation to reduce localStorage I/O
+  invalidateCache([`profile_${userId}`, 'gamification', `tribe_members_${tribeId}`]);
 };
 
 export const updateProfile = async (profile: UserProfile) => {
@@ -675,8 +691,8 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
     const newLog = { ...log, id: mockId, user: userProfile.displayName };
     setInCache(cacheKey, [newLog, ...cached]);
 
-    invalidateCache('stats');
-    invalidateCache('gamification');
+    // BOLT: Batch invalidation to reduce localStorage I/O
+    invalidateCache(['stats', 'gamification']);
     return mockId;
   }
 
@@ -686,8 +702,8 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       type: 'SAVE_LOG',
       payload: { log, userProfile }
     });
-    invalidateCache('logs');
-    invalidateCache('stats');
+    // BOLT: Batch invalidation
+    invalidateCache(['logs', 'stats']);
     return log.id;
   }
 
@@ -708,17 +724,15 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
         type: 'SAVE_LOG',
         payload: { log, userProfile }
       });
-      invalidateCache('logs');
-      invalidateCache('stats');
+      // BOLT: Batch invalidation
+      invalidateCache(['logs', 'stats']);
       return log.id;
     }
 
     // Invalidate caches dependent on logs
-    invalidateCache('logs'); // Clears logs_global and logs_user_...
+    // BOLT: Batch all related invalidations in a single localStorage pass
     const logDateKey = log.date.split('T')[0];
-    invalidateCache(`logs_date_${logDateKey}`); // Invalidate today's cache if applicable
-    invalidateCache('stats'); // Clears any computed stats
-    invalidateCache('gamification'); // Gamification logic depends on logs
+    invalidateCache(['logs', `logs_date_${logDateKey}`, 'stats', 'gamification']);
 
     return data?.id;
   } catch (err) {
@@ -727,8 +741,8 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       type: 'SAVE_LOG',
       payload: { log, userProfile }
     });
-    invalidateCache('logs');
-    invalidateCache('stats');
+    // BOLT: Batch invalidation
+    invalidateCache(['logs', 'stats']);
     return log.id;
   }
 };
@@ -755,9 +769,8 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
     const updated = cached.map(l => l.id === log.id ? log : l);
     setInCache(cacheKey, updated);
   }
-  invalidateCache(`logs_user_${userProfile.displayName}`);
-  invalidateCache('stats');
-  invalidateCache('gamification');
+  // BOLT: Batch invalidation
+  invalidateCache([`logs_user_${userProfile.displayName}`, 'stats', 'gamification']);
 
   if (!navigator.onLine) {
     console.log("Offline: Queuing log update");
@@ -1169,8 +1182,8 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
     text: sanitizedText
   });
 
-  invalidateCache('comments_log_' + recordId);
-  invalidateCache('comment_counts'); // Clears global and tribe-specific caches
+  // BOLT: Batch invalidation
+  invalidateCache(['comments_log_' + recordId, 'comment_counts']);
 };
 
 // --- GAMIFICATION ---
@@ -1369,8 +1382,8 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
     message: sanitizedMessage
   });
 
-  invalidateCache('gifts');
-  invalidateCache('gamification'); // Sending a gift changes inventory
+  // BOLT: Batch invalidation
+  invalidateCache(['gifts', 'gamification']);
 };
 
 export const deleteLog = async (logId: string, userProfile: UserProfile) => {
@@ -1401,9 +1414,8 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
     console.error("Error fetching log to delete", fetchError);
     if (fetchError?.code === 'PGRST116' || !logData) {
       console.log("Log mismatch: Log not found in DB, removing from local cache to sync.");
-      invalidateCache('logs');
-      invalidateCache('stats');
-      invalidateCache('gamification');
+      // BOLT: Batch invalidation
+      invalidateCache(['logs', 'stats', 'gamification']);
     }
     return;
   }
@@ -1425,11 +1437,9 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
   // 3. Revert Gamification State
   await revertGamificationForLog(log, userProfile);
 
-  invalidateCache('logs');
+  // BOLT: Batch all related invalidations in a single localStorage pass
   const logDateKey = log.date.split('T')[0];
-  invalidateCache(`logs_date_${logDateKey}`);
-  invalidateCache('stats');
-  invalidateCache('gamification');
+  invalidateCache(['logs', `logs_date_${logDateKey}`, 'stats', 'gamification']);
 };
 
 export const processOfflineQueue = async () => {

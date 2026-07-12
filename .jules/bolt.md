@@ -37,3 +37,7 @@
 ## 2026-07-06 - Avoiding Concurrency Waterfalls in Multi-Request Effects
 **Learning:** Naively chaining async calls to avoid redundant internal processing (e.g., passing pre-fetched logs to a statistics utility) can inadvertently create network waterfalls if unrelated parallel requests are moved outside of a Promise.all block. This increases the total Time to Interactive even if individual calls are slightly faster.
 **Action:** Use independent promise variables for each data dependency and await them collectively with Promise.all. If one request depends on another, chain it (.then) within its own promise variable so it doesn't block unrelated parallel requests.
+
+## 2026-07-12 - Batched Cache Invalidation
+**Learning:** Successive calls to a cache invalidation function that iterates over all `localStorage` keys create a significant synchronous I/O bottleneck ($O(K \times N)$). Batching these patterns into a single pass ($O(N)$) and using `Object.keys(localStorage)` instead of the index-based `.key(i)` method significantly reduces main-thread blocking during critical storage operations.
+**Action:** Always prefer batching multiple related cache invalidations or storage updates into a single synchronous pass. Avoid repeated calls to `localStorage.key()` in large loops.

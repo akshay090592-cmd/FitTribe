@@ -37,3 +37,7 @@
 ## 2026-07-06 - Avoiding Concurrency Waterfalls in Multi-Request Effects
 **Learning:** Naively chaining async calls to avoid redundant internal processing (e.g., passing pre-fetched logs to a statistics utility) can inadvertently create network waterfalls if unrelated parallel requests are moved outside of a Promise.all block. This increases the total Time to Interactive even if individual calls are slightly faster.
 **Action:** Use independent promise variables for each data dependency and await them collectively with Promise.all. If one request depends on another, chain it (.then) within its own promise variable so it doesn't block unrelated parallel requests.
+
+## 2026-07-13 - Robust Batched Cache Invalidation
+**Learning:** Attempting to use `Object.keys(localStorage)` for optimized batch invalidation can fail in environments with certain `localStorage` mocks (like Vitest) that don't expose keys via standard Object methods. Sequential invalidation calls also created O(K * N) complexity, which is noticeable as the number of cached entities grows.
+**Action:** Prefer `localStorage.key(i)` within a `localStorage.length` loop for robust iteration across all environments. Support batching of patterns in a single pass to reduce complexity to O(N) for any number of invalidations.

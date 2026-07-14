@@ -37,9 +37,7 @@ export const processOfflineQueue = async () => {
     window.dispatchEvent(new Event('sync-end'));
 
     // Refresh caches after sync
-    invalidateCache('logs');
-    invalidateCache('stats');
-    invalidateCache('gamification');
+    invalidateCache(['logs', 'stats', 'gamification']);
 };
 
 const syncLog = async (payload: any): Promise<boolean> => {

@@ -105,10 +105,17 @@ export const setInCache = (key: string, data: any) => {
   }
 };
 
-export const invalidateCache = (keyPattern: string) => {
+/**
+ * BOLT: Supports batched invalidation of multiple cache patterns in a single pass.
+ * Reduces Synchronous I/O and memory iterations from O(K * N) to O(N) where K is
+ * the number of patterns and N is the total number of cache keys.
+ */
+export const invalidateCache = (patterns: string | string[]) => {
+  const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+
   // Clear from Memory
   Object.keys(memoryCache).forEach(key => {
-    if (key.includes(keyPattern)) {
+    if (patternArray.some(p => key.includes(p))) {
       delete memoryCache[key];
     }
   });
@@ -117,8 +124,10 @@ export const invalidateCache = (keyPattern: string) => {
   const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(CACHE_PREFIX) && (key.includes(keyPattern) || key === CACHE_PREFIX + keyPattern)) {
-      keysToRemove.push(key);
+    if (key && key.startsWith(CACHE_PREFIX)) {
+      if (patternArray.some(p => key.includes(p) || key === CACHE_PREFIX + p)) {
+        keysToRemove.push(key);
+      }
     }
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
@@ -440,9 +449,7 @@ export const createProfile = async (
     points: 0
   });
 
-  invalidateCache(`profile_${userId}`);
-  invalidateCache('gamification');
-  invalidateCache(`tribe_members_${tribeId}`);
+  invalidateCache([`profile_${userId}`, 'gamification', `tribe_members_${tribeId}`]);
 };
 
 export const updateProfile = async (profile: UserProfile) => {
@@ -675,8 +682,7 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
     const newLog = { ...log, id: mockId, user: userProfile.displayName };
     setInCache(cacheKey, [newLog, ...cached]);
 
-    invalidateCache('stats');
-    invalidateCache('gamification');
+    invalidateCache(['stats', 'gamification']);
     return mockId;
   }
 
@@ -686,8 +692,7 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       type: 'SAVE_LOG',
       payload: { log, userProfile }
     });
-    invalidateCache('logs');
-    invalidateCache('stats');
+    invalidateCache(['logs', 'stats']);
     return log.id;
   }
 
@@ -708,17 +713,13 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
         type: 'SAVE_LOG',
         payload: { log, userProfile }
       });
-      invalidateCache('logs');
-      invalidateCache('stats');
+      invalidateCache(['logs', 'stats']);
       return log.id;
     }
 
     // Invalidate caches dependent on logs
-    invalidateCache('logs'); // Clears logs_global and logs_user_...
     const logDateKey = log.date.split('T')[0];
-    invalidateCache(`logs_date_${logDateKey}`); // Invalidate today's cache if applicable
-    invalidateCache('stats'); // Clears any computed stats
-    invalidateCache('gamification'); // Gamification logic depends on logs
+    invalidateCache(['logs', `logs_date_${logDateKey}`, 'stats', 'gamification']);
 
     return data?.id;
   } catch (err) {
@@ -727,8 +728,7 @@ export const saveLog = async (log: WorkoutLog, userProfile: UserProfile): Promis
       type: 'SAVE_LOG',
       payload: { log, userProfile }
     });
-    invalidateCache('logs');
-    invalidateCache('stats');
+    invalidateCache(['logs', 'stats']);
     return log.id;
   }
 };
@@ -755,9 +755,7 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
     const updated = cached.map(l => l.id === log.id ? log : l);
     setInCache(cacheKey, updated);
   }
-  invalidateCache(`logs_user_${userProfile.displayName}`);
-  invalidateCache('stats');
-  invalidateCache('gamification');
+  invalidateCache([`logs_user_${userProfile.displayName}`, 'stats', 'gamification']);
 
   if (!navigator.onLine) {
     console.log("Offline: Queuing log update");
@@ -1169,8 +1167,7 @@ export const addComment = async (logId: string, text: string, profile: UserProfi
     text: sanitizedText
   });
 
-  invalidateCache('comments_log_' + recordId);
-  invalidateCache('comment_counts'); // Clears global and tribe-specific caches
+  invalidateCache(['comments_log_' + recordId, 'comment_counts']);
 };
 
 // --- GAMIFICATION ---
@@ -1369,8 +1366,7 @@ export const sendGift = async (profile: UserProfile, transaction: GiftTransactio
     message: sanitizedMessage
   });
 
-  invalidateCache('gifts');
-  invalidateCache('gamification'); // Sending a gift changes inventory
+  invalidateCache(['gifts', 'gamification']);
 };
 
 export const deleteLog = async (logId: string, userProfile: UserProfile) => {
@@ -1401,9 +1397,7 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
     console.error("Error fetching log to delete", fetchError);
     if (fetchError?.code === 'PGRST116' || !logData) {
       console.log("Log mismatch: Log not found in DB, removing from local cache to sync.");
-      invalidateCache('logs');
-      invalidateCache('stats');
-      invalidateCache('gamification');
+      invalidateCache(['logs', 'stats', 'gamification']);
     }
     return;
   }
@@ -1425,11 +1419,8 @@ export const deleteLog = async (logId: string, userProfile: UserProfile) => {
   // 3. Revert Gamification State
   await revertGamificationForLog(log, userProfile);
 
-  invalidateCache('logs');
   const logDateKey = log.date.split('T')[0];
-  invalidateCache(`logs_date_${logDateKey}`);
-  invalidateCache('stats');
-  invalidateCache('gamification');
+  invalidateCache(['logs', `logs_date_${logDateKey}`, 'stats', 'gamification']);
 };
 
 export const processOfflineQueue = async () => {

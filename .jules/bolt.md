@@ -37,3 +37,10 @@
 ## 2026-07-06 - Avoiding Concurrency Waterfalls in Multi-Request Effects
 **Learning:** Naively chaining async calls to avoid redundant internal processing (e.g., passing pre-fetched logs to a statistics utility) can inadvertently create network waterfalls if unrelated parallel requests are moved outside of a Promise.all block. This increases the total Time to Interactive even if individual calls are slightly faster.
 **Action:** Use independent promise variables for each data dependency and await them collectively with Promise.all. If one request depends on another, chain it (.then) within its own promise variable so it doesn't block unrelated parallel requests.
+## 2026-07-14 - Batched Cache Invalidation
+**Learning:** Sequential calls to  for related data (logs, stats, gamification) trigger multiple full scans of both  and . For a user with many cached entities, this creates redundant synchronous I/O and CPU overhead on the main thread.
+**Action:** Always support batched operations for storage-level utilities. By using  and a single-pass loop, complexity is reduced from (K \times N)$ to (N)$, ensuring that complex state updates remain performant as the cache size grows.
+
+## 2026-07-14 - Batched Cache Invalidation
+**Learning:** Sequential calls to 'invalidateCache' for related data (logs, stats, gamification) trigger multiple full scans of both 'memoryCache' and 'localStorage'. For a user with many cached entities, this creates redundant synchronous I/O and CPU overhead on the main thread.
+**Action:** Always support batched operations for storage-level utilities. By using 'string | string[]' and a single-pass loop, complexity is reduced from O(K * N) to O(N), ensuring that complex state updates remain performant as the cache size grows.

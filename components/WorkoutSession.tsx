@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, WorkoutPlan, ExerciseRecord, WorkoutLog, ExerciseSet, Badge, UserProfile, WorkoutType } from '../types';
 import { ExerciseCard } from './ExerciseCard';
@@ -114,6 +114,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [loading, setLoading] = useState(!savedSession);
 
   const [records, setRecords] = useState<ExerciseRecord[]>(savedSession?.records || []);
+  const recordsRef = useRef(records);
+  useEffect(() => {
+    recordsRef.current = records;
+  }, [records]);
 
   // Timer hooks
   const workoutTimer = useTimer({
@@ -359,9 +363,16 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   // BOLT: Extract reset to a stable reference to prevent handleSetComplete from changing every second.
   const restTimerReset = restTimer.reset;
 
+  /**
+   * BOLT: Optimized handleSetComplete to use a ref for records.
+   * This stabilizes the callback reference, preventing all memoized WorkoutExerciseItem
+   * components from re-rendering every time a single set is updated.
+   * Performance Impact: Reduces re-renders of the exercise list by O(N).
+   */
   const handleSetComplete = useCallback((exerciseIndex: number, setIndex: number) => {
     const currentEx = plan.exercises[exerciseIndex];
     let nextRest = currentEx.restSeconds || 60;
+    const currentRecords = recordsRef.current;
 
     if (currentEx.isSuperset) {
       const groupIndices = plan.exercises.map((e, i) => ({ ...e, idx: i }))
@@ -371,11 +382,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // Check if ALL other exercises in the group have this set completed
       const othersCompleted = groupIndices
         .filter(idx => idx !== exerciseIndex)
-        .every(idx => records[idx]?.sets[setIndex]?.completed);
+        .every(idx => currentRecords[idx]?.sets[setIndex]?.completed);
 
       if (!othersCompleted) {
         // Find the next incomplete exercise in the group to expand
-        const nextExIdx = groupIndices.find(idx => idx !== exerciseIndex && !records[idx]?.sets[setIndex]?.completed);
+        const nextExIdx = groupIndices.find(idx => idx !== exerciseIndex && !currentRecords[idx]?.sets[setIndex]?.completed);
         if (nextExIdx !== undefined && plan.exercises[nextExIdx]) {
           setExpandedExerciseId(plan.exercises[nextExIdx].name);
         } else {
@@ -391,8 +402,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         nextRest = 90; // Standard superset rest
         // Expand the first exercise for the NEXT set?
         const firstExIdx = groupIndices[0];
-        if (records[firstExIdx]) {
-          const firstRecord = records[firstExIdx];
+        if (currentRecords[firstExIdx]) {
+          const firstRecord = currentRecords[firstExIdx];
           if (setIndex < firstRecord.sets.length - 1) {
             setExpandedExerciseId(plan.exercises[firstExIdx].name);
           }
@@ -404,7 +415,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     // Explicitly reset and start the timer
     restTimerReset(nextRest, true);
     setShowRestTimer(true);
-  }, [plan.exercises, restTimerReset, records]);
+  }, [plan.exercises, restTimerReset]);
 
   const toggleAccordion = useCallback((name: string) => {
     setExpandedExerciseId(prev => prev === name ? null : name);

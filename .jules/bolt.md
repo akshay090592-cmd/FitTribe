@@ -44,3 +44,7 @@
 ## 2026-07-14 - Batched Cache Invalidation
 **Learning:** Sequential calls to 'invalidateCache' for related data (logs, stats, gamification) trigger multiple full scans of both 'memoryCache' and 'localStorage'. For a user with many cached entities, this creates redundant synchronous I/O and CPU overhead on the main thread.
 **Action:** Always support batched operations for storage-level utilities. By using 'string | string[]' and a single-pass loop, complexity is reduced from O(K * N) to O(N), ensuring that complex state updates remain performant as the cache size grows.
+
+## 2026-07-22 - Stabilizing WorkoutSession Callbacks
+**Learning:** Passing state-dependent callbacks (like 'onSetComplete' which used 'records') to a long list of memoized child components causes a full list re-render whenever *any* item in the state changes. Even if children are wrapped in 'React.memo', they receive a new callback reference every time.
+**Action:** Use 'useRef' to maintain a stable reference to frequently changing state for use in callbacks that are passed deep into the component tree. This decouples the callback's identity from the state's value, preserving the effectiveness of 'React.memo' on list items.

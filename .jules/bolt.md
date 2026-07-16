@@ -48,3 +48,7 @@
 ## 2026-07-22 - Stabilizing WorkoutSession Callbacks
 **Learning:** Passing state-dependent callbacks (like 'onSetComplete' which used 'records') to a long list of memoized child components causes a full list re-render whenever *any* item in the state changes. Even if children are wrapped in 'React.memo', they receive a new callback reference every time.
 **Action:** Use 'useRef' to maintain a stable reference to frequently changing state for use in callbacks that are passed deep into the component tree. This decouples the callback's identity from the state's value, preserving the effectiveness of 'React.memo' on list items.
+
+## 2026-07-23 - Optimized Timer Interval Lifecycle
+**Learning:** Including a frequently ticking state (like 'seconds') in a 'useEffect' dependency array that manages a 'setInterval' causes the interval to be destroyed and recreated every single tick. For a long-running timer like a workout stopwatch, this creates significant unnecessary CPU churn and pressure on the React reconciler. Stabilizing the effect dependencies while maintaining accuracy requires calculating 'elapsed' time from a stable reference timestamp.
+**Action:** Exclude ticking 'seconds' from timer effect dependencies. Use a reference timestamp (like 'startTime') and 'Date.now()' inside the interval to calculate the current value. Implement a guard in 'setState' to only trigger a re-render when the integer second value actually changes. Stabilize callbacks like 'onComplete' using 'useRef' to prevent accidental interval resets.

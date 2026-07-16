@@ -30,8 +30,6 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
     const [duration, setDuration] = useState<number>(30);
     const [intensity, setIntensity] = useState<number>(5);
     const [customOtherActivity, setCustomOtherActivity] = useState<string>('');
-    const [calories, setCalories] = useState<number>(0);
-    const [vibes, setVibes] = useState<number>(0);
     const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
     const [isSavingFavorite, setIsSavingFavorite] = useState(false);
     const [newFavoriteName, setNewFavoriteName] = useState('');
@@ -78,27 +76,26 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
         };
     }, [isOpen, currentUser]);
 
-    useEffect(() => {
-        if (!userProfile) return;
+    /**
+     * BOLT: Optimized derived state calculation.
+     * Replaced useEffect + useState with useMemo to eliminate a redundant render cycle
+     * during high-frequency interactions (like dragging the intensity slider).
+     */
+    const { calories, vibes } = React.useMemo(() => {
+        if (!userProfile) return { calories: 0, vibes: 0 };
 
         if (mode === 'wellbeing') {
             const vibeScore = Math.round(duration * (intensity / 5));
-            setVibes(vibeScore);
-            setCalories(0);
+            return { calories: 0, vibes: vibeScore };
         } else {
             const baseMet = MET_VALUES[activity] || 5;
-            // Adjust MET slightly by intensity
-            // Intensity 1-10. 5 is standard.
-            // Range 0.8x to 1.2x seems reasonable for a slider without changing the activity name
             const intensityMultiplier = 0.8 + (intensity / 10) * 0.4;
             const adjustedMet = baseMet * intensityMultiplier;
 
             const burned = calculateCalories(userProfile, adjustedMet, duration);
-            setCalories(burned);
-            setVibes(0);
+            return { calories: burned, vibes: 0 };
         }
-
-    }, [activity, duration, intensity, userProfile]);
+    }, [activity, duration, intensity, userProfile, mode]);
 
     const handleSaveFavorite = () => {
         if (!newFavoriteName.trim()) return;

@@ -114,7 +114,18 @@ export const useTimer = ({
         sessionStorage.setItem(timerId, JSON.stringify({ ...state, initialSecondsManaged }));
     }, [state.isActive, state.startTime, state.pauseTime, timerId, initialSecondsManaged]);
 
+    const onCompleteRef = useRef(onComplete);
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
     // Timer logic
+    /**
+     * BOLT: Optimized timer interval management.
+     * Removed 'state.seconds' from dependencies to prevent interval recreation every second.
+     * Uses 'initialSecondsManaged' and 'startTime' to calculate time-of-flight, ensuring
+     * accuracy across tab-switching and backgrounding without continuous side-effect churn.
+     */
     useEffect(() => {
         let interval: any = null;
 
@@ -122,23 +133,31 @@ export const useTimer = ({
             interval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - state.startTime!) / 1000);
 
-                if (type === 'countdown') {
-                    const newSeconds = Math.max(0, initialSecondsManaged - elapsed);
-                    setState(prev => ({ ...prev, seconds: newSeconds }));
-                } else {
-                    setState(prev => ({ ...prev, seconds: elapsed }));
+                if (type === 'countdown' && elapsed >= initialSecondsManaged) {
+                    playBeep();
+                    if (onCompleteRef.current) onCompleteRef.current();
+                    setState(prev => ({
+                        ...prev,
+                        seconds: 0,
+                        isActive: false,
+                        pauseTime: Date.now()
+                    }));
+                    return;
                 }
+
+                const newSeconds = type === 'countdown'
+                    ? initialSecondsManaged - elapsed
+                    : elapsed;
+
+                setState(prev => {
+                    if (prev.seconds === newSeconds) return prev;
+                    return { ...prev, seconds: newSeconds };
+                });
             }, 1000);
         }
 
-        if (type === 'countdown' && state.seconds <= 0 && state.isActive) {
-            playBeep();
-            setState(prev => ({ ...prev, isActive: false, pauseTime: Date.now() }));
-            if (onComplete) onComplete();
-        }
-
         return () => clearInterval(interval);
-    }, [state.isActive, state.startTime, state.seconds, onComplete, type, initialSecondsManaged, playBeep]);
+    }, [state.isActive, state.startTime, type, initialSecondsManaged, playBeep]);
 
     // Visibility change
     useEffect(() => {

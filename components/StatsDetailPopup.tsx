@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { WorkoutLog, WorkoutType, XPLog, PointLog } from '../types';
 import { X, Calendar, Activity, Zap, TrendingUp, CheckCircle, XCircle, Star, ShoppingBag, Flame, Trophy, Lock, Heart } from 'lucide-react';
 import { XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculatePoints } from '../utils/gamification';
@@ -13,7 +13,8 @@ interface Props {
     xpBreakdown?: Map<string, { base: number, bonus: number, total: number, streak: number }>;
 }
 
-export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs, title: customTitle, xpBreakdown }) => {
+// Performance Optimization: Wrap in React.memo to prevent redundant re-renders of the detailed stats list on parent view changes.
+export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, logs, title: customTitle, xpBreakdown }) => {
     if (!isOpen) return null;
 
     const title = customTitle || {
@@ -205,4 +206,4 @@ export const StatsDetailPopup: React.FC<Props> = ({ isOpen, onClose, type, logs,
             </div>
         </div>
     );
-};
+});

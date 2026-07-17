@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { WorkoutLog } from '../types';
 import { monthLongYearFormatter } from '../utils/dateUtils';
@@ -7,7 +7,8 @@ interface Props {
     logs: WorkoutLog[];
 }
 
-export const Calendar: React.FC<Props> = ({ logs }) => {
+// Performance Optimization: Wrap in React.memo to prevent unnecessary re-renders of the Calendar view on global state updates in App.tsx when the logs prop reference is identical.
+export const Calendar: React.FC<Props> = memo(({ logs }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const { daysInMonth, startDay, monthLabel, workoutDays } = useMemo(() => {
@@ -127,4 +128,4 @@ export const Calendar: React.FC<Props> = ({ logs }) => {
             </div>
         </div>
     );
-};
+});

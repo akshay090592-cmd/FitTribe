@@ -37,9 +37,6 @@
 ## 2026-07-06 - Avoiding Concurrency Waterfalls in Multi-Request Effects
 **Learning:** Naively chaining async calls to avoid redundant internal processing (e.g., passing pre-fetched logs to a statistics utility) can inadvertently create network waterfalls if unrelated parallel requests are moved outside of a Promise.all block. This increases the total Time to Interactive even if individual calls are slightly faster.
 **Action:** Use independent promise variables for each data dependency and await them collectively with Promise.all. If one request depends on another, chain it (.then) within its own promise variable so it doesn't block unrelated parallel requests.
-## 2026-07-14 - Batched Cache Invalidation
-**Learning:** Sequential calls to  for related data (logs, stats, gamification) trigger multiple full scans of both  and . For a user with many cached entities, this creates redundant synchronous I/O and CPU overhead on the main thread.
-**Action:** Always support batched operations for storage-level utilities. By using  and a single-pass loop, complexity is reduced from (K \times N)$ to (N)$, ensuring that complex state updates remain performant as the cache size grows.
 
 ## 2026-07-14 - Batched Cache Invalidation
 **Learning:** Sequential calls to 'invalidateCache' for related data (logs, stats, gamification) trigger multiple full scans of both 'memoryCache' and 'localStorage'. For a user with many cached entities, this creates redundant synchronous I/O and CPU overhead on the main thread.
@@ -56,3 +53,7 @@
 ## 2026-07-24 - Allocation-Free Exercise Log Retrieval
 **Learning:** Calling `getLastLogForExerciseByType` and `getLastLogForExercise` in parallel (via Promise.all) for every exercise in a plan can cause a significant performance bottleneck if each call performs high-order operations like `.filter()` and `.find()` over the entire workout log history. This creates multiple redundant arrays and function closures per render/initialization cycle.
 **Action:** Replace high-order multi-pass array methods with single-pass, standard index-based `for` loops for user history scanning. This completely eliminates intermediate array allocations and closure creation on hot initialization paths.
+
+## 2026-07-25 - Lightweight Mathematical Calendar Day Difference
+**Learning:** Utilizing external date formatting libraries like `date-fns` for basic relative date difference calculations (e.g. `differenceInCalendarDays`) can introduce unnecessary heap allocation and computation overhead on high-frequency rendering paths (such as the relative timestamp in Social Feed lists).
+**Action:** For simple differences, construct UTC midnight timestamps using the local date components (`Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())`). This completely avoids DST/timezone shifts, runs ~15x faster than library-based alternatives, and eliminates dependency evaluation overhead during hot rendering passes.

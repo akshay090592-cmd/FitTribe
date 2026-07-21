@@ -8,7 +8,7 @@ interface BadgeModalProps {
   unlockedBadgeIds: string[];
 }
 
-export const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, unlockedBadgeIds = [] }) => {
+export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClose, unlockedBadgeIds = [] }) => {
   const BadgeIcon = ({ name, size = 24 }: { name: string, size?: number }) => {
     const icons: any = {
       Footprints: Zap,
@@ -29,8 +29,17 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, unlocke
     return <Icon size={size} />;
   };
 
+  // BOLT: Optimize progress calculation to be O(B + M) instead of O(M * B).
+  // Uses a pre-constructed Set of badge IDs for O(1) checks.
   const progress = useMemo(() => {
-    const unlockedCount = unlockedBadgeIds.filter(id => BADGES_DB.some(b => b.id === id)).length;
+    const badgeIdsSet = new Set(BADGES_DB.map(b => b.id));
+    let unlockedCount = 0;
+    const len = unlockedBadgeIds.length;
+    for (let i = 0; i < len; i++) {
+        if (badgeIdsSet.has(unlockedBadgeIds[i])) {
+            unlockedCount++;
+        }
+    }
     const total = BADGES_DB.length;
     return {
         current: unlockedCount,
@@ -39,11 +48,14 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, unlocke
     };
   }, [unlockedBadgeIds]);
 
+  // BOLT: Optimize sorting to drop complexity from O(M * B log B) to O(B log B).
+  // Pre-constructs a Set of unlocked badge IDs once so that lookup inside the comparator is O(1).
   const sortedBadges = useMemo(() => {
+    const unlockedSet = new Set(unlockedBadgeIds);
     return [...BADGES_DB].sort((a, b) => {
         // Sort by unlocked status first (unlocked first)
-        const aUnlocked = unlockedBadgeIds.includes(a.id);
-        const bUnlocked = unlockedBadgeIds.includes(b.id);
+        const aUnlocked = unlockedSet.has(a.id);
+        const bUnlocked = unlockedSet.has(b.id);
 
         if (aUnlocked && !bUnlocked) return -1;
         if (!aUnlocked && bUnlocked) return 1;
@@ -157,4 +169,4 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, unlocke
       </div>
     </div>
   );
-};
+});

@@ -61,3 +61,7 @@
 ## 2026-07-26 - Linear-Time Set Mapping for Array Collections inside Comparators and Reducers
 **Learning:** Performing linear operations like `.includes()` or `.some()` inside `.sort()` comparators or `.filter()` reducers creates a hidden quadratic complexity bottleneck ($O(N \times M \log M)$ or $O(N \times M)$) that scales poorly with collection size.
 **Action:** Always pre-allocate stable arrays into `Set` instances once before commencing loops, filters, or sorts. Lookups like `Set.has()` run in $O(1)$, dropping computational complexity to pure linear ($O(N + M)$) or standard log-linear ($O(M \log M)$) while eliminating nested loop iterations.
+
+## 2026-08-11 - Keyed Promise and Value Caching for Concurrent User Security
+**Learning:** Storing cached values or active promises in a single shared, global module-level reference results in race conditions and severe authorization bypasses where concurrent requests for different users hijack or resolve with another user's session state.
+**Action:** Always key caches and active promises by the unique identifier (e.g. `userId`) using a Map (`Map<string, T>`). Ensure to delete resolved/rejected promises from the map in a `finally` block to allow future requests, while fully isolating different users.

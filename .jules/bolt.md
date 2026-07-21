@@ -57,3 +57,7 @@
 ## 2026-07-25 - Lightweight Mathematical Calendar Day Difference
 **Learning:** Utilizing external date formatting libraries like `date-fns` for basic relative date difference calculations (e.g. `differenceInCalendarDays`) can introduce unnecessary heap allocation and computation overhead on high-frequency rendering paths (such as the relative timestamp in Social Feed lists).
 **Action:** For simple differences, construct UTC midnight timestamps using the local date components (`Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())`). This completely avoids DST/timezone shifts, runs ~15x faster than library-based alternatives, and eliminates dependency evaluation overhead during hot rendering passes.
+
+## 2026-07-26 - Linear-Time Set Mapping for Array Collections inside Comparators and Reducers
+**Learning:** Performing linear operations like `.includes()` or `.some()` inside `.sort()` comparators or `.filter()` reducers creates a hidden quadratic complexity bottleneck ($O(N \times M \log M)$ or $O(N \times M)$) that scales poorly with collection size.
+**Action:** Always pre-allocate stable arrays into `Set` instances once before commencing loops, filters, or sorts. Lookups like `Set.has()` run in $O(1)$, dropping computational complexity to pure linear ($O(N + M)$) or standard log-linear ($O(M \log M)$) while eliminating nested loop iterations.

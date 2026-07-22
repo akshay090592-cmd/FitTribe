@@ -65,3 +65,7 @@
 ## 2026-08-11 - Keyed Promise and Value Caching for Concurrent User Security
 **Learning:** Storing cached values or active promises in a single shared, global module-level reference results in race conditions and severe authorization bypasses where concurrent requests for different users hijack or resolve with another user's session state.
 **Action:** Always key caches and active promises by the unique identifier (e.g. `userId`) using a Map (`Map<string, T>`). Ensure to delete resolved/rejected promises from the map in a `finally` block to allow future requests, while fully isolating different users.
+
+## 2026-08-12 - Consolidating Multiple Linear Scans into Single-Pass Loops
+**Learning:** Performing multiple independent linear array scans (using `.some()`, `.filter()`, or `.includes()`) in utility functions that check history-dependent milestones (such as badge achievements) introduces significant computational and allocation overhead (e.g. repeated `Date` parsing). This scales poorly as history grows.
+**Action:** Consolidate multiple distinct historical checks into optimized single-pass loops. Use local boolean flags to track the status of target conditions, eliminating linear array checks within loop bodies, and enable early break conditions once all goals are satisfied.

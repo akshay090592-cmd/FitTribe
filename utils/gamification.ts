@@ -702,35 +702,61 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
     }
   }
 
-  // 3. Time Based (Current log check first, then O(N) catch-up only if needed)
+  // 3. Time Based (Current log check first, then O(N) single-pass catch-up only if needed)
   const logDateObj = new Date(log.date);
   const logHour = logDateObj.getHours();
   const logDay = logDateObj.getDay();
 
-  if (!userState.badges.includes('early_bird')) {
-    if (logHour < 8) unlock('early_bird');
-    else if (userLogs.some(l => new Date(l.date).getHours() < 8)) unlock('early_bird');
+  let checkEarlyBird = !userState.badges.includes('early_bird');
+  let checkNightOwl = !userState.badges.includes('night_owl');
+  let checkLunchBreak = !userState.badges.includes('lunch_break');
+  let checkWeekendWarrior = !userState.badges.includes('weekend_warrior');
+
+  // Check current log first
+  if (checkEarlyBird && logHour < 8) {
+    unlock('early_bird');
+    checkEarlyBird = false;
+  }
+  if (checkNightOwl && logHour >= 20) {
+    unlock('night_owl');
+    checkNightOwl = false;
+  }
+  if (checkLunchBreak && logHour >= 11 && logHour < 13) {
+    unlock('lunch_break');
+    checkLunchBreak = false;
+  }
+  if (checkWeekendWarrior && (logDay === 0 || logDay === 6)) {
+    unlock('weekend_warrior');
+    checkWeekendWarrior = false;
   }
 
-  if (!userState.badges.includes('night_owl')) {
-    if (logHour >= 20) unlock('night_owl');
-    else if (userLogs.some(l => new Date(l.date).getHours() >= 20)) unlock('night_owl');
-  }
+  // Only scan history in a single pass if there are remaining badges to check
+  if (checkEarlyBird || checkNightOwl || checkLunchBreak || checkWeekendWarrior) {
+    for (let i = 0; i < userLogs.length; i++) {
+      if (!checkEarlyBird && !checkNightOwl && !checkLunchBreak && !checkWeekendWarrior) break;
 
-  if (!userState.badges.includes('lunch_break')) {
-    if (logHour >= 11 && logHour < 13) unlock('lunch_break');
-    else if (userLogs.some(l => {
-      const h = new Date(l.date).getHours();
-      return h >= 11 && h < 13;
-    })) unlock('lunch_break');
-  }
+      const l = userLogs[i];
+      const d = new Date(l.date);
+      const h = d.getHours();
+      const day = d.getDay();
 
-  if (!userState.badges.includes('weekend_warrior')) {
-    if (logDay === 0 || logDay === 6) unlock('weekend_warrior');
-    else if (userLogs.some(l => {
-      const d = new Date(l.date).getDay();
-      return d === 0 || d === 6;
-    })) unlock('weekend_warrior');
+      if (checkEarlyBird && h < 8) {
+        unlock('early_bird');
+        checkEarlyBird = false;
+      }
+      if (checkNightOwl && h >= 20) {
+        unlock('night_owl');
+        checkNightOwl = false;
+      }
+      if (checkLunchBreak && h >= 11 && h < 13) {
+        unlock('lunch_break');
+        checkLunchBreak = false;
+      }
+      if (checkWeekendWarrior && (day === 0 || day === 6)) {
+        unlock('weekend_warrior');
+        checkWeekendWarrior = false;
+      }
+    }
   }
 
   // 4. Streak
@@ -741,27 +767,42 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
   // 5. Volume (Century Club & Heavy Lifter) - ONLY for Gym Workouts
   // BOLT: Check current log first to avoid history scan
+  let hasCentury = userState.badges.includes('century_club');
+  let hasHeavy = userState.badges.includes('heavy_lifter');
+
   if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE && log.exercises) {
     const currentVolume = log.exercises.reduce((acc, ex) =>
       acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
       , 0);
-    if (currentVolume >= 1000) unlock('century_club');
-    if (currentVolume >= 5000) unlock('heavy_lifter');
+    if (currentVolume >= 1000) {
+      unlock('century_club');
+      hasCentury = true;
+    }
+    if (currentVolume >= 5000) {
+      unlock('heavy_lifter');
+      hasHeavy = true;
+    }
   }
 
-  // BOLT: Catch-up for volume badges only if they are not yet earned
-  if (!userState.badges.includes('century_club') || !userState.badges.includes('heavy_lifter')) {
+  // BOLT: Catch-up for volume badges only if they are not yet earned, using fast boolean flags
+  if (!hasCentury || !hasHeavy) {
     for (let i = 0; i < userLogs.length; i++) {
+      if (hasCentury && hasHeavy) break;
+
       const l = userLogs[i];
       if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
         const volume = l.exercises.reduce((acc, ex) =>
           acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
           , 0);
-        if (volume >= 1000) unlock('century_club');
-        if (volume >= 5000) unlock('heavy_lifter');
+        if (!hasCentury && volume >= 1000) {
+          unlock('century_club');
+          hasCentury = true;
+        }
+        if (!hasHeavy && volume >= 5000) {
+          unlock('heavy_lifter');
+          hasHeavy = true;
+        }
       }
-      // If both are now unlocked, we can stop
-      if (userState.badges.includes('century_club') && userState.badges.includes('heavy_lifter')) break;
     }
   }
 
@@ -770,15 +811,33 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   if (teamStats.weeklyCount >= teamStats.weeklyTarget && (teamStats.userStats[userProfile.displayName] || 0) > 0) unlock('team_player');
   if (teamStats.monthlyCount >= teamStats.monthlyTarget && teamStats.monthlyCount > 0) unlock('goal_crusher');
 
-  // 7. Calorie & Duration (Check current log first)
-  if (!userState.badges.includes('calorie_crusher')) {
-    if ((log.calories || 0) >= 500) unlock('calorie_crusher');
-    else if (userLogs.some(l => (l.calories || 0) >= 500)) unlock('calorie_crusher');
+  // 7. Calorie & Duration (Check current log first, then single-pass catch-up only if needed)
+  let checkCalorie = !userState.badges.includes('calorie_crusher');
+  let checkLongHaul = !userState.badges.includes('long_haul');
+
+  if (checkCalorie && (log.calories || 0) >= 500) {
+    unlock('calorie_crusher');
+    checkCalorie = false;
+  }
+  if (checkLongHaul && (log.durationMinutes || 0) >= 90) {
+    unlock('long_haul');
+    checkLongHaul = false;
   }
 
-  if (!userState.badges.includes('long_haul')) {
-    if ((log.durationMinutes || 0) >= 90) unlock('long_haul');
-    else if (userLogs.some(l => (l.durationMinutes || 0) >= 90)) unlock('long_haul');
+  if (checkCalorie || checkLongHaul) {
+    for (let i = 0; i < userLogs.length; i++) {
+      if (!checkCalorie && !checkLongHaul) break;
+
+      const l = userLogs[i];
+      if (checkCalorie && (l.calories || 0) >= 500) {
+        unlock('calorie_crusher');
+        checkCalorie = false;
+      }
+      if (checkLongHaul && (l.durationMinutes || 0) >= 90) {
+        unlock('long_haul');
+        checkLongHaul = false;
+      }
+    }
   }
 
   // 9. Consistency King (3 workouts/week for 4 weeks)

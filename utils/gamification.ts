@@ -1112,43 +1112,90 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
     if (commitBadge) keptBadges.push(commitBadge);
   }
 
-  // Check rules again
-  if (sortedLogs.length >= 1) keptBadges.push('first_step');
-
+  // BOLT: Optimize by consolidating multiple distinct linear scans and Date allocations
+  // into a single-pass loop. Uses fast ISO string comparison for calendar day check.
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const recentLogs = sortedLogs.filter(l => new Date(l.date) > oneWeekAgo);
-  if (recentLogs.length >= 3) keptBadges.push('week_warrior');
+  const oneWeekAgoISO = oneWeekAgo.toISOString();
 
-  if (sortedLogs.some(l => new Date(l.date).getHours() < 8)) keptBadges.push('early_bird');
-  if (sortedLogs.some(l => new Date(l.date).getHours() >= 20)) keptBadges.push('night_owl');
+  let hasEarlyBird = false;
+  let hasNightOwl = false;
+  let hasWeekendWarrior = false;
+  let hasLunchBreak = false;
+  let hasLongHaul = false;
+  let hasCalorieCrusher = false;
+  let hasCenturyClub = false;
+  let hasHeavyLifter = false;
+  let weekWarriorCount = 0;
+
+  for (let i = 0; i < sortedLogs.length; i++) {
+    const l = sortedLogs[i];
+
+    if ((l.durationMinutes || 0) >= 90) {
+      hasLongHaul = true;
+    }
+
+    if ((l.calories || 0) >= 500) {
+      hasCalorieCrusher = true;
+    }
+
+    const logDateObj = new Date(l.date);
+    const hour = logDateObj.getHours();
+    const day = logDateObj.getDay();
+
+    if (logDateObj >= oneWeekAgo) {
+      weekWarriorCount++;
+    }
+
+    if (hour < 8) {
+      hasEarlyBird = true;
+    }
+    if (hour >= 20) {
+      hasNightOwl = true;
+    }
+    if (day === 0 || day === 6) {
+      hasWeekendWarrior = true;
+    }
+    if (hour >= 11 && hour < 13) {
+      hasLunchBreak = true;
+    }
+
+    if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
+      let volume = 0;
+      for (let j = 0; j < l.exercises.length; j++) {
+        const ex = l.exercises[j];
+        if (ex.sets) {
+          for (let k = 0; k < ex.sets.length; k++) {
+            const s = ex.sets[k];
+            if (s.completed) {
+              volume += s.weight * s.reps;
+            }
+          }
+        }
+      }
+      if (volume >= 1000) {
+        hasCenturyClub = true;
+      }
+      if (volume >= 5000) {
+        hasHeavyLifter = true;
+      }
+    }
+  }
+
+  if (sortedLogs.length >= 1) keptBadges.push('first_step');
+  if (weekWarriorCount >= 3) keptBadges.push('week_warrior');
+  if (hasEarlyBird) keptBadges.push('early_bird');
+  if (hasNightOwl) keptBadges.push('night_owl');
+  if (hasCenturyClub) keptBadges.push('century_club');
+  if (hasHeavyLifter) keptBadges.push('heavy_lifter');
+  if (hasWeekendWarrior) keptBadges.push('weekend_warrior');
+  if (hasLunchBreak) keptBadges.push('lunch_break');
+  if (hasLongHaul) keptBadges.push('long_haul');
+  if (hasCalorieCrusher) keptBadges.push('calorie_crusher');
 
   const currentStreak = await getStreaks(userProfile.displayName as User, sortedLogs);
   if (currentStreak >= 5) keptBadges.push('streak_5');
   if (currentStreak >= 10) keptBadges.push('streak_10');
-
-  sortedLogs.forEach(l => {
-    if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE) {
-      const volume = l.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
-      if (volume >= 1000) keptBadges.push('century_club');
-      if (volume >= 5000) keptBadges.push('heavy_lifter');
-    }
-  });
-
-  if (sortedLogs.some(l => {
-    const d = new Date(l.date).getDay();
-    return d === 0 || d === 6;
-  })) keptBadges.push('weekend_warrior');
-
-  if (sortedLogs.some(l => {
-    const hour = new Date(l.date).getHours();
-    return hour >= 11 && hour < 13;
-  })) keptBadges.push('lunch_break');
-
-  if (sortedLogs.some(l => (l.durationMinutes || 0) >= 90)) keptBadges.push('long_haul');
-  if (sortedLogs.some(l => (l.calories || 0) >= 500)) keptBadges.push('calorie_crusher');
 
   // Team goals re-verification (pass tribeId)
   const teamStats = await getTeamStats(userProfile.tribeId);

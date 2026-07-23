@@ -69,3 +69,7 @@
 ## 2026-08-12 - Consolidating Multiple Linear Scans into Single-Pass Loops
 **Learning:** Performing multiple independent linear array scans (using `.some()`, `.filter()`, or `.includes()`) in utility functions that check history-dependent milestones (such as badge achievements) introduces significant computational and allocation overhead (e.g. repeated `Date` parsing). This scales poorly as history grows.
 **Action:** Consolidate multiple distinct historical checks into optimized single-pass loops. Use local boolean flags to track the status of target conditions, eliminating linear array checks within loop bodies, and enable early break conditions once all goals are satisfied.
+
+## 2026-08-13 - Extending Consolidated Single-Pass Loops to Destructive Reversion Operations
+**Learning:** Destructive operations like `revertGamificationForLog` are often omitted from optimization sweeps because they are considered "cold paths". However, since they run on the main UI thread during synchronous actions (like deleting a workout log in a list), they can cause noticeable UI freezes if they perform multiple linear passes and create hundreds of garbage-collected Date objects.
+**Action:** Apply the same rigorous consolidated single-pass loop optimization to both forward (insert/add) and backward (delete/revert) application data paths to maintain consistent, buttery-smooth interactions.

@@ -1117,38 +1117,69 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
 
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const recentLogs = sortedLogs.filter(l => new Date(l.date) > oneWeekAgo);
-  if (recentLogs.length >= 3) keptBadges.push('week_warrior');
+  const oneWeekAgoISO = oneWeekAgo.toISOString();
 
-  if (sortedLogs.some(l => new Date(l.date).getHours() < 8)) keptBadges.push('early_bird');
-  if (sortedLogs.some(l => new Date(l.date).getHours() >= 20)) keptBadges.push('night_owl');
+  // BOLT: Optimize by using local boolean flags and a single-pass loop
+  // over sortedLogs, eliminating 8+ separate linear scans (some, filter, forEach).
+  // Also reuse a single Date object to avoid hundreds of GC allocations.
+  let hasWeekWarrior = false;
+  let hasEarlyBird = false;
+  let hasNightOwl = false;
+  let hasCenturyClub = false;
+  let hasHeavyLifter = false;
+  let hasWeekendWarrior = false;
+  let hasLunchBreak = false;
+  let hasLongHaul = false;
+  let hasCalorieCrusher = false;
+
+  let weekWarriorCount = 0;
+  const loopDateObj = new Date();
+
+  for (let i = 0, len = sortedLogs.length; i < len; i++) {
+    const l = sortedLogs[i];
+
+    // Week warrior check (Assumes logs are sorted chronologically ascending, we count logs > oneWeekAgoISO)
+    if (l.date > oneWeekAgoISO) {
+      weekWarriorCount++;
+      if (weekWarriorCount >= 3) {
+        hasWeekWarrior = true;
+      }
+    }
+
+    loopDateObj.setTime(Date.parse(l.date));
+    const h = loopDateObj.getHours();
+    const day = loopDateObj.getDay();
+
+    if (h < 8) hasEarlyBird = true;
+    if (h >= 20) hasNightOwl = true;
+    if (h >= 11 && h < 13) hasLunchBreak = true;
+    if (day === 0 || day === 6) hasWeekendWarrior = true;
+
+    if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
+      const volume = l.exercises.reduce((acc, ex) =>
+        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
+        , 0);
+      if (volume >= 1000) hasCenturyClub = true;
+      if (volume >= 5000) hasHeavyLifter = true;
+    }
+
+    if ((l.durationMinutes || 0) >= 90) hasLongHaul = true;
+    if ((l.calories || 0) >= 500) hasCalorieCrusher = true;
+  }
+
+  if (hasWeekWarrior) keptBadges.push('week_warrior');
+  if (hasEarlyBird) keptBadges.push('early_bird');
+  if (hasNightOwl) keptBadges.push('night_owl');
+  if (hasCenturyClub) keptBadges.push('century_club');
+  if (hasHeavyLifter) keptBadges.push('heavy_lifter');
+  if (hasWeekendWarrior) keptBadges.push('weekend_warrior');
+  if (hasLunchBreak) keptBadges.push('lunch_break');
+  if (hasLongHaul) keptBadges.push('long_haul');
+  if (hasCalorieCrusher) keptBadges.push('calorie_crusher');
 
   const currentStreak = await getStreaks(userProfile.displayName as User, sortedLogs);
   if (currentStreak >= 5) keptBadges.push('streak_5');
   if (currentStreak >= 10) keptBadges.push('streak_10');
-
-  sortedLogs.forEach(l => {
-    if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE) {
-      const volume = l.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
-      if (volume >= 1000) keptBadges.push('century_club');
-      if (volume >= 5000) keptBadges.push('heavy_lifter');
-    }
-  });
-
-  if (sortedLogs.some(l => {
-    const d = new Date(l.date).getDay();
-    return d === 0 || d === 6;
-  })) keptBadges.push('weekend_warrior');
-
-  if (sortedLogs.some(l => {
-    const hour = new Date(l.date).getHours();
-    return hour >= 11 && hour < 13;
-  })) keptBadges.push('lunch_break');
-
-  if (sortedLogs.some(l => (l.durationMinutes || 0) >= 90)) keptBadges.push('long_haul');
-  if (sortedLogs.some(l => (l.calories || 0) >= 500)) keptBadges.push('calorie_crusher');
 
   // Team goals re-verification (pass tribeId)
   const teamStats = await getTeamStats(userProfile.tribeId);

@@ -69,3 +69,7 @@
 ## 2026-08-12 - Consolidating Multiple Linear Scans into Single-Pass Loops
 **Learning:** Performing multiple independent linear array scans (using `.some()`, `.filter()`, or `.includes()`) in utility functions that check history-dependent milestones (such as badge achievements) introduces significant computational and allocation overhead (e.g. repeated `Date` parsing). This scales poorly as history grows.
 **Action:** Consolidate multiple distinct historical checks into optimized single-pass loops. Use local boolean flags to track the status of target conditions, eliminating linear array checks within loop bodies, and enable early break conditions once all goals are satisfied.
+
+## 2026-08-13 - Consolidating Subtractive Gamification Traversal
+**Learning:** In subtractive gamification routines (like `revertGamificationForLog`), checking 8+ historical achievements sequentially over the remaining workout logs triggers multiple array traversals (`filter`, `some`, `forEach`), each allocating heavy `Date` instances and executing closure lambdas. This is highly inefficient when deleting items from a user's workout history.
+**Action:** Consolidate all historical re-verifications into a single-pass loop over the remaining chronological history. Track satisfying conditions using local boolean flags, reuse a single `Date` object via `setTime()` to completely avoid garbage collection churn, and drop complexity from multiple nested traversals to $O(N)$.

@@ -73,3 +73,7 @@
 ## 2026-08-13 - Consolidating Subtractive Gamification Traversal
 **Learning:** In subtractive gamification routines (like `revertGamificationForLog`), checking 8+ historical achievements sequentially over the remaining workout logs triggers multiple array traversals (`filter`, `some`, `forEach`), each allocating heavy `Date` instances and executing closure lambdas. This is highly inefficient when deleting items from a user's workout history.
 **Action:** Consolidate all historical re-verifications into a single-pass loop over the remaining chronological history. Track satisfying conditions using local boolean flags, reuse a single `Date` object via `setTime()` to completely avoid garbage collection churn, and drop complexity from multiple nested traversals to $O(N)$.
+
+## 2026-08-14 - Extremely High-Performance Cached Date of Birth parsing
+**Learning:** String parsing in JavaScript Date constructors (`new Date(dob)`) is computationally intensive and allocates a heavy `Date` object on every execution. In high-frequency render-critical paths (like real-time calorie calculation or profile widgets), repeatedly parsing the static user DOB is a major CPU bottleneck.
+**Action:** Always map and cache static DOB inputs to simple date-component primitives (`year`, `month`, `date`) in a module-level cache Map. Use these cached numeric values to compute dynamic differences relative to the current time, and include a size limit guard on the cache Map to prevent memory expansion.

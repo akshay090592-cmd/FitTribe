@@ -34,6 +34,31 @@ export const compareISODates = (a: string, b: string): number => {
     return 0;
 };
 
+const formatterCaches = new Map<Intl.DateTimeFormat, Map<string, string>>();
+
+/**
+ * BOLT: Centralized high-performance date formatting wrapper with cache.
+ * Avoids costly `new Date(dateStr)` allocations and heavy `formatter.format()` calls on hot paths.
+ */
+export const formatWithCache = (formatter: Intl.DateTimeFormat, date: string | Date): string => {
+    let cache = formatterCaches.get(formatter);
+    if (!cache) {
+        cache = new Map<string, string>();
+        formatterCaches.set(formatter, cache);
+    }
+
+    const cacheKey = typeof date === 'string' ? date : String(date.getTime());
+    let cached = cache.get(cacheKey);
+    if (!cached) {
+        if (cache.size > 1000) {
+            cache.clear();
+        }
+        cached = formatter.format(typeof date === 'string' ? new Date(date) : date);
+        cache.set(cacheKey, cached);
+    }
+    return cached;
+};
+
 /**
  * Formats a date string into a relative time string (e.g., "Just now", "2h ago", "Yesterday", "2d ago").
  * Uses calendar days for "Yesterday" and "Xd ago" to ensure consistency with the calendar view

@@ -1,7 +1,50 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getCalendarDayDifference, formatTimeAgo } from '../utils/dateUtils';
+import { getCalendarDayDifference, formatTimeAgo, formatWithCache, monthDayFormatter } from '../utils/dateUtils';
 
 describe('dateUtils Optimizations & Correctness', () => {
+    describe('formatWithCache', () => {
+        it('should return identical formatted output to raw formatter for string inputs', () => {
+            const dateStr = '2026-04-25T14:30:00Z';
+            const expected = monthDayFormatter.format(new Date(dateStr));
+            const actual = formatWithCache(monthDayFormatter, dateStr);
+            expect(actual).toBe(expected);
+        });
+
+        it('should return identical formatted output to raw formatter for Date object inputs', () => {
+            const date = new Date('2026-04-25T14:30:00Z');
+            const expected = monthDayFormatter.format(date);
+            const actual = formatWithCache(monthDayFormatter, date);
+            expect(actual).toBe(expected);
+        });
+
+        it('should perform significantly faster than raw formatting in a 10,000 iteration benchmark', () => {
+            const dateStr = '2026-04-25T14:30:00Z';
+
+            // Warm up
+            formatWithCache(monthDayFormatter, dateStr);
+
+            // Raw Formatter benchmark
+            const t0 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                const tempDate = new Date(dateStr);
+                monthDayFormatter.format(tempDate);
+            }
+            const rawTime = performance.now() - t0;
+
+            // Cached Formatter benchmark
+            const t1 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                formatWithCache(monthDayFormatter, dateStr);
+            }
+            const cachedTime = performance.now() - t1;
+
+            console.log(`BENCHMARK: 10,000 calls of formatWithCache took ${cachedTime.toFixed(3)}ms vs raw formatting taking ${rawTime.toFixed(3)}ms`);
+
+            // Cached version should be much faster (usually 10-50x faster)
+            expect(cachedTime).toBeLessThan(rawTime);
+        });
+    });
+
     describe('getCalendarDayDifference', () => {
         it('should return 0 for same-day dates with different times', () => {
             const d1 = new Date('2026-04-25T14:30:00');

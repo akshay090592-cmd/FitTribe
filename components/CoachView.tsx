@@ -3,7 +3,7 @@ import { UserProfile, WeeklyPlan, PlanStatus } from '../types';
 import { AICoachService } from '../services/aiCoach';
 import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
 import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info } from 'lucide-react';
-import { monthDayFormatter, weekdayShortFormatter } from '../utils/dateUtils';
+import { monthDayFormatter, weekdayShortFormatter, formatWithCache } from '../utils/dateUtils';
 
 import { WorkoutLog } from '../types';
 
@@ -45,7 +45,7 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return '';
         try {
-            return monthDayFormatter.format(new Date(dateStr));
+            return formatWithCache(monthDayFormatter, dateStr);
         } catch (e) {
             return '';
         }

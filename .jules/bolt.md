@@ -1,3 +1,7 @@
+## 2026-08-15 - Cached Date Formatting on List Components
+**Learning:** Repetitive calls to `Intl.DateTimeFormat.format()` combined with short-lived `new Date()` instantiations inside rendering lists (like Logbook, Coach Planner, and detailed stats popups) create high CPU load and trigger severe garbage collection pressure. Since date strings in lists are immutable, caching the formatted string output using nested maps mapped by formatters completely eliminates formatting and allocation overhead.
+**Action:** Use a centralized `formatWithCache` wrapper when formatting date strings inside hot render paths or loops mapping over large datasets.
+
 ## 2026-04-24 - Parallelized Profile Loading
 **Learning:** Sequential await calls in initial application loading (like `loadProfile`) create significant cumulative latency, especially as the number of data points (logs, stats, gamification) grows. Reusing already fetched data (like the `logs` array) for multiple derived calculations (`mood`, `streak`, `streakRisk`) can eliminate multiple redundant database/network requests.
 **Action:** Always look for independent async calls in lifecycle methods and group them with `Promise.all`. Ensure utility functions support passing pre-fetched data to avoid "Internal N+1" scenarios where multiple utilities fetch the same raw data.

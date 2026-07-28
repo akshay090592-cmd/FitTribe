@@ -22,7 +22,6 @@ import { NotificationPopup } from './components/NotificationPopup';
 import { getAvatarPath } from './utils/avatar';
 import { googleHealthService } from './services/googleHealthService';
 import { formatTimeAgo, compareISODates } from './utils/dateUtils';
-import { formatDistanceToNow } from 'date-fns';
 import { WeeklyStatsWidget } from './components/WeeklyStatsWidget';
 import { Plus } from 'lucide-react';
 import { DesktopNavigation } from './components/DesktopNavigation';
@@ -1554,7 +1553,7 @@ const App: React.FC = () => {
                     {lastWorkout && (
                       <div className="text-teal-600 text-[10px] font-bold flex items-center mt-0.5">
                         <Clock size={10} className="mr-1" />
-                        {formatDistanceToNow(new Date(lastWorkout.date), { addSuffix: true })}
+                        {formatTimeAgo(lastWorkout.date)}
                       </div>
                     )}
                   </div>

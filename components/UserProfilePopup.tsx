@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User, UserGamificationState, UserProfile } from '../types';
 import { X, Award, Gift, Star, Clock, Trophy, Target, Zap, Activity } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { getPublicProfile, getXPLogs } from '../utils/storage';
 import { getAvatarPath } from '../utils/avatar';
 import { calculateLevel, getRank } from '../utils/gamification';

@@ -1,3 +1,7 @@
+## 2026-08-20 - Complete Elimination of date-fns Runtime Dependency
+**Learning:** Relying on standard utility libraries like `date-fns` inside hot React rendering paths or global containers introduces significant production bundle size overhead and JS parsing latency. Combining pre-optimized, native JS `Date` methods and custom relative-time logic (e.g. `formatTimeAgo` which uses component-based math) completely eliminates the need for `date-fns` at runtime, accelerating initial render time.
+**Action:** Avoid importing `date-fns` inside React components. Use inline mathematical start-of-week logic and the custom, high-performance `formatTimeAgo` utility.
+
 ## 2026-08-15 - Cached Date Formatting on List Components
 **Learning:** Repetitive calls to `Intl.DateTimeFormat.format()` combined with short-lived `new Date()` instantiations inside rendering lists (like Logbook, Coach Planner, and detailed stats popups) create high CPU load and trigger severe garbage collection pressure. Since date strings in lists are immutable, caching the formatted string output using nested maps mapped by formatters completely eliminates formatting and allocation overhead.
 **Action:** Use a centralized `formatWithCache` wrapper when formatting date strings inside hot render paths or loops mapping over large datasets.

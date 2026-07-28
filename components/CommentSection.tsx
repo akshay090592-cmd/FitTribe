@@ -3,7 +3,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { User, SocialComment, UserProfile } from '../types';
 import { getComments, addComment } from '../utils/storage';
 import { MessageCircle, Send } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatTimeAgo } from '../utils/dateUtils';
 import { getAvatarPath } from '../utils/avatar';
 
 interface Props {
@@ -65,7 +65,7 @@ export const CommentSection: React.FC<Props> = memo(({ logId, currentUser, logOw
 
     const formatTime = (dateStr: string) => {
         try {
-            return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+            return formatTimeAgo(dateStr);
         } catch {
             return 'just now';
         }

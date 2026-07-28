@@ -1,7 +1,6 @@
 import React, { useMemo, memo } from 'react';
 import { WorkoutLog, UserProfile, WorkoutType } from '../types';
 import { Activity, Clock, Flame, Dumbbell } from 'lucide-react';
-import { startOfWeek } from 'date-fns';
 
 interface Props {
   logs: WorkoutLog[];
@@ -16,7 +15,8 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
     // Since logs are sorted descending, we can stop as soon as we hit a log older than the current week.
     // Performance: Improves from O(N_total) to O(N_week).
     const now = new Date();
-    const weekStart = startOfWeek(now);
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
     const weekStartISO = weekStart.toISOString();
 

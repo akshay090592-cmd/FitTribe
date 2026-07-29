@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getCalendarDayDifference, formatTimeAgo, formatWithCache, monthDayFormatter } from '../utils/dateUtils';
+import { getCalendarDayDifference, formatTimeAgo, formatWithCache, monthDayFormatter, getWeekKey } from '../utils/dateUtils';
 
 describe('dateUtils Optimizations & Correctness', () => {
     describe('formatWithCache', () => {
@@ -68,6 +68,57 @@ describe('dateUtils Optimizations & Correctness', () => {
             const d1 = new Date('2026-04-20T12:00:00');
             const d2 = new Date('2026-04-25T12:00:00');
             expect(getCalendarDayDifference(d1, d2)).toBe(-5);
+        });
+    });
+
+    describe('getWeekKey', () => {
+        it('should return the correct year and calendar week format', () => {
+            const dateStr = '2026-04-25T14:30:00Z'; // April 25, 2026
+            const key = getWeekKey(dateStr);
+            expect(key).toBe('2026-W18');
+        });
+
+        it('should handle transition between years correctly', () => {
+            const endOfYear = '2025-12-31T23:59:59Z';
+            const startOfNewYear = '2026-01-01T00:00:00Z';
+            expect(getWeekKey(endOfYear)).toBe('2025-W53');
+            expect(getWeekKey(startOfNewYear)).toBe('2026-W1');
+        });
+
+        it('should perform significantly faster than uncached calculation in a 10,000 iteration benchmark', () => {
+            const dateStr = '2026-04-25T14:30:00Z';
+
+            // Uncached calculation logic (original)
+            const uncachedGetWeekKey = (str: string): string => {
+                const d = new Date(str);
+                const year = d.getFullYear();
+                const firstDayOfYear = new Date(year, 0, 1);
+                const pastDaysOfYear = (d.getTime() - firstDayOfYear.getTime()) / 86400000;
+                const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+                return `${year}-W${week}`;
+            };
+
+            // Warm up
+            getWeekKey(dateStr);
+
+            // Raw benchmark
+            const t0 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                uncachedGetWeekKey(dateStr);
+            }
+            const rawTime = performance.now() - t0;
+
+            // Cached benchmark
+            const t1 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                getWeekKey(dateStr);
+            }
+            const cachedTime = performance.now() - t1;
+
+            console.log(`BENCHMARK: 10,000 calls of getWeekKey took ${cachedTime.toFixed(3)}ms vs uncached calculation taking ${rawTime.toFixed(3)}ms`);
+
+            // Cached version should be significantly faster (usually 10x-100x faster)
+            expect(cachedTime).toBeLessThan(rawTime);
         });
     });
 

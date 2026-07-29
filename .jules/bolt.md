@@ -85,3 +85,7 @@
 ## 2026-08-14 - Extremely High-Performance Cached Date of Birth parsing
 **Learning:** String parsing in JavaScript Date constructors (`new Date(dob)`) is computationally intensive and allocates a heavy `Date` object on every execution. In high-frequency render-critical paths (like real-time calorie calculation or profile widgets), repeatedly parsing the static user DOB is a major CPU bottleneck.
 **Action:** Always map and cache static DOB inputs to simple date-component primitives (`year`, `month`, `date`) in a module-level cache Map. Use these cached numeric values to compute dynamic differences relative to the current time, and include a size limit guard on the cache Map to prevent memory expansion.
+
+## 2026-08-25 - Cached Calendar-Week Calculation
+**Learning:** Computing calendar-week identifiers (e.g. "2024-W5") inside loops mapping over long logbook/workout histories creates high CPU and memory churn because each iteration instantiates multiple `Date` objects, including redundant year-boundary markers like `new Date(year, 0, 1)`. Extracting the calculation into a centralized helper with year-boundary and string-key memoization caches avoids 100% of these allocations.
+**Action:** Use `getWeekKey` from `utils/dateUtils.ts` when grouping or filtering records by calendar week inside loops or historical recalculation paths.

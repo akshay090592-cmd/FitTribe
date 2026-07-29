@@ -1,7 +1,7 @@
 import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, WorkoutType } from '../types';
 import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions, getTribeMembers } from './storage';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { compareISODates } from './dateUtils';
+import { compareISODates, getWeekKey } from './dateUtils';
 
 export const BADGES_DB: Badge[] = [
   { id: 'first_step', title: 'First Step', description: 'Complete your first workout', icon: 'Footprints', rarity: 'common' },
@@ -848,12 +848,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
       if (l.type === WorkoutType.COMMITMENT) continue;
       if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) continue;
 
-      const d = new Date(l.date);
-      const year = d.getFullYear();
-      const firstDayOfYear = new Date(year, 0, 1);
-      const pastDaysOfYear = (d.getTime() - firstDayOfYear.getTime()) / 86400000;
-      const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-      const weekKey = `${year}-W${week}`;
+      const weekKey = getWeekKey(l.date);
       workoutsPerWeek.set(weekKey, (workoutsPerWeek.get(weekKey) || 0) + 1);
     }
 
@@ -1190,12 +1185,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   const workoutsPerWeek = new Map<string, number>();
   sortedLogs.forEach(l => {
     if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) return;
-    const d = new Date(l.date);
-    const year = d.getFullYear();
-    const firstDayOfYear = new Date(year, 0, 1);
-    const pastDaysOfYear = (d.getTime() - firstDayOfYear.getTime()) / 86400000;
-    const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-    const weekKey = `${year}-W${week}`;
+    const weekKey = getWeekKey(l.date);
     workoutsPerWeek.set(weekKey, (workoutsPerWeek.get(weekKey) || 0) + 1);
   });
   const eligibleWeeks = Array.from(workoutsPerWeek.keys()).filter(k => workoutsPerWeek.get(k)! >= 3).sort();

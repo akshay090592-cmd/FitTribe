@@ -89,3 +89,49 @@ export const formatTimeAgo = (dateStr: string): string => {
 
     return `${diffDays}d ago`;
 };
+
+/**
+ * BOLT: Cache for first day of year timestamps and day values to avoid repeated Date object allocation in loops.
+ */
+const firstDayOfYearCache = new Map<number, { time: number; day: number }>();
+
+const getFirstDayOfYearInfo = (year: number) => {
+    let info = firstDayOfYearCache.get(year);
+    if (!info) {
+        const firstDay = new Date(year, 0, 1);
+        info = {
+            time: firstDay.getTime(),
+            day: firstDay.getDay()
+        };
+        firstDayOfYearCache.set(year, info);
+    }
+    return info;
+};
+
+/**
+ * BOLT: High-performance cache for computed week keys to completely bypass Date parsing and allocations on hot paths.
+ */
+const weekKeyCache = new Map<string, string>();
+
+/**
+ * BOLT: Computes and caches a unique calendar week identifier (e.g. "2024-W5") for a given ISO/date string.
+ * This completely avoids the overhead of repeated DOB/date parsing and Date object allocation in hot loops
+ * like badge checks or history re-verification.
+ */
+export const getWeekKey = (dateStr: string): string => {
+    let key = weekKeyCache.get(dateStr);
+    if (!key) {
+        // Prevent potential memory expansion
+        if (weekKeyCache.size > 1000) {
+            weekKeyCache.clear();
+        }
+        const d = new Date(dateStr);
+        const year = d.getFullYear();
+        const firstDayInfo = getFirstDayOfYearInfo(year);
+        const pastDaysOfYear = (d.getTime() - firstDayInfo.time) / 86400000;
+        const week = Math.ceil((pastDaysOfYear + firstDayInfo.day + 1) / 7);
+        key = `${year}-W${week}`;
+        weekKeyCache.set(dateStr, key);
+    }
+    return key;
+};

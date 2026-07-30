@@ -1,6 +1,10 @@
 import { UserProfile } from '../types';
 import { calculateAge } from './profileUtils';
 
+// BOLT: High-performance cache for computed BMR values to avoid redundant Mifflin-St Jeor math,
+// age calculations, and string comparisons during hot render paths (like slider drags or real-time calorie math).
+const bmrCache = new Map<string, number>();
+
 /**
  * Calculates calories burned using the Mifflin-St Jeor Equation for BMR if profile data is available.
  * Fallback to standard MET * Weight * Duration formula.
@@ -23,13 +27,23 @@ export const calculateCalories = (
 
     // If we have full profile data, use BMR
     if (userProfile && userProfile.height && userProfile.weight && userProfile.dob && userProfile.gender) {
-        const age = calculateAge(userProfile.dob);
-        let bmr = (10 * userProfile.weight) + (6.25 * userProfile.height) - (5 * age);
+        const cacheKey = `${userProfile.id}_${userProfile.weight}_${userProfile.height}_${userProfile.dob}_${userProfile.gender}`;
+        let bmr = bmrCache.get(cacheKey);
 
-        if (userProfile.gender === 'male') {
-            bmr += 5;
-        } else {
-            bmr -= 161;
+        if (bmr === undefined) {
+            // Prevent potential memory expansion
+            if (bmrCache.size > 1000) {
+                bmrCache.clear();
+            }
+            const age = calculateAge(userProfile.dob);
+            bmr = (10 * userProfile.weight) + (6.25 * userProfile.height) - (5 * age);
+
+            if (userProfile.gender === 'male') {
+                bmr += 5;
+            } else {
+                bmr -= 161;
+            }
+            bmrCache.set(cacheKey, bmr);
         }
 
         // BMR is calories burned at rest in 24 hours.

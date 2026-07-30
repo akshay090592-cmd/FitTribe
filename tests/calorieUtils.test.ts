@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateCalories } from '../utils/calorieUtils';
-import { UserProfile, User } from '../types';
+import { UserProfile } from '../types';
 
 describe('Calorie Utils', () => {
     // Mock User Profile
@@ -41,5 +41,47 @@ describe('Calorie Utils', () => {
         // Test Case 3: Zero Duration
         const caloriesZero = calculateCalories(mockProfile, 5.0, 0);
         expect(caloriesZero).toBe(0);
+    });
+
+    it('should calculate calories identically when retrieving from cache', () => {
+        const firstRun = calculateCalories(mockProfile, 5.0, 60);
+        const secondRun = calculateCalories(mockProfile, 5.0, 60);
+        expect(firstRun).toBe(secondRun);
+    });
+
+    it('should perform significantly faster than uncached calculation in a 10,000 iteration benchmark', () => {
+        // Warm up the cache
+        calculateCalories(mockProfile, 5.0, 60);
+
+        const iterations = 10000;
+
+        // Measure cached execution
+        const startCached = performance.now();
+        for (let i = 0; i < iterations; i++) {
+            calculateCalories(mockProfile, 5.0, 60);
+        }
+        const endCached = performance.now();
+        const durationCached = endCached - startCached;
+
+        // Measure uncached execution by creating a new profile on each iteration (bypassing the cache key)
+        const startUncached = performance.now();
+        for (let i = 0; i < iterations; i++) {
+            const dynamicProfile: UserProfile = {
+                id: `dynamic-${i}`,
+                email: 'test@example.com',
+                displayName: `User-${i}` as any,
+                weight: 80,
+                height: 180,
+                dob: '1990-01-01',
+                gender: 'male'
+            };
+            calculateCalories(dynamicProfile, 5.0, 60);
+        }
+        const endUncached = performance.now();
+        const durationUncached = endUncached - startUncached;
+
+        console.log(`BENCHMARK: 10,000 calls of calculateCalories took ${durationCached.toFixed(3)}ms (cached) vs ${durationUncached.toFixed(3)}ms (uncached)`);
+
+        expect(durationCached).toBeLessThan(durationUncached);
     });
 });

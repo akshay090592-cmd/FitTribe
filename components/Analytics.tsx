@@ -5,9 +5,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroups, MUSCLE_GROUPS } from '../utils/muscleMapping';
-import { monthDayFormatter, monthYearFormatter, compareISODates } from '../utils/dateUtils';
+import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache } from '../utils/dateUtils';
 
 import { Calendar } from './Calendar';
+
+// BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
+// redundant Date object instantiations and expensive formatting calls on hot rendering paths.
+const chartMetaCache = new Map<string, { key: string; label: string }>();
 
 interface Props {
   user: User;
@@ -91,33 +95,44 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
     const processLogs = (logList: any[], isRival: boolean) => {
       for (let i = 0; i < logList.length; i++) {
         const log = logList[i];
-        let key = '';
-        let weekThursday: Date | null = null;
+        const cacheKey = `${log.date}_${currentViewMode}`;
+        let meta = chartMetaCache.get(cacheKey);
 
-        if (currentViewMode === 'monthly') {
-          key = log.date.substring(0, 7); // BOLT: Use substring for monthly grouping key
-        } else {
-          // Weekly grouping: Use UTC for consistency in week calculation
-          const date = new Date(log.date);
-          weekThursday = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-          const dayNum = weekThursday.getUTCDay() || 7;
-          weekThursday.setUTCDate(weekThursday.getUTCDate() + 4 - dayNum);
-          const yearStart = new Date(Date.UTC(weekThursday.getUTCFullYear(), 0, 1));
-          const weekNo = Math.ceil((((weekThursday.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        if (!meta) {
+          if (chartMetaCache.size > 1000) {
+            chartMetaCache.clear();
+          }
 
-          key = `${weekThursday.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+          let key = '';
+          let label = '';
+
+          if (currentViewMode === 'monthly') {
+            key = log.date.substring(0, 7);
+            label = formatWithCache(monthYearFormatter, log.date);
+          } else {
+            // Weekly grouping: Use UTC for consistency in week calculation
+            const date = new Date(log.date);
+            const weekThursday = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = weekThursday.getUTCDay() || 7;
+            weekThursday.setUTCDate(weekThursday.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(weekThursday.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((weekThursday.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+
+            key = `${weekThursday.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+
+            // Reuse weekThursday calculated above
+            const weekStart = new Date(weekThursday);
+            weekStart.setUTCDate(weekThursday.getUTCDate() - 3); // Back to Monday
+            label = formatWithCache(monthDayFormatter, weekStart);
+          }
+
+          meta = { key, label };
+          chartMetaCache.set(cacheKey, meta);
         }
 
+        const { key, label } = meta;
+
         if (!grouped[key]) {
-          let label = '';
-          if (currentViewMode === 'monthly') {
-            label = monthYearFormatter.format(new Date(log.date));
-          } else {
-            // Reuse weekThursday calculated above
-            const weekStart = new Date(weekThursday!);
-            weekStart.setUTCDate(weekThursday!.getUTCDate() - 3); // Back to Monday
-            label = monthDayFormatter.format(weekStart);
-          }
           grouped[key] = { label, totalVolume: 0, workoutCount: 0, rivalTotalVolume: 0, rivalWorkoutCount: 0, exerciseStats: {}, sortKey: key };
         }
 

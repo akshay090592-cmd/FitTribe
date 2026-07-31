@@ -27,7 +27,7 @@
 **Action:** Always lazy-load components that are not part of the critical initial render path (e.g., blogs, secondary info pages, and even desktop-only widgets if they are heavy). Use `React.Suspense` to provide a smooth loading state for these asynchronous chunks.
 
 ## 2026-05-12 - App-wide Date Formatting Optimization
-**Learning:** Centralizing `Intl.DateTimeFormat` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
+**Learning:** Centralizing `Intl.DateTimeFormat.format()` objects in a utility file instead of calling `toLocaleDateString` or creating new `Intl` objects in component renders/loops significantly reduces CPU overhead and memory pressure. This is especially impactful in "data-heavy" components like Analytics, History, and Popups where many dates are formatted in a single pass.
 **Action:** Always prefer shared, pre-instantiated formatters from `utils/dateUtils.ts` for consistent and high-performance date representation across the app.
 
 ## 2026-06-03 - Timezone-Safe Early Exit in Hot Loops
@@ -93,3 +93,7 @@
 ## 2026-08-30 - Caching Profile BMR Calculations to Accelerate Calorie Calculations
 **Learning:** Repeatedly calculating BMR (Mifflin-St Jeor) on every call to `calculateCalories` (which is a hot path for real-time tracking, dragging intensity/duration sliders, and rendering activity modals) introduces unnecessary mathematical operations, DOB component conversions, and gender branching, since profile parameters are completely constant during a session.
 **Action:** Cache computed BMR values in a static, module-level cache `Map` keyed by a hash of the profile's static parameters (`id`, `weight`, `height`, `dob`, and `gender`). Bounding the map to 1000 items prevents memory expansion while achieving a ~4x performance gain on calorie calculations.
+
+## 2026-09-01 - Caching Analytics Grouping Metadata and Dates on Hot Render Paths
+**Learning:** Computing grouping keys and labels inside high-frequency loops for chart rendering (such as `getChartData` in Analytics view) creates significant CPU load and high heap allocation rates. By caching computed keys and formatted labels in a size-bounded, module-level cache Map keyed by a combination of the date string and the viewMode, we avoid constructing up to 4 heavy `Date` objects and executing raw formatter operations per log entry per render.
+**Action:** Always cache deterministic metadata, keys, and formatted labels inside data processing loops used for charts or charts comparisons to eliminate Date allocation overhead and raw formatter churn.

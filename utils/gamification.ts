@@ -893,10 +893,10 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
 export const rebuildGamificationState = async (userProfile: UserProfile) => {
   const allLogs = await getUserLogs(userProfile.displayName);
-  // Sort by date ascending to replay history, excluding commitments for stats calculation
+  // BOLT: Since getUserLogs already returns logs sorted descending, we can reverse in O(N) to get ascending order
   const sortedLogs = allLogs
     .filter(l => l.type !== WorkoutType.COMMITMENT)
-    .sort((a, b) => compareISODates(a.date, b.date));
+    .reverse();
 
   // Reset State
   const userState: UserGamificationState = {
@@ -1076,9 +1076,10 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   // We need to fetch remaining logs to verify badges.
   // NOTE: This runs AFTER the log is deleted from DB.
   const remainingLogs = await getUserLogs(userProfile.displayName as User);
+  // BOLT: Since getUserLogs already returns logs sorted descending, we can reverse in O(N) to get ascending order
   const sortedLogs = remainingLogs
     .filter(l => l.type !== WorkoutType.COMMITMENT)
-    .sort((a, b) => compareISODates(a.date, b.date));
+    .reverse();
 
   const keptBadges: string[] = [];
 

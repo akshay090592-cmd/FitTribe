@@ -209,7 +209,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
         if (targetId) {
           const element = document.getElementById(`exercise-${targetId}`);
-          if (element) {
+          if (element && typeof element.scrollIntoView === 'function') {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }

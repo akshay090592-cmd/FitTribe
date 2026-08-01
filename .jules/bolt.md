@@ -1,3 +1,15 @@
+## 2026-09-05 - Linear-Time Ascending Log Reversal for Gamification Replay
+**Learning:** Performing full $O(N \log N)$ chronological sorting via string comparison of date keys (e.g., ISO-8601 string checks) inside hot gamification paths (such as `revertGamificationForLog` during workout deletions) is highly inefficient and creates high CPU overhead as user history grows. Since `getUserLogs` already guarantees logs sorted descending, calling `.reverse()` achieves ascending order in $O(N)$ linear time and entirely bypasses date string parsing and comparison overhead.
+**Action:** Always prefer `.reverse()` instead of `.sort()` when transforming pre-sorted descending arrays to ascending chronological order in hot loops or frequently triggered event handlers.
+
+## 2026-09-03 - Avoiding Premature Caching Anti-Optimizations
+**Learning:** Introducing a `Map` cache inside basic, highly optimized utility functions (like `getAvatarPath` string interpolations) can be an anti-optimization. Modern JS engines (V8) compile small template literals directly to highly optimized, allocation-free machine code. Adding `Map` lookups, key creations, and size-checks can introduce CPU overhead and garbage collection pressure that exceeds the original inline allocation cost.
+**Action:** Never optimize simple string interpolation utilities with `Map` lookups. Keep them stateless and pure, and only introduce caches for computationally heavy operations (such as mathematical algorithms or date parsings).
+
+## 2026-09-04 - Robust scrollIntoView Checks in Simulated Environments
+**Learning:** Standard browser layout methods like `element.scrollIntoView` do not exist in simulated JS environments like `jsdom`, causing uncaught `TypeError` exceptions during test suite execution. Wrapping these calls in an existence check prevents test framework crashes while maintaining smooth scrolling in the production browser environment.
+**Action:** Always verify layout-dependent browser APIs with a quick `typeof element.method === 'function'` check before execution inside component lifecycles.
+
 ## 2026-08-20 - Complete Elimination of date-fns Runtime Dependency
 **Learning:** Relying on standard utility libraries like `date-fns` inside hot React rendering paths or global containers introduces significant production bundle size overhead and JS parsing latency. Combining pre-optimized, native JS `Date` methods and custom relative-time logic (e.g. `formatTimeAgo` which uses component-based math) completely eliminates the need for `date-fns` at runtime, accelerating initial render time.
 **Action:** Avoid importing `date-fns` inside React components. Use inline mathematical start-of-week logic and the custom, high-performance `formatTimeAgo` utility.

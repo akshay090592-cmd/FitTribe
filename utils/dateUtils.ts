@@ -60,34 +60,60 @@ export const formatWithCache = (formatter: Intl.DateTimeFormat, date: string | D
 };
 
 /**
+ * BOLT: High-performance cache for relative time formatting strings.
+ * Bypasses expensive string-to-date parsing, UTC calculations, and allocation of Date objects
+ * on hot paths like list rendering. Keyed by the date string and the current minute (e.g., key + "_" + Math.floor(now/60000))
+ * to ensure that values are highly cached during atomic layout re-renders but update gracefully every minute.
+ * Map size is limited to 1000 items to prevent memory expansion.
+ */
+const relativeTimeCache = new Map<string, string>();
+
+/**
  * Formats a date string into a relative time string (e.g., "Just now", "2h ago", "Yesterday", "2d ago").
  * Uses calendar days for "Yesterday" and "Xd ago" to ensure consistency with the calendar view
  * and avoid timezone/time-of-day confusion.
  */
 export const formatTimeAgo = (dateStr: string): string => {
-    const date = new Date(dateStr);
     const now = new Date();
+    const cacheKey = `${dateStr}_${Math.floor(now.getTime() / 60000)}`;
+    let cached = relativeTimeCache.get(cacheKey);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    // Prevent potential memory expansion
+    if (relativeTimeCache.size > 1000) {
+        relativeTimeCache.clear();
+    }
+
+    const date = new Date(dateStr);
 
     // Use calendar days to determine "Yesterday" and "d ago"
     const diffDays = getCalendarDayDifference(now, date);
 
+    let result = '';
     if (diffDays === 0) {
         const diffMs = now.getTime() - date.getTime();
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
         if (diffHours === 0) {
             const diffMins = Math.floor(diffMs / (1000 * 60));
-            if (diffMins === 0) return 'Just now';
-            return `${diffMins}m ago`;
+            if (diffMins === 0) {
+                result = 'Just now';
+            } else {
+                result = `${diffMins}m ago`;
+            }
+        } else {
+            result = `${diffHours}h ago`;
         }
-        return `${diffHours}h ago`;
+    } else if (diffDays === 1) {
+        result = 'Yesterday';
+    } else {
+        result = `${diffDays}d ago`;
     }
 
-    if (diffDays === 1) {
-        return 'Yesterday';
-    }
-
-    return `${diffDays}d ago`;
+    relativeTimeCache.set(cacheKey, result);
+    return result;
 };
 
 /**

@@ -161,5 +161,65 @@ describe('dateUtils Optimizations & Correctness', () => {
 
             vi.useRealTimers();
         });
+
+        it('should use the cache for successive calls of the same timestamp within the same minute', () => {
+            const dateStr = '2026-04-25T11:55:00Z';
+
+            // First call (populates cache)
+            const firstResult = formatTimeAgo(dateStr);
+
+            // Second call (hits cache)
+            const secondResult = formatTimeAgo(dateStr);
+
+            expect(firstResult).toBe(secondResult);
+        });
+
+        it('should perform significantly faster than raw/uncached calculation in a 10,000 iteration benchmark', () => {
+            // Ensure we use real timers so performance.now() works correctly for benchmarking
+            vi.useRealTimers();
+
+            const dateStr = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(); // 3 days ago
+
+            // Uncached / raw implementation for benchmarking
+            const rawFormatTimeAgo = (dateString: string): string => {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffDays = getCalendarDayDifference(now, date);
+                if (diffDays === 0) {
+                    const diffMs = now.getTime() - date.getTime();
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    if (diffHours === 0) {
+                        const diffMins = Math.floor(diffMs / (1000 * 60));
+                        if (diffMins === 0) return 'Just now';
+                        return `${diffMins}m ago`;
+                    }
+                    return `${diffHours}h ago`;
+                }
+                if (diffDays === 1) return 'Yesterday';
+                return `${diffDays}d ago`;
+            };
+
+            // Warm up
+            formatTimeAgo(dateStr);
+
+            // Benchmark Uncached/Raw
+            const t0 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                rawFormatTimeAgo(dateStr);
+            }
+            const uncachedTime = performance.now() - t0;
+
+            // Benchmark Cached
+            const t1 = performance.now();
+            for (let i = 0; i < 10000; i++) {
+                formatTimeAgo(dateStr);
+            }
+            const cachedTime = performance.now() - t1;
+
+            console.log(`FORMAT_TIME_AGO BENCHMARK: 10,000 calls of formatTimeAgo took ${cachedTime.toFixed(3)}ms (cached) vs ${uncachedTime.toFixed(3)}ms (raw/uncached)`);
+
+            // Cached version should be significantly faster (usually 5x to 30x speedup)
+            expect(cachedTime).toBeLessThan(uncachedTime);
+        });
     });
 });

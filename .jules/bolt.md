@@ -1,3 +1,7 @@
+## 2026-09-06 - Minute-Keyed Caching for Relative Time Formatting
+**Learning:** High-frequency relative date/time calculation via `formatTimeAgo` (e.g., inside hot social feed or comment list renders) triggers hundreds of redundant string-to-date parsings and `Date` object allocations. While relative times change over time, keying a map-based cache (`relativeTimeCache`) with `${dateStr}_${Math.floor(Date.now() / 60000)}` allows bypassing all allocation and calculation overhead on hot re-render paths, while gracefully updating values when the system time crosses minute boundaries.
+**Action:** Always utilize a minute-keyed cache for relative time formatters when rendering dates inside frequently updated or scrolling lists.
+
 ## 2026-09-05 - Linear-Time Ascending Log Reversal for Gamification Replay
 **Learning:** Performing full $O(N \log N)$ chronological sorting via string comparison of date keys (e.g., ISO-8601 string checks) inside hot gamification paths (such as `revertGamificationForLog` during workout deletions) is highly inefficient and creates high CPU overhead as user history grows. Since `getUserLogs` already guarantees logs sorted descending, calling `.reverse()` achieves ascending order in $O(N)$ linear time and entirely bypasses date string parsing and comparison overhead.
 **Action:** Always prefer `.reverse()` instead of `.sort()` when transforming pre-sorted descending arrays to ascending chronological order in hot loops or frequently triggered event handlers.

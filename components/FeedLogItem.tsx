@@ -168,11 +168,22 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     ) : (
                         <>
                             {displayedExercises.map((ex, i) => {
-                                const bestSet = ex.sets.reduce((m, c) => c.weight > m.weight ? c : m, { weight: 0, reps: 0 });
+                                // BOLT: Compute the best set using a standard, allocation-free loop to completely bypass
+                                // function closure generation and array traversal overhead.
+                                let maxWeight = 0;
+                                const sets = ex.sets;
+                                if (sets) {
+                                    for (let j = 0; j < sets.length; j++) {
+                                        const set = sets[j];
+                                        if (set.weight > maxWeight) {
+                                            maxWeight = set.weight;
+                                        }
+                                    }
+                                }
                                 return (
                                     <div key={`${ex.name}-${i}`} className="flex justify-between text-xs items-center group/ex">
                                         <span className="text-emerald-900 font-medium truncate max-w-[150px] group-hover/ex:text-emerald-700 transition-colors">{ex.name}</span>
-                                        <span className="bg-white px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 shadow-sm border border-emerald-50">{bestSet.weight}kg</span>
+                                        <span className="bg-white px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 shadow-sm border border-emerald-50">{maxWeight}kg</span>
                                     </div>
                                 );
                             })}

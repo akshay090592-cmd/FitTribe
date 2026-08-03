@@ -925,12 +925,6 @@ const App: React.FC = () => {
     e.currentTarget.src = 'https://placehold.co/100x100/10b981/ffffff?text=Panda'; // Simple fallback
   };
 
-
-
-  const getAvatarPathHelper = (avatarId: string | undefined, mood: 'fire' | 'tired' | 'normal') => {
-    return getAvatarPath(avatarId, mood);
-  };
-
   const handleCommit = async () => {
     if (!userProfile) return;
     setIsCommitting(true);

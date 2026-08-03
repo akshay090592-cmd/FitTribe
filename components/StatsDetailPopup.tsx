@@ -13,6 +13,73 @@ interface Props {
     xpBreakdown?: Map<string, { base: number, bonus: number, total: number, streak: number }>;
 }
 
+/**
+ * BOLT: Hoist helper functions out of the render loop to prevent function recreation
+ * and garbage collection allocation pressure on every single render cycle.
+ */
+const getRowData = (
+    log: WorkoutLog | XPLog | PointLog,
+    type: 'workouts' | 'streak' | 'weekly' | 'points',
+    xpBreakdown?: Map<string, { base: number; bonus: number; total: number; streak: number }>
+) => {
+    let xp = 0;
+    let bonus = 0;
+    let streak = 0;
+    let points = 0;
+    let isValidForGoal = false;
+    let activityName = 'Activity';
+    let iconType = 'workout';
+    let vibes = 0;
+
+    if ('amount' in log) { // PointLog or XPLog
+        const l = log as (XPLog | PointLog);
+        if (type === 'points') points = l.amount;
+        else xp = l.amount;
+
+        // Format Activity Name from Source
+        if (l.source === 'workout') {
+            activityName = 'Workout Completed';
+            iconType = 'workout';
+        } else if (l.source === 'badge') {
+            activityName = 'Badge Earned';
+            iconType = 'badge';
+        } else if (l.source === 'quest') {
+            activityName = 'Quest Complete';
+            iconType = 'quest';
+        } else if (l.source === 'shop') {
+            activityName = 'Shop Purchase';
+            iconType = 'shop';
+        }
+    } else {
+        // Legacy WorkoutLog
+        const l = log as WorkoutLog;
+        isValidForGoal = l.durationMinutes >= 30;
+        activityName = l.type === 'Custom' ? (l.customActivity || 'Custom Workout') : (l.type === 'A' ? 'Plan A' : 'Plan B');
+        vibes = l.vibes || 0;
+
+        if (xpBreakdown && xpBreakdown.has(l.id)) {
+            const data = xpBreakdown.get(l.id)!;
+            xp = data.total;
+            bonus = data.bonus;
+            streak = data.streak;
+        } else {
+            if (l.durationMinutes < 30) xp = l.durationMinutes;
+            else if (l.type === WorkoutType.CUSTOM) xp = Math.floor((l.calories || 0) / 10);
+            else xp = l.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;
+        }
+        points = calculatePoints(l);
+    }
+
+    return { xp, bonus, isValidForGoal, points, streak, activityName, iconType, vibes };
+};
+
+const renderIcon = (iconType: string, isShop: boolean) => {
+    if (isShop) return <ShoppingBag size={16} className="text-indigo-400" />;
+    if (iconType === 'badge') return <Trophy size={16} className="text-yellow-500" />;
+    if (iconType === 'quest') return <CheckCircle size={16} className="text-blue-500" />;
+    return <Zap size={16} className="text-emerald-500" />;
+};
+
 // Performance Optimization: Wrap in React.memo to prevent redundant re-renders of the detailed stats list on parent view changes.
 export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, logs, title: customTitle, xpBreakdown }) => {
     if (!isOpen) return null;
@@ -23,59 +90,6 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
         weekly: 'Weekly Goal Progress',
         points: 'Points History'
     }[type];
-
-    // Helper to calculate XP/Status
-    const getRowData = (log: WorkoutLog | XPLog | PointLog) => {
-        let xp = 0;
-        let bonus = 0;
-        let streak = 0;
-        let points = 0;
-        let isValidForGoal = false;
-        let activityName = 'Activity';
-        let iconType = 'workout';
-        let vibes = 0;
-
-        if ('amount' in log) { // PointLog or XPLog
-            const l = log as (XPLog | PointLog);
-            if (type === 'points') points = l.amount;
-            else xp = l.amount;
-
-            // Format Activity Name from Source
-            if (l.source === 'workout') {
-                activityName = 'Workout Completed';
-                iconType = 'workout';
-            } else if (l.source === 'badge') {
-                activityName = 'Badge Earned';
-                iconType = 'badge';
-            } else if (l.source === 'quest') {
-                activityName = 'Quest Complete';
-                iconType = 'quest';
-            } else if (l.source === 'shop') {
-                activityName = 'Shop Purchase';
-                iconType = 'shop';
-            }
-        } else {
-            // Legacy WorkoutLog
-            const l = log as WorkoutLog;
-            isValidForGoal = l.durationMinutes >= 30;
-            activityName = l.type === 'Custom' ? (l.customActivity || 'Custom Workout') : (l.type === 'A' ? 'Plan A' : 'Plan B');
-            vibes = l.vibes || 0;
-
-            if (xpBreakdown && xpBreakdown.has(l.id)) {
-                const data = xpBreakdown.get(l.id)!;
-                xp = data.total;
-                bonus = data.bonus;
-                streak = data.streak;
-            } else {
-                if (l.durationMinutes < 30) xp = l.durationMinutes;
-                else if (l.type === WorkoutType.CUSTOM) xp = Math.floor((l.calories || 0) / 10);
-                else xp = l.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;
-            }
-            points = calculatePoints(l);
-        }
-
-        return { xp, bonus, isValidForGoal, points, streak, activityName, iconType, vibes };
-    };
 
     const processedLogs = useMemo(() => {
         if (type === 'workouts' || type === 'points') return logs;
@@ -105,13 +119,6 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
 
         return logs;
     }, [logs, type]);
-
-    const renderIcon = (iconType: string, isShop: boolean) => {
-        if (isShop) return <ShoppingBag size={16} className="text-indigo-400" />;
-        if (iconType === 'badge') return <Trophy size={16} className="text-yellow-500" />;
-        if (iconType === 'quest') return <CheckCircle size={16} className="text-blue-500" />;
-        return <Zap size={16} className="text-emerald-500" />;
-    }
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -144,7 +151,7 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
                                     const logId = 'id' in log ? log.id : (log as any).id;
                                     const logDate = 'created_at' in log ? (log as any).created_at : (log as any).date;
 
-                                    const { xp, bonus, streak, isValidForGoal, points, activityName, iconType, vibes } = getRowData(log);
+                                    const { xp, bonus, streak, isValidForGoal, points, activityName, iconType, vibes } = getRowData(log, type, xpBreakdown);
                                     const dateStr = formatWithCache(monthDayFormatter, logDate);
 
                                     const isShop = iconType === 'shop';

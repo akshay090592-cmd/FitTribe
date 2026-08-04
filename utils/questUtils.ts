@@ -121,6 +121,10 @@ const QUEST_TEMPLATES: Omit<Quest, 'id' | 'progress' | 'completed'>[] = [
 
 // --- UTILS ---
 
+// BOLT: Bounded in-memory caches to completely eliminate synchronous localStorage reads and JSON.parse overhead on hot paths.
+const dailyQuestsCache = new Map<string, Quest[]>();
+const onboardingQuestsCache = new Map<string, Quest[]>();
+
 const getStorageKey = (user: string) => `daily_quests_${user}_${new Date().toDateString()}`;
 const getOnboardingKey = (user: string) => `onboarding_quests_${user}`;
 
@@ -155,24 +159,31 @@ const getCustomChallengeQuest = (cc: CustomChallenge): Quest => {
 
 export const getDailyQuests = (user: User, profile?: UserProfile | null): Quest[] => {
   const key = getStorageKey(user);
-  const stored = localStorage.getItem(key);
-  let quests: Quest[] = [];
 
-  if (stored) {
-    quests = JSON.parse(stored);
-  } else {
-    // Generate new quests
-    const shuffled = [...QUEST_TEMPLATES].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 3);
+  let quests = dailyQuestsCache.get(key);
+  if (!quests) {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      quests = JSON.parse(stored);
+    } else {
+      // Generate new quests
+      const shuffled = [...QUEST_TEMPLATES].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3);
 
-    quests = selected.map(template => ({
-      ...template,
-      id: crypto.randomUUID(),
-      progress: 0,
-      completed: false
-    }));
+      quests = selected.map(template => ({
+        ...template,
+        id: crypto.randomUUID(),
+        progress: 0,
+        completed: false
+      }));
 
-    localStorage.setItem(key, JSON.stringify(quests));
+      localStorage.setItem(key, JSON.stringify(quests));
+    }
+    // Limit cache size to prevent memory leaks across dates
+    if (dailyQuestsCache.size > 100) {
+      dailyQuestsCache.clear();
+    }
+    dailyQuestsCache.set(key, quests);
   }
 
   // Inject Custom Challenges if exist
@@ -182,29 +193,34 @@ export const getDailyQuests = (user: User, profile?: UserProfile | null): Quest[
     // Sort by type priority (Daily, Weekly, Monthly) or just creation
     const activeChallenges = profile.customChallenges.filter(cc => {
       const end = new Date(cc.endDate);
-      // Show if not expired OR if completed recently?
-      // For now show if not expired.
       return now <= end;
     });
 
     const customQuests = activeChallenges.map(cc => getCustomChallengeQuest(cc));
 
-    // Remove any stale custom quests from base list (if any leaked in)
-    quests = quests.filter(q => !q.id.startsWith('custom_'));
+    // Remove any stale custom quests from base list (if any leaked in) and clone base array to prevent mutating cached array
+    const filteredBaseQuests = quests.filter(q => !q.id.startsWith('custom_'));
 
-    // Prepend custom quests
-    quests.unshift(...customQuests);
+    // Prepend custom quests and return a new array
+    return [...customQuests, ...filteredBaseQuests];
   }
 
   return quests;
 };
 
 export const getOnboardingQuests = (user: User): Quest[] => {
+  let quests = onboardingQuestsCache.get(user);
+  if (quests) {
+    return quests;
+  }
+
   const key = getOnboardingKey(user);
   const stored = localStorage.getItem(key);
 
   if (stored) {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    onboardingQuestsCache.set(user, parsed);
+    return parsed;
   }
 
   // Initialize
@@ -216,6 +232,7 @@ export const getOnboardingQuests = (user: User): Quest[] => {
   }));
 
   localStorage.setItem(key, JSON.stringify(initialQuests));
+  onboardingQuestsCache.set(user, initialQuests);
   return initialQuests;
 };
 
@@ -255,6 +272,7 @@ export const updateOnboardingQuestProgress = async (
   if (updated) {
     const key = getOnboardingKey(user);
     localStorage.setItem(key, JSON.stringify(newQuests));
+    onboardingQuestsCache.set(user, newQuests);
 
     if (earnedPoints > 0 || earnedXp > 0) {
       const allState = await getGamificationState();
@@ -404,6 +422,7 @@ export const updateQuestProgress = async (
     const standardQuests = newQuests.filter(q => !q.id.startsWith('custom_'));
     const key = getStorageKey(user);
     localStorage.setItem(key, JSON.stringify(standardQuests));
+    dailyQuestsCache.set(key, standardQuests);
 
     if (earnedPoints > 0 || earnedXp > 0) {
       // Award Rewards

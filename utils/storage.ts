@@ -811,45 +811,37 @@ export const updateLog = async (log: WorkoutLog, userProfile: UserProfile): Prom
 };
 
 export const getUserLogs = async (user: User, tribeId?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
-  const cacheKey = tribeId ? `logs_user_${user}_${tribeId}_p${page || 0}` : `logs_user_${user}_p${page || 0}`;
+  // BOLT: Ignore tribeId to always load complete personal workout logs, ensuring data completeness
+  const cacheKey = `logs_user_${user}_p${page || 0}`;
 
   return deduplicateRequest(cacheKey, async () => {
     const cached = getFromCache<WorkoutLog[]>(cacheKey);
     // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
     if (cached) return [...cached];
 
-  // BOLT: Only select required columns
-  let query = supabase
-    .from('workout_logs')
-    .select('id, user_id, display_name, log_data, date')
-    .eq('display_name', user)
-    .order('date', { ascending: false });
+    // BOLT: Only select required columns
+    let query = supabase
+      .from('workout_logs')
+      .select('id, user_id, display_name, log_data, date')
+      .eq('display_name', user)
+      .order('date', { ascending: false });
 
-  // BOLT: Implementation of pagination
-  if (pageSize && page !== undefined) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
-  }
-
-  if (tribeId) {
-    // BOLT: Use cached member retrieval
-    const members = await getTribeMembers(tribeId);
-    if (members && members.length > 0) {
-      const memberIds = members.map(m => m.id);
-      query = query.in('user_id', memberIds);
+    // BOLT: Implementation of pagination
+    if (pageSize && page !== undefined) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
     }
-  }
 
-  const { data, error } = await query;
+    const { data, error } = await query;
 
-  if (error || !data) return [];
+    if (error || !data) return [];
 
-  const logs = data.map((row: any) => ({
-    ...row.log_data,
-    id: String(row.id),
-    user: row.display_name
-  }));
+    const logs = data.map((row: any) => ({
+      ...row.log_data,
+      id: String(row.id),
+      user: row.display_name
+    }));
 
     setInCache(cacheKey, logs);
     return logs;

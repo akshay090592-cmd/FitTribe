@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getOnboardingQuests, updateOnboardingQuestProgress } from '../utils/questUtils';
+import { getOnboardingQuests, updateOnboardingQuestProgress, clearQuestCaches } from '../utils/questUtils';
 import { getGamificationState, saveGamificationState } from '../utils/storage';
 
 // Mock localStorage with stateful implementation
@@ -33,6 +33,7 @@ describe('Onboarding Quests', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    clearQuestCaches();
     vi.clearAllMocks();
     (getGamificationState as any).mockResolvedValue({});
   });

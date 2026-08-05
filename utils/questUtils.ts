@@ -121,6 +121,22 @@ const QUEST_TEMPLATES: Omit<Quest, 'id' | 'progress' | 'completed'>[] = [
 
 // --- UTILS ---
 
+/**
+ * BOLT: Bounded in-memory Map caches to completely bypass synchronous `localStorage.getItem`
+ * and CPU-intensive `JSON.parse` operations on hot rendering paths.
+ * Limit sizes to 1000 items to prevent potential memory bloat.
+ */
+const dailyQuestsCache = new Map<string, Quest[]>();
+const onboardingQuestsCache = new Map<string, Quest[]>();
+
+/**
+ * BOLT: Helper to clear quest caches. Useful for test isolation and user logout events.
+ */
+export const clearQuestCaches = () => {
+  dailyQuestsCache.clear();
+  onboardingQuestsCache.clear();
+};
+
 const getStorageKey = (user: string) => `daily_quests_${user}_${new Date().toDateString()}`;
 const getOnboardingKey = (user: string) => `onboarding_quests_${user}`;
 
@@ -155,25 +171,45 @@ const getCustomChallengeQuest = (cc: CustomChallenge): Quest => {
 
 export const getDailyQuests = (user: User, profile?: UserProfile | null): Quest[] => {
   const key = getStorageKey(user);
-  const stored = localStorage.getItem(key);
-  let quests: Quest[] = [];
+  let standardQuests = dailyQuestsCache.get(key);
 
-  if (stored) {
-    quests = JSON.parse(stored);
-  } else {
-    // Generate new quests
-    const shuffled = [...QUEST_TEMPLATES].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 3);
+  if (!standardQuests) {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        standardQuests = JSON.parse(stored);
+      } catch (e) {
+        console.error("Error parsing daily quests from localStorage", e);
+      }
+    }
 
-    quests = selected.map(template => ({
-      ...template,
-      id: crypto.randomUUID(),
-      progress: 0,
-      completed: false
-    }));
+    if (!standardQuests || !Array.isArray(standardQuests)) {
+      // Generate new quests
+      const shuffled = [...QUEST_TEMPLATES].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3);
 
-    localStorage.setItem(key, JSON.stringify(quests));
+      standardQuests = selected.map(template => ({
+        ...template,
+        id: crypto.randomUUID(),
+        progress: 0,
+        completed: false
+      }));
+
+      try {
+        localStorage.setItem(key, JSON.stringify(standardQuests));
+      } catch (e) {
+        console.error("Error saving daily quests to localStorage", e);
+      }
+    }
+
+    if (dailyQuestsCache.size > 1000) {
+      dailyQuestsCache.clear();
+    }
+    dailyQuestsCache.set(key, standardQuests);
   }
+
+  // Clone standard quests so caller modifications do not pollute the cache
+  let quests: Quest[] = standardQuests.map(q => ({ ...q }));
 
   // Inject Custom Challenges if exist
   if (profile?.customChallenges && profile.customChallenges.length > 0) {
@@ -201,22 +237,42 @@ export const getDailyQuests = (user: User, profile?: UserProfile | null): Quest[
 
 export const getOnboardingQuests = (user: User): Quest[] => {
   const key = getOnboardingKey(user);
-  const stored = localStorage.getItem(key);
+  let quests = onboardingQuestsCache.get(key);
 
-  if (stored) {
-    return JSON.parse(stored);
+  if (!quests) {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        quests = JSON.parse(stored);
+      } catch (e) {
+        console.error("Error parsing onboarding quests from localStorage", e);
+      }
+    }
+
+    if (!quests || !Array.isArray(quests)) {
+      // Initialize
+      quests = ONBOARDING_TEMPLATES.map(t => ({
+        ...t,
+        id: t.templateId, // Stable ID
+        progress: 0,
+        completed: false
+      }));
+
+      try {
+        localStorage.setItem(key, JSON.stringify(quests));
+      } catch (e) {
+        console.error("Error saving onboarding quests to localStorage", e);
+      }
+    }
+
+    if (onboardingQuestsCache.size > 1000) {
+      onboardingQuestsCache.clear();
+    }
+    onboardingQuestsCache.set(key, quests);
   }
 
-  // Initialize
-  const initialQuests = ONBOARDING_TEMPLATES.map(t => ({
-    ...t,
-    id: t.templateId, // Stable ID
-    progress: 0,
-    completed: false
-  }));
-
-  localStorage.setItem(key, JSON.stringify(initialQuests));
-  return initialQuests;
+  // Return clones
+  return quests.map(q => ({ ...q }));
 };
 
 export const updateOnboardingQuestProgress = async (
@@ -254,6 +310,10 @@ export const updateOnboardingQuestProgress = async (
 
   if (updated) {
     const key = getOnboardingKey(user);
+    if (onboardingQuestsCache.size > 1000) {
+      onboardingQuestsCache.clear();
+    }
+    onboardingQuestsCache.set(key, newQuests);
     localStorage.setItem(key, JSON.stringify(newQuests));
 
     if (earnedPoints > 0 || earnedXp > 0) {
@@ -403,6 +463,10 @@ export const updateQuestProgress = async (
     // Only save standard quests to local storage
     const standardQuests = newQuests.filter(q => !q.id.startsWith('custom_'));
     const key = getStorageKey(user);
+    if (dailyQuestsCache.size > 1000) {
+      dailyQuestsCache.clear();
+    }
+    dailyQuestsCache.set(key, standardQuests);
     localStorage.setItem(key, JSON.stringify(standardQuests));
 
     if (earnedPoints > 0 || earnedXp > 0) {

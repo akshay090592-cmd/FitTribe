@@ -84,6 +84,17 @@ describe('gamification', () => {
             const streak = await getStreaks('TestUser');
             expect(streak).toBe(2);
         });
+
+        it('should handle a 90-day streak spanning across 6 months of workout logs', async () => {
+            const logs: any[] = [];
+            for (let i = 0; i < 90; i++) {
+                // Workouts every 2 days spans 180 days (~6 months) with no gap > 3 days
+                logs.push({ date: d(i * 2) });
+            }
+            (getUserLogs as Mock).mockResolvedValue(logs);
+            const streak = await getStreaks('TestUser');
+            expect(streak).toBe(90);
+        });
     });
 
     describe('getTeamStats', () => {

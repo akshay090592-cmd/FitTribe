@@ -486,7 +486,7 @@ const App: React.FC = () => {
 
         // Optimization: Parallelize independent data fetches
         const [logs, stats, gameState, members, savedPlans] = await Promise.all([
-          getUserLogs(profile.displayName, profile.tribeId),
+          getUserLogs(profile.displayName),
           getTeamStats(profile.tribeId),
           getGamificationState(profile.tribeId),
           profile.tribeId ? getTribeMembers(profile.tribeId) : Promise.resolve([]),
@@ -499,12 +499,8 @@ const App: React.FC = () => {
 
         // 2. Process Streaks & Risk (Reusing logs)
         // BOLT: Calculate streak once and reuse it for mood and risk to avoid redundant O(N) passes.
-        let calculatedStreak = 0;
-        if (gameState && gameState[profile.displayName] && (gameState[profile.displayName].streak || 0) > 0) {
-          calculatedStreak = gameState[profile.displayName].streak;
-        } else {
-          calculatedStreak = calculateStreaks(logs, { isSorted: true }) as number;
-        }
+        // Always calculate the streak dynamically from the complete logs to avoid stale values from gameState.
+        const calculatedStreak = calculateStreaks(logs, { isSorted: true }) as number;
         setStreak(calculatedStreak);
         setStreakRisk(await getStreakRisk(profile.displayName, logs));
 
@@ -964,10 +960,10 @@ const App: React.FC = () => {
         let logsToUse: any[] = [];
 
         if (type === 'streak') {
-          logsToUse = await getStreakLogs(currentUser, userProfile?.tribeId);
+          logsToUse = await getStreakLogs(currentUser);
         } else {
           // BOLT: Removed redundant .sort() as getUserLogs already returns logs sorted by date DESC.
-          logsToUse = await getUserLogs(currentUser, userProfile?.tribeId);
+          logsToUse = await getUserLogs(currentUser);
         }
 
         const breakdown = calculateLogXPBreakdown(logsToUse, { isSortedDesc: true });

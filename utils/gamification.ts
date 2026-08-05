@@ -340,7 +340,7 @@ export async function getStreaks(user: User, tribeIdOrLogs?: string | WorkoutLog
   if (Array.isArray(tribeIdOrLogs)) {
     rawLogs = tribeIdOrLogs;
   } else {
-    rawLogs = await getUserLogs(user, tribeIdOrLogs as string);
+    rawLogs = await getUserLogs(user);
   }
   return calculateStreaks(rawLogs, { returnLogs, isSorted: true });
 }
@@ -354,7 +354,7 @@ export const getStreakRisk = async (user: User, tribeIdOrLogs?: string | Workout
   if (Array.isArray(tribeIdOrLogs)) {
     logs = tribeIdOrLogs;
   } else {
-    logs = await getUserLogs(user, tribeIdOrLogs as string);
+    logs = await getUserLogs(user);
   }
 
   if (logs.length === 0) return false;
@@ -396,7 +396,7 @@ export const getMood = async (user: User, tribeIdOrLogs?: string | WorkoutLog[])
   if (Array.isArray(tribeIdOrLogs)) {
     logs = tribeIdOrLogs;
   } else {
-    logs = await getUserLogs(user, tribeIdOrLogs as string);
+    logs = await getUserLogs(user);
   }
 
   return calculateMood(logs);

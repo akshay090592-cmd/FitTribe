@@ -818,17 +818,6 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
     // OPTIMIZATION: Return shallow copy instead of deep mapping. Cache already contains valid objects.
     if (cached) return [...cached];
 
-    // BOLT: Check standardized tribe/global activity cache for page 0
-    if (!page || page === 0) {
-      const standardizedKey = tribeId ? `logs_tribe_${tribeId}_p0_s100` : `logs_global_p0_s100`;
-      const globalCached = getFromCache<WorkoutLog[]>(standardizedKey);
-      if (globalCached) {
-        const userLogs = globalCached.filter(l => l.user === user);
-        setInCache(cacheKey, userLogs);
-        return [...userLogs];
-      }
-    }
-
   // BOLT: Only select required columns
   let query = supabase
     .from('workout_logs')
@@ -871,18 +860,6 @@ export const getUserLogsById = async (userId: string, displayName?: string, page
   const cacheKey = `logs_userid_${userId}_p${page || 0}`;
   const cached = getFromCache<WorkoutLog[]>(cacheKey);
   if (cached) return [...cached];
-
-  // BOLT: Check standardized tribe activity cache if displayName is available
-  if (displayName && !page) {
-    const tribeProfile = getFromCache<UserProfile>(`profile_${userId}`);
-    const standardizedCacheKey = tribeProfile?.tribeId ? `logs_tribe_${tribeProfile.tribeId}_p0_s100` : `logs_global_p0_s100`;
-    const globalCached = getFromCache<WorkoutLog[]>(standardizedCacheKey);
-    if (globalCached) {
-      const userLogs = globalCached.filter(l => l.user === displayName);
-      setInCache(cacheKey, userLogs);
-      return [...userLogs];
-    }
-  }
 
   // BOLT: Only select required columns
   let query = supabase

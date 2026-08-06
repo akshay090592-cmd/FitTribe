@@ -51,9 +51,21 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     };
 
     // BOLT: Memoize total volume calculation to prevent redundant $O(E*S)$ reduction on every render
-    const totalVolume = useMemo(() => log.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0), [log.exercises]);
+    // Optimized using nested allocation-free manual standard for loops instead of dual .reduce().
+    const totalVolume = useMemo(() => {
+        let vol = 0;
+        const exercises = log.exercises;
+        for (let i = 0; i < exercises.length; i++) {
+            const sets = exercises[i].sets;
+            for (let j = 0; j < sets.length; j++) {
+                const s = sets[j];
+                if (s.completed) {
+                    vol += s.weight * s.reps;
+                }
+            }
+        }
+        return vol;
+    }, [log.exercises]);
 
     // BOLT: Memoize displayed exercises to avoid $O(1)$ or $O(N)$ slicing on every render
     const displayedExercises = useMemo(() => isExpanded ? log.exercises : log.exercises.slice(0, 3), [isExpanded, log.exercises]);
@@ -168,11 +180,21 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     ) : (
                         <>
                             {displayedExercises.map((ex, i) => {
-                                const bestSet = ex.sets.reduce((m, c) => c.weight > m.weight ? c : m, { weight: 0, reps: 0 });
+                                // BOLT: Compute the best set weight using a standard, manual, allocation-free for loop
+                                // instead of .reduce(). This avoids closure allocations and intermediate object initialization
+                                // in hot scrolling list-rendering paths.
+                                let bestWeight = 0;
+                                const sets = ex.sets;
+                                for (let j = 0; j < sets.length; j++) {
+                                    const s = sets[j];
+                                    if (s.weight > bestWeight) {
+                                        bestWeight = s.weight;
+                                    }
+                                }
                                 return (
                                     <div key={`${ex.name}-${i}`} className="flex justify-between text-xs items-center group/ex">
                                         <span className="text-emerald-900 font-medium truncate max-w-[150px] group-hover/ex:text-emerald-700 transition-colors">{ex.name}</span>
-                                        <span className="bg-white px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 shadow-sm border border-emerald-50">{bestSet.weight}kg</span>
+                                        <span className="bg-white px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 shadow-sm border border-emerald-50">{bestWeight}kg</span>
                                     </div>
                                 );
                             })}

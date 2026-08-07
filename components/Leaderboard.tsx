@@ -19,6 +19,26 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
     const [timeframe, setTimeframe] = useState<Timeframe>('weekly');
 
     const filteredStats = useMemo(() => {
+        // BOLT: Optimize lifetime view by completely skipping sub-array allocations,
+        // log element pushes, and XP calculations. Calculates count in a single pass O(N) increment.
+        if (timeframe === 'lifetime') {
+            const stats: Record<string, { xp: number; count: number }> = {};
+            members.forEach(user => {
+                const userState = gamificationState[user];
+                stats[user] = {
+                    xp: userState?.lifetimeXp ?? userState?.points ?? 0,
+                    count: 0
+                };
+            });
+            for (let i = 0; i < logs.length; i++) {
+                const l = logs[i];
+                if (stats[l.user]) {
+                    stats[l.user].count++;
+                }
+            }
+            return stats;
+        }
+
         const now = new Date();
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
@@ -37,12 +57,12 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
 
         // BOLT: Optimize filtering by using an early break.
         // Since logs are sorted DESC, we can stop processing once they are older than the timeframe cutoff.
-        const cutoffISO = timeframe === 'weekly' ? startOfWeekISO : (timeframe === 'monthly' ? startOfMonthISO : null);
+        const cutoffISO = timeframe === 'weekly' ? startOfWeekISO : startOfMonthISO;
 
         // Single pass filtering O(N) instead of O(U*N)
         for (const l of logs) {
             // Early exit if logs are older than the timeframe
-            if (cutoffISO && l.date < cutoffISO) break;
+            if (l.date < cutoffISO) break;
 
             // Skip if user not in our known list (safety)
             if (!groupedLogs[l.user]) continue;
@@ -55,16 +75,8 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
         members.forEach(user => {
             const userLogs = groupedLogs[user];
 
-            // Calculate metrics
-            let xp = 0;
-            if (timeframe === 'lifetime') {
-                const userState = gamificationState[user];
-                xp = userState?.lifetimeXp ?? userState?.points ?? 0;
-            } else {
-                // BOLT: Optimize by using O(N) reversal instead of O(N log N) sorting
-                // since logs are already provided in descending order from the feed.
-                xp = calculateXP(userLogs, { isSortedDesc: true });
-            }
+            // Calculate metrics (already filtered to only weekly/monthly here)
+            const xp = calculateXP(userLogs, { isSortedDesc: true });
 
             stats[user] = {
                 xp,

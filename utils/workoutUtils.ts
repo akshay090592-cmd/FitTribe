@@ -53,34 +53,57 @@ export const getLastLogForExerciseByType = async (user: User, exerciseName: stri
     return null;
 };
 
+// BOLT: High-performance cache for parsed duration strings to avoid repeated string lowering,
+// trimming, split operations, and regex matching on hot paths.
+export const durationCache = new Map<string, number>();
+
+/**
+ * BOLT: Clears the duration cache. Primarily used in test suites to prevent cross-test state pollution.
+ */
+export const clearDurationCache = () => {
+    durationCache.clear();
+};
+
 /**
  * Parses a duration string like "60s", "1:30", "2m 30s", or "45" into total seconds.
  */
 export const parseDurationToSeconds = (durationStr: string | undefined): number => {
     if (!durationStr) return 0;
     
+    const cached = durationCache.get(durationStr);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    // Limit cache size to prevent potential memory expansion
+    if (durationCache.size > 1000) {
+        durationCache.clear();
+    }
+
     const str = durationStr.toLowerCase().trim();
+    let result = 0;
     
     // Format: "60s" or "60"
     if (/^\d+\s*s?$/.test(str)) {
-        return parseInt(str) || 0;
-    }
-    
-    // Format: "1:30"
-    if (str.includes(':')) {
+        result = parseInt(str) || 0;
+    } else if (str.includes(':')) {
+        // Format: "1:30"
         const parts = str.split(':');
         const m = parseInt(parts[0]) || 0;
         const s = parseInt(parts[1]) || 0;
-        return m * 60 + s;
+        result = m * 60 + s;
+    } else {
+        // Format: "2m 30s" or "2m"
+        let totalSeconds = 0;
+        const mMatch = str.match(/(\d+)\s*m/);
+        const sMatch = str.match(/(\d+)\s*s/);
+
+        if (mMatch) totalSeconds += parseInt(mMatch[1]) * 60;
+        if (sMatch) totalSeconds += parseInt(sMatch[1]);
+
+        result = totalSeconds || parseInt(str) || 0;
     }
-    
-    // Format: "2m 30s" or "2m"
-    let totalSeconds = 0;
-    const mMatch = str.match(/(\d+)\s*m/);
-    const sMatch = str.match(/(\d+)\s*s/);
-    
-    if (mMatch) totalSeconds += parseInt(mMatch[1]) * 60;
-    if (sMatch) totalSeconds += parseInt(sMatch[1]);
-    
-    return totalSeconds || parseInt(str) || 0;
+
+    durationCache.set(durationStr, result);
+    return result;
 };

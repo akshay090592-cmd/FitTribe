@@ -54,33 +54,59 @@ export const getLastLogForExerciseByType = async (user: User, exerciseName: stri
 };
 
 /**
- * Parses a duration string like "60s", "1:30", "2m 30s", or "45" into total seconds.
+ * BOLT: Optimized cache Map for parseDurationToSeconds. Bypasses redundant lowering,
+ * trimming, splitting, and regular expression evaluations on hot paths (e.g., WorkoutSession, timers).
+ */
+const durationCache = new Map<string, number>();
+
+/**
+ * BOLT: Clears duration cache to prevent cross-test state pollution in vitest/jsdom.
+ */
+export const clearDurationCache = (): void => {
+    durationCache.clear();
+};
+
+/**
+ * BOLT: Parses a duration string like "60s", "1:30", "2m 30s", or "45" into total seconds.
+ * Optimized with a Map cache to completely bypass expensive string/regex operations on subsequent lookups.
+ * Max cache size is limited to 1000 to prevent memory leak/bloat.
  */
 export const parseDurationToSeconds = (durationStr: string | undefined): number => {
     if (!durationStr) return 0;
-    
+
+    let cached = durationCache.get(durationStr);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    if (durationCache.size > 1000) {
+        durationCache.clear();
+    }
+
     const str = durationStr.toLowerCase().trim();
-    
+    let result = 0;
+
     // Format: "60s" or "60"
     if (/^\d+\s*s?$/.test(str)) {
-        return parseInt(str) || 0;
-    }
-    
-    // Format: "1:30"
-    if (str.includes(':')) {
+        result = parseInt(str) || 0;
+    } else if (str.includes(':')) {
+        // Format: "1:30"
         const parts = str.split(':');
         const m = parseInt(parts[0]) || 0;
         const s = parseInt(parts[1]) || 0;
-        return m * 60 + s;
+        result = m * 60 + s;
+    } else {
+        // Format: "2m 30s" or "2m"
+        let totalSeconds = 0;
+        const mMatch = str.match(/(\d+)\s*m/);
+        const sMatch = str.match(/(\d+)\s*s/);
+
+        if (mMatch) totalSeconds += parseInt(mMatch[1]) * 60;
+        if (sMatch) totalSeconds += parseInt(sMatch[1]);
+
+        result = totalSeconds || parseInt(str) || 0;
     }
-    
-    // Format: "2m 30s" or "2m"
-    let totalSeconds = 0;
-    const mMatch = str.match(/(\d+)\s*m/);
-    const sMatch = str.match(/(\d+)\s*s/);
-    
-    if (mMatch) totalSeconds += parseInt(mMatch[1]) * 60;
-    if (sMatch) totalSeconds += parseInt(sMatch[1]);
-    
-    return totalSeconds || parseInt(str) || 0;
+
+    durationCache.set(durationStr, result);
+    return result;
 };

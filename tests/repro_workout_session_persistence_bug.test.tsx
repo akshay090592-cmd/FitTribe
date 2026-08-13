@@ -127,6 +127,9 @@ describe('WorkoutSession Persistence Bug', () => {
     // Go to cooldown
     fireEvent.click(screen.getByText(/Finish & Cool Down/i));
 
+    // Confirm Cooldown Popup
+    fireEvent.click(screen.getByText(/Yes, Cool Down/i));
+
     // Wait for cooldown
     await waitFor(() => {
       expect(screen.getByText(/Complete Mission/i)).toBeInTheDocument();
@@ -138,6 +141,9 @@ describe('WorkoutSession Persistence Bug', () => {
     // Start finishing the workout (this triggers state changes)
     await act(async () => {
       fireEvent.click(screen.getByText(/Complete Mission/i));
+      // Wait for feedback modal and submit it
+      const submitFeedbackBtn = await screen.findByText(/Complete Workout/i);
+      fireEvent.click(submitFeedbackBtn);
       // Give it a moment to process the async tasks
       await new Promise(r => setTimeout(r, 100));
     });

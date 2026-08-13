@@ -1,3 +1,7 @@
+## 2026-09-11 - Request Deduplication for getUserLogsById
+**Learning:** Concurrent double-mounting or multi-component loading can trigger duplicate database requests for user logs by ID. Wrapping `getUserLogsById` with `deduplicateRequest` ensures that concurrent identical requests are combined into a single shared promise, preventing redundant network overhead and Supabase database query load.
+**Action:** Always employ request deduplication wrappers on database query functions that are vulnerable to simultaneous execution from multiple components in a React dashboard.
+
 ## 2026-09-10 - Bounded Map Caching for Workout Duration Parsing
 **Learning:** Workout logging systems and timer widgets frequently parse user-inputted duration strings (e.g. "60s", "1:30", "2m 30s", "45") on hot paths. Parsing these strings repeatedly triggers high CPU overhead and garbage collection churn due to redundant string allocations (`toLowerCase()`, `trim()`, `split()`) and RegExp matches. Keying an in-memory `durationCache` Map with raw string inputs avoids 100% of these calculations for recurring entries. Keeping the cache strictly bounded to 1000 items prevents memory expansion from arbitrary or malicious inputs, while `clearDurationCache()` ensures test runner isolation.
 **Action:** Always cache deterministic string parsing logic (like duration or custom format conversions) using size-bounded Map caches, complemented by explicit cache-clearing hooks for clean test runner isolation.

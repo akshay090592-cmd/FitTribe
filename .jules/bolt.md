@@ -1,3 +1,7 @@
+## 2026-09-11 - Request Deduplication for Concurrent User-Specific Logs Queries
+**Learning:** Cascading query flows or concurrent component mounts often fetch logs by user ID (`getUserLogsById`) simultaneously. Wrapping this database-querying pathway in a `deduplicateRequest` utility ensures that overlapping identical calls reuse the same pending Promise, significantly reducing duplicated Supabase network traffic, client-side decoding overhead, and database query load.
+**Action:** Always wrap concurrent data-fetching utilities in a deduplicated promise caching layer keyed by a combination of the parameters and page offsets.
+
 ## 2026-09-10 - Bounded Map Caching for Workout Duration Parsing
 **Learning:** Workout logging systems and timer widgets frequently parse user-inputted duration strings (e.g. "60s", "1:30", "2m 30s", "45") on hot paths. Parsing these strings repeatedly triggers high CPU overhead and garbage collection churn due to redundant string allocations (`toLowerCase()`, `trim()`, `split()`) and RegExp matches. Keying an in-memory `durationCache` Map with raw string inputs avoids 100% of these calculations for recurring entries. Keeping the cache strictly bounded to 1000 items prevents memory expansion from arbitrary or malicious inputs, while `clearDurationCache()` ensures test runner isolation.
 **Action:** Always cache deterministic string parsing logic (like duration or custom format conversions) using size-bounded Map caches, complemented by explicit cache-clearing hooks for clean test runner isolation.

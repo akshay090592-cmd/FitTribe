@@ -850,35 +850,38 @@ export const getUserLogs = async (user: User, tribeId?: string, page?: number, p
 
 export const getUserLogsById = async (userId: string, displayName?: string, page?: number, pageSize?: number): Promise<WorkoutLog[]> => {
   const cacheKey = `logs_userid_${userId}_p${page || 0}`;
-  const cached = getFromCache<WorkoutLog[]>(cacheKey);
-  if (cached) return [...cached];
 
-  // BOLT: Only select required columns
-  let query = supabase
-    .from('workout_logs')
-    .select('id, user_id, display_name, log_data, date')
-    .eq('user_id', userId)
-    .order('date', { ascending: false });
+  return deduplicateRequest(cacheKey, async () => {
+    const cached = getFromCache<WorkoutLog[]>(cacheKey);
+    if (cached) return [...cached];
 
-  // BOLT: Pagination
-  if (pageSize && page !== undefined) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
-  }
+    // BOLT: Only select required columns
+    let query = supabase
+      .from('workout_logs')
+      .select('id, user_id, display_name, log_data, date')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
 
-  const { data, error } = await query;
+    // BOLT: Pagination
+    if (pageSize && page !== undefined) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+    }
 
-  if (error || !data) return [];
+    const { data, error } = await query;
 
-  const logs = data.map((row: any) => ({
-    ...row.log_data,
-    id: String(row.id),
-    user: row.display_name
-  }));
+    if (error || !data) return [];
 
-  setInCache(cacheKey, logs);
-  return logs;
+    const logs = data.map((row: any) => ({
+      ...row.log_data,
+      id: String(row.id),
+      user: row.display_name
+    }));
+
+    setInCache(cacheKey, logs);
+    return logs;
+  });
 };
 
 

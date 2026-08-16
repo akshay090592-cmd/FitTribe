@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank } from '../utils/gamification';
+import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, calculateWorkoutVolume } from '../utils/gamification';
 import { User, WorkoutLog, UserProfile, UserGamificationState, WorkoutType } from '../types';
 
 // Mock supabaseClient first to override isSupabaseConfigured
@@ -439,6 +439,103 @@ describe('gamification', () => {
             expect(breakdown.get('3')).toEqual({ base: 60, bonus: 20, total: 80, streak: 3 });
             expect(breakdown.get('4')).toEqual({ base: 15, bonus: 0, total: 15, streak: 3 });
             expect(breakdown.get('5')).toEqual({ base: 100, bonus: 30, total: 130, streak: 4 });
+        });
+    });
+
+    describe('calculateWorkoutVolume Optimization & Correctness', () => {
+        it('should correctly calculate total completed set volume', () => {
+            const log: WorkoutLog = {
+                id: '1',
+                user: 'User1',
+                date: new Date().toISOString(),
+                type: WorkoutType.A,
+                durationMinutes: 45,
+                exercises: [
+                    {
+                        id: 'ex1',
+                        name: 'Bench Press',
+                        sets: [
+                            { reps: 10, weight: 100, completed: true },
+                            { reps: 8, weight: 100, completed: true },
+                            { reps: 6, weight: 100, completed: false } // uncompleted
+                        ]
+                    },
+                    {
+                        id: 'ex2',
+                        name: 'Squat',
+                        sets: [
+                            { reps: 5, weight: 150, completed: true }
+                        ]
+                    }
+                ]
+            };
+
+            // Expected volume: (10*100) + (8*100) + (5*150) = 1000 + 800 + 750 = 2550
+            expect(calculateWorkoutVolume(log)).toBe(2550);
+        });
+
+        it('should return 0 for logs with missing exercises or empty sets', () => {
+            const emptyLog: WorkoutLog = {
+                id: '2',
+                user: 'User1',
+                date: new Date().toISOString(),
+                type: WorkoutType.CUSTOM,
+                durationMinutes: 30
+            };
+
+            expect(calculateWorkoutVolume(emptyLog)).toBe(0);
+        });
+
+        it('should perform volume calculation efficiently without array allocation churn in a benchmark', () => {
+            const log: WorkoutLog = {
+                id: 'bench',
+                user: 'User1',
+                date: new Date().toISOString(),
+                type: WorkoutType.A,
+                durationMinutes: 60,
+                exercises: Array.from({ length: 10 }, (_, i) => ({
+                    id: `ex_${i}`,
+                    name: `Exercise ${i}`,
+                    sets: [
+                        { reps: 10, weight: 80, completed: true },
+                        { reps: 10, weight: 80, completed: true },
+                        { reps: 8, weight: 85, completed: true },
+                        { reps: 6, weight: 90, completed: false }
+                    ]
+                }))
+            };
+
+            const unoptimizedVolume = (l: WorkoutLog): number => {
+                if (!l.exercises) return 0;
+                return l.exercises.reduce((acc, ex) =>
+                    acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
+                    , 0);
+            };
+
+            const iterations = 50000;
+
+            // Warmup
+            for (let i = 0; i < 5000; i++) {
+                calculateWorkoutVolume(log);
+                unoptimizedVolume(log);
+            }
+
+            const startOptimized = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                calculateWorkoutVolume(log);
+            }
+            const timeOptimized = performance.now() - startOptimized;
+
+            const startUnoptimized = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                unoptimizedVolume(log);
+            }
+            const timeUnoptimized = performance.now() - startUnoptimized;
+
+            console.log(`VOLUME CALCULATION BENCHMARK: 50,000 iterations took ${timeOptimized.toFixed(3)}ms (optimized) vs ${timeUnoptimized.toFixed(3)}ms (unoptimized .reduce)`);
+
+            expect(calculateWorkoutVolume(log)).toBe(unoptimizedVolume(log));
+            expect(timeOptimized).toBeLessThanOrEqual(timeUnoptimized + 5.0); // resilient to minor JIT timing jitter
         });
     });
 });

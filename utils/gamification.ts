@@ -238,6 +238,29 @@ export const calculateLogXPBreakdown = (logs: WorkoutLog[], options: { isSortedD
   return breakdown;
 };
 
+/**
+ * BOLT: Optimized workout volume calculation using manual index-based nested loops.
+ * Eliminates array closure allocations and higher-order reduce overhead on volume calculations.
+ */
+export const calculateWorkoutVolume = (log: WorkoutLog): number => {
+  if (log.type === WorkoutType.CUSTOM || log.type === WorkoutType.CUSTOM_TEMPLATE || !log.exercises) {
+    return 0;
+  }
+  let totalVolume = 0;
+  const exercises = log.exercises;
+  for (let i = 0, exLen = exercises.length; i < exLen; i++) {
+    const sets = exercises[i].sets;
+    if (!sets) continue;
+    for (let j = 0, setLen = sets.length; j < setLen; j++) {
+      const set = sets[j];
+      if (set.completed) {
+        totalVolume += (set.weight || 0) * (set.reps || 0);
+      }
+    }
+  }
+  return totalVolume;
+};
+
 export const calculatePoints = (log: WorkoutLog): number => {
   if (log.type === WorkoutType.COMMITMENT) return 0;
 
@@ -770,18 +793,14 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   let hasCentury = userState.badges.includes('century_club');
   let hasHeavy = userState.badges.includes('heavy_lifter');
 
-  if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE && log.exercises) {
-    const currentVolume = log.exercises.reduce((acc, ex) =>
-      acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-      , 0);
-    if (currentVolume >= 1000) {
-      unlock('century_club');
-      hasCentury = true;
-    }
-    if (currentVolume >= 5000) {
-      unlock('heavy_lifter');
-      hasHeavy = true;
-    }
+  const currentVolume = calculateWorkoutVolume(log);
+  if (currentVolume >= 1000) {
+    unlock('century_club');
+    hasCentury = true;
+  }
+  if (currentVolume >= 5000) {
+    unlock('heavy_lifter');
+    hasHeavy = true;
   }
 
   // BOLT: Catch-up for volume badges only if they are not yet earned, using fast boolean flags
@@ -790,18 +809,14 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
       if (hasCentury && hasHeavy) break;
 
       const l = userLogs[i];
-      if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
-        const volume = l.exercises.reduce((acc, ex) =>
-          acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-          , 0);
-        if (!hasCentury && volume >= 1000) {
-          unlock('century_club');
-          hasCentury = true;
-        }
-        if (!hasHeavy && volume >= 5000) {
-          unlock('heavy_lifter');
-          hasHeavy = true;
-        }
+      const volume = calculateWorkoutVolume(l);
+      if (!hasCentury && volume >= 1000) {
+        unlock('century_club');
+        hasCentury = true;
+      }
+      if (!hasHeavy && volume >= 5000) {
+        unlock('heavy_lifter');
+        hasHeavy = true;
       }
     }
   }
@@ -997,12 +1012,8 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
 
   // Century Club
   sortedLogs.forEach(log => {
-    if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE) {
-      const volume = log.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
-      if (volume >= 1000) newBadges.push('century_club');
-    }
+    const volume = calculateWorkoutVolume(log);
+    if (volume >= 1000) newBadges.push('century_club');
   });
 
   // Weekend
@@ -1151,13 +1162,9 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
     if (h >= 11 && h < 13) hasLunchBreak = true;
     if (day === 0 || day === 6) hasWeekendWarrior = true;
 
-    if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
-      const volume = l.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
-      if (volume >= 1000) hasCenturyClub = true;
-      if (volume >= 5000) hasHeavyLifter = true;
-    }
+    const volume = calculateWorkoutVolume(l);
+    if (volume >= 1000) hasCenturyClub = true;
+    if (volume >= 5000) hasHeavyLifter = true;
 
     if ((l.durationMinutes || 0) >= 90) hasLongHaul = true;
     if ((l.calories || 0) >= 500) hasCalorieCrusher = true;

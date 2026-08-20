@@ -137,3 +137,7 @@
 ## 2026-09-01 - Caching Analytics Grouping Metadata and Dates on Hot Render Paths
 **Learning:** Computing grouping keys and labels inside high-frequency loops for chart rendering (such as `getChartData` in Analytics view) creates significant CPU load and high heap allocation rates. By caching computed keys and formatted labels in a size-bounded, module-level cache Map keyed by a combination of the date string and the viewMode, we avoid constructing up to 4 heavy `Date` objects and executing raw formatter operations per log entry per render.
 **Action:** Always cache deterministic metadata, keys, and formatted labels inside data processing loops used for charts or charts comparisons to eliminate Date allocation overhead and raw formatter churn.
+
+## 2026-09-02 - Allocation-Free Workout Volume Calculation
+**Learning:** Nested array `.reduce()` calls (e.g. iterating sets inside exercises) instantiate closure functions on every outer iteration and create unnecessary function call overhead during high-frequency gamification state checks. Also, direct property accesses on nested objects without safety checks can lead to unexpected runtime crashes if `log.exercises` or `exercise.sets` is undefined.
+**Action:** Extract nested collection aggregations into dedicated helper functions using allocation-free manual `for` loops with explicit length caching and guard checks (`if (!exercises) return 0`).

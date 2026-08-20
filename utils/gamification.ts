@@ -22,6 +22,30 @@ export const BADGES_DB: Badge[] = [
   { id: 'heavy_lifter', title: 'Heavy Lifter', description: 'Lift 5000kg total volume in one session', icon: 'Dumbbell', rarity: 'legendary' }
 ];
 
+/**
+ * BOLT: High-performance, allocation-free volume calculation for workout exercises.
+ * Replaces nested .reduce() calls with manual index-based for loops to eliminate lambda closure
+ * allocations and garbage collection overhead during achievement checks and gamification updates.
+ */
+export const calculateWorkoutVolume = (exercises?: any[]): number => {
+  if (!exercises) return 0;
+  let totalVolume = 0;
+  const exLen = exercises.length;
+  for (let i = 0; i < exLen; i++) {
+    const ex = exercises[i];
+    if (!ex || !ex.sets) continue;
+    const sets = ex.sets;
+    const setLen = sets.length;
+    for (let j = 0; j < setLen; j++) {
+      const s = sets[j];
+      if (s.completed) {
+        totalVolume += s.weight * s.reps;
+      }
+    }
+  }
+  return totalVolume;
+};
+
 export const SHOP_THEMES: Theme[] = [
   { id: 'jungle_night', name: 'Jungle Night', type: 'image' as const, value: '/assets/jungle_night_bg.webp', price: 500, description: 'Train under the moon' },
   { id: 'volcano', name: 'Volcano Core', type: 'image' as const, value: '/assets/volcano_bg.webp', price: 1000, description: 'Things are heating up!' },
@@ -771,9 +795,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   let hasHeavy = userState.badges.includes('heavy_lifter');
 
   if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE && log.exercises) {
-    const currentVolume = log.exercises.reduce((acc, ex) =>
-      acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-      , 0);
+    const currentVolume = calculateWorkoutVolume(log.exercises);
     if (currentVolume >= 1000) {
       unlock('century_club');
       hasCentury = true;
@@ -791,9 +813,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
       const l = userLogs[i];
       if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
-        const volume = l.exercises.reduce((acc, ex) =>
-          acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-          , 0);
+        const volume = calculateWorkoutVolume(l.exercises);
         if (!hasCentury && volume >= 1000) {
           unlock('century_club');
           hasCentury = true;
@@ -998,9 +1018,7 @@ export const rebuildGamificationState = async (userProfile: UserProfile) => {
   // Century Club
   sortedLogs.forEach(log => {
     if (log.type !== WorkoutType.CUSTOM && log.type !== WorkoutType.CUSTOM_TEMPLATE) {
-      const volume = log.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
+      const volume = calculateWorkoutVolume(log.exercises);
       if (volume >= 1000) newBadges.push('century_club');
     }
   });
@@ -1152,9 +1170,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
     if (day === 0 || day === 6) hasWeekendWarrior = true;
 
     if (l.type !== WorkoutType.CUSTOM && l.type !== WorkoutType.CUSTOM_TEMPLATE && l.exercises) {
-      const volume = l.exercises.reduce((acc, ex) =>
-        acc + ex.sets.reduce((sAcc, s) => sAcc + (s.completed ? s.weight * s.reps : 0), 0)
-        , 0);
+      const volume = calculateWorkoutVolume(l.exercises);
       if (volume >= 1000) hasCenturyClub = true;
       if (volume >= 5000) hasHeavyLifter = true;
     }

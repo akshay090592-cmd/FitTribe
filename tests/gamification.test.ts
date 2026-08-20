@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank } from '../utils/gamification';
+import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, calculateWorkoutVolume } from '../utils/gamification';
 import { User, WorkoutLog, UserProfile, UserGamificationState, WorkoutType } from '../types';
 
 // Mock supabaseClient first to override isSupabaseConfigured
@@ -412,6 +412,29 @@ describe('gamification', () => {
             expect(mood).toBe('normal');
         });
     });
+    describe('calculateWorkoutVolume Optimization', () => {
+        it('should correctly calculate total workout volume', () => {
+            const mockExercises = Array.from({ length: 50 }, (_, i) => ({
+                name: `Exercise ${i}`,
+                sets: [
+                    { weight: 100, reps: 10, completed: true },
+                    { weight: 100, reps: 10, completed: true },
+                    { weight: 120, reps: 8, completed: true },
+                    { weight: 120, reps: 8, completed: false }, // Should be ignored
+                ]
+            }));
+
+            // Test correctness
+            const expectedVolume = 50 * (1000 + 1000 + 960); // 148,000
+            const calculatedVolume = calculateWorkoutVolume(mockExercises);
+            expect(calculatedVolume).toBe(expectedVolume);
+
+            // Also test null/undefined safety
+            expect(calculateWorkoutVolume(undefined)).toBe(0);
+            expect(calculateWorkoutVolume([])).toBe(0);
+        });
+    });
+
     describe('calculateLogXPBreakdown', () => {
         it('should correctly calculate base XP and streak bonuses for a sequence of logs', () => {
             const logs = [

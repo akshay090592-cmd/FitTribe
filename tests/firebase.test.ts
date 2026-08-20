@@ -6,10 +6,12 @@ import { supabase } from '../utils/supabaseClient';
 // Mock dependencies
 vi.mock('firebase/app', () => ({
   initializeApp: vi.fn(),
+  getApps: vi.fn().mockReturnValue([]),
+  getApp: vi.fn(),
 }));
 
 vi.mock('firebase/messaging', () => ({
-  getMessaging: vi.fn(),
+  getMessaging: vi.fn().mockReturnValue({}),
   getToken: vi.fn(),
   onMessage: vi.fn(),
 }));

@@ -1,5 +1,5 @@
 // Initialize Firebase Cloud Messaging
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { supabase } from '../utils/supabaseClient';
 
@@ -14,8 +14,18 @@ const firebaseConfig = {
   measurementId: "G-R0995L4XDG"
 };
 
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+const app = (typeof getApps === 'function' && getApps().length > 0) ? getApp() : initializeApp(firebaseConfig);
+
+const getMessagingInstance = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      return getMessaging(app);
+    }
+  } catch (error) {
+    console.warn('Firebase Messaging not supported in this environment:', error);
+  }
+  return null;
+};
 
 // User provided VAPID key
 const VAPID_KEY = "BMqx16vICaoBtA6IZyCQG9-s4-TIFlo3_8ughLgnc58T54MYis0RYxJin3o6IeNTEPOYwONlrhRoP6b468UBu8o";
@@ -24,6 +34,11 @@ export const requestNotificationPermission = async (userId: string) => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
+      const messaging = getMessagingInstance();
+      if (!messaging) {
+        console.warn('Messaging instance is not available');
+        return;
+      }
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY
       });
@@ -48,6 +63,10 @@ export const requestNotificationPermission = async (userId: string) => {
 };
 
 export const onMessageListener = (callback: (payload: any) => void) => {
+  const messaging = getMessagingInstance();
+  if (!messaging) {
+    return () => {};
+  }
   return onMessage(messaging, (payload) => {
     callback(payload);
   });

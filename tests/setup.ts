@@ -16,6 +16,8 @@ vi.mock('../services/firebase', () => ({
 // Mock firebase modules directly as they have top-level side effects
 vi.mock('firebase/app', () => ({
     initializeApp: vi.fn().mockReturnValue({}),
+    getApps: vi.fn().mockReturnValue([]),
+    getApp: vi.fn().mockReturnValue({}),
 }));
 
 vi.mock('firebase/messaging', () => ({

@@ -21,9 +21,15 @@ export const SEO: React.FC<SEOProps> = ({
     schema
 }) => {
     const siteUrl = 'https://tribeworkout.netlify.app';
-    const rawUrl = url || (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : siteUrl);
-    const currentUrl = rawUrl.replace(/\/$/, "");
-    const metaImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
+    let currentUrl = siteUrl;
+    if (url) {
+        currentUrl = url.startsWith('http') ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    } else if (typeof window !== 'undefined' && window.location.pathname && window.location.pathname !== '/') {
+        currentUrl = `${siteUrl}${window.location.pathname}`;
+    }
+    currentUrl = currentUrl.replace(/\/$/, "");
+    if (!currentUrl) currentUrl = siteUrl;
+    const metaImage = image.startsWith('http') ? image : `${siteUrl}${image.startsWith('/') ? '' : '/'}${image}`;
 
     return (
         <Helmet>

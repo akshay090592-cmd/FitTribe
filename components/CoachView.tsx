@@ -176,12 +176,25 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
 
     const adherenceStats = useMemo(() => {
         if (!weeklyPlan || !weeklyPlan.schedule) return null;
-        const total = weeklyPlan.schedule.length;
-        const done = weeklyPlan.schedule.filter(s => s.status === 'done').length;
-        const alternate = weeklyPlan.schedule.filter(s => s.status === 'alternate').length;
-        const partial = weeklyPlan.schedule.filter(s => s.status === 'partial').length;
-        const notDone = weeklyPlan.schedule.filter(s => s.status === 'not_done').length;
-        const pending = weeklyPlan.schedule.filter(s => !s.status).length;
+        const schedule = weeklyPlan.schedule;
+        const total = schedule.length;
+
+        // BOLT: Single-pass loop replaces 5 separate array allocations and linear scans.
+        // Performance: Reduces complexity from O(5N) to O(N) while eliminating array allocations.
+        let done = 0;
+        let alternate = 0;
+        let partial = 0;
+        let notDone = 0;
+        let pending = 0;
+
+        for (let i = 0; i < total; i++) {
+            const status = schedule[i].status;
+            if (status === 'done') done++;
+            else if (status === 'alternate') alternate++;
+            else if (status === 'partial') partial++;
+            else if (status === 'not_done') notDone++;
+            else pending++;
+        }
 
         return {
             done: Math.round((done / total) * 100),

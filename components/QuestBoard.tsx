@@ -117,10 +117,19 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
 export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false }) => {
   if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
 
-  const completedCount = quests.filter(q => q.completed).length;
+  // BOLT: Single-pass counting loops eliminate array allocations from .filter().length
+  let completedCount = 0;
+  for (let i = 0; i < quests.length; i++) {
+    if (quests[i].completed) completedCount++;
+  }
   const allComplete = completedCount === quests.length && quests.length > 0;
 
-  const onboardingCompletedCount = onboardingQuests?.filter(q => q.completed).length || 0;
+  let onboardingCompletedCount = 0;
+  if (onboardingQuests) {
+    for (let i = 0; i < onboardingQuests.length; i++) {
+      if (onboardingQuests[i].completed) onboardingCompletedCount++;
+    }
+  }
   const showOnboarding = !hasLoggedWorkouts && onboardingQuests && onboardingQuests.length > 0 && onboardingCompletedCount < onboardingQuests.length;
 
   return (

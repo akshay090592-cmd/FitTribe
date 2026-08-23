@@ -441,21 +441,31 @@ export const getTeamStats = async (tribeId?: string) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const weeklyCount = allLogs.filter(l =>
-      l.type !== WorkoutType.COMMITMENT &&
-      (l.durationMinutes || 0) >= 30 &&
-      new Date(l.date) >= startOfWeek
-    ).length;
+    // BOLT: Optimize local fallback counting using a single pass loop instead of 3 separate .filter() calls.
+    // Parses log timestamp once per log and avoids intermediate array allocations and Date object churn.
+    const startOfWeekTime = startOfWeek.getTime();
+    const startOfMonthTime = startOfMonth.getTime();
+    const startOfYearTime = startOfYear.getTime();
 
-    const monthlyCount = allLogs.filter(l =>
-      l.type !== WorkoutType.COMMITMENT &&
-      new Date(l.date) >= startOfMonth
-    ).length;
+    let weeklyCount = 0;
+    let monthlyCount = 0;
+    let yearlyCount = 0;
 
-    const yearlyCount = allLogs.filter(l =>
-      l.type !== WorkoutType.COMMITMENT &&
-      new Date(l.date) >= startOfYear
-    ).length;
+    for (let i = 0; i < allLogs.length; i++) {
+      const l = allLogs[i];
+      if (l.type === WorkoutType.COMMITMENT) continue;
+
+      const logTime = Date.parse(l.date);
+      if (logTime >= startOfWeekTime && (l.durationMinutes || 0) >= 30) {
+        weeklyCount++;
+      }
+      if (logTime >= startOfMonthTime) {
+        monthlyCount++;
+      }
+      if (logTime >= startOfYearTime) {
+        yearlyCount++;
+      }
+    }
 
     return {
       weeklyCount,

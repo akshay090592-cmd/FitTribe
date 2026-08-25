@@ -145,6 +145,10 @@ describe('WorkoutSession Commitment Flow', () => {
         const finishCooldownBtn = screen.getByText(/Finish & Cool Down/i);
         fireEvent.click(finishCooldownBtn);
 
+        // Confirm finish popup
+        await waitFor(() => expect(screen.getByText(/Yes, Cool Down/i)).toBeInTheDocument());
+        fireEvent.click(screen.getByText(/Yes, Cool Down/i));
+
         // 4. In Cooldown screen
         await waitFor(() => expect(screen.getByText(/Zen Mode/i)).toBeInTheDocument());
 
@@ -190,6 +194,8 @@ describe('WorkoutSession Commitment Flow', () => {
 
         // Workout -> Cooldown
         fireEvent.click(screen.getByText(/Finish & Cool Down/i));
+        await waitFor(() => expect(screen.getByText(/Yes, Cool Down/i)).toBeInTheDocument());
+        fireEvent.click(screen.getByText(/Yes, Cool Down/i));
         await waitFor(() => screen.getByText(/Zen Mode/i));
 
         // Complete (Opens Feedback)

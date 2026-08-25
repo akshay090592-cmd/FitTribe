@@ -106,7 +106,7 @@ describe('Google Health Service', () => {
       const res = await googleHealthService.safelyFetchExercisePoints(startTimeISO);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=start_time'), expect.anything());
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('filter=exercise.interval.civil_start_time'), expect.anything());
       expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('pageSize=25'), expect.anything());
       expect(res.dataPoints[0].name).toBe('server-filtered');
     });
@@ -125,8 +125,8 @@ describe('Google Health Service', () => {
       // @ts-ignore
       await googleHealthService.safelyFetchExercisePoints(startTimeWithMillis);
 
-      // Expected: "2026-06-20T08:22:02Z" (encoded)
-      const expectedFilterPart = encodeURIComponent('2026-06-20T08:22:02Z');
+      // Expected: "2026-06-20T08:22:02" (encoded)
+      const expectedFilterPart = encodeURIComponent('2026-06-20T08:22:02');
       expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(expectedFilterPart), expect.anything());
       expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('758'), expect.anything());
     });
@@ -220,7 +220,7 @@ describe('Google Health Service', () => {
         expect.stringContaining('exercise/dataPoints'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('342.5')
+          body: expect.stringContaining('fittribe-log-1')
         })
       );
     });
@@ -314,5 +314,89 @@ describe('Google Health Service', () => {
       const avg = await googleHealthService.fetchAverageHeartRate('start', 'end');
       expect(avg).toBe(145);
     });
+  });
+
+  describe('OAuth Authorization & Token Management', () => {
+    it('should trigger authorization redirect and store last redirect timestamp', () => {
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+      delete (window as any).location;
+      (window as any).location = { href: '', origin: 'https://app.test', pathname: '/dashboard', search: '' };
+
+      googleHealthService.authorize();
+
+      expect(setItemSpy).toHaveBeenCalledWith('google_health_last_redirect', expect.any(String));
+      expect(window.location.href).toContain('accounts.google.com/o/oauth2/v2/auth');
+    });
+
+    it('should parse hash token and return auth callback result', () => {
+      delete (window as any).location;
+      (window as any).location = {
+        hash: '#access_token=test-token-123&expires_in=3600&state=google_health_auth',
+        pathname: '/',
+        search: ''
+      };
+      const replaceStateSpy = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+
+      const result = googleHealthService.handleAuthCallback();
+
+      expect(result).not.toBeNull();
+      expect(result?.accessToken).toBe('test-token-123');
+      expect(replaceStateSpy).toHaveBeenCalled();
+    });
+
+    it('should return null from handleAuthCallback if hash or token is missing', () => {
+      delete (window as any).location;
+      (window as any).location = { hash: '', pathname: '/', search: '' };
+      expect(googleHealthService.handleAuthCallback()).toBeNull();
+    });
+
+    it('should correctly remove tokens on disconnect', () => {
+      localStorage.setItem('google_health_access_token', 'token');
+      localStorage.setItem('google_health_expires_at', String(Date.now() + 100000));
+
+      googleHealthService.disconnect();
+
+      expect(googleHealthService.isConnected()).toBe(false);
+      expect(localStorage.getItem('google_health_access_token')).toBeNull();
+    });
+  });
+
+  describe('API Retry and Error Handling', () => {
+    it('should retry on 429 status and succeed', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('valid-token');
+
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ status: 429, ok: false, text: async () => 'Rate limited' })
+        .mockResolvedValueOnce({ status: 200, ok: true, json: async () => ({ success: true }) });
+
+      global.fetch = fetchMock;
+
+      // @ts-ignore
+      const result = await googleHealthService.fetchGoogleAPI('users/me/test');
+      expect(result).toEqual({ success: true });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle HTTP 204 no content response', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('valid-token');
+
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true });
+
+      // @ts-ignore
+      const result = await googleHealthService.fetchGoogleAPI('users/me/test');
+      expect(result).toBeNull();
+    });
+
+    it('should throw error when max retries exceeded or response is not ok', async () => {
+      vi.spyOn(googleHealthService, 'isConnected').mockReturnValue(true);
+      vi.spyOn(googleHealthService as any, 'getAccessToken').mockReturnValue('valid-token');
+
+      global.fetch = vi.fn().mockResolvedValue({ status: 500, ok: false, text: async () => 'Server error' });
+
+      // @ts-ignore
+      await expect(googleHealthService.fetchGoogleAPI('users/me/test')).rejects.toThrow('Google Health API error: 500');
+    }, 15000);
   });
 });

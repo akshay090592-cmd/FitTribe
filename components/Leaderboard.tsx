@@ -39,50 +39,46 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
             return stats;
         }
 
+        // BOLT: Compute cutoffISO conditionally based on selected timeframe, avoiding double Date allocations.
         const now = new Date();
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
-        startOfWeek.setHours(0, 0, 0, 0);
-        const startOfWeekISO = startOfWeek.toISOString();
+        let cutoffISO: string;
 
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        startOfMonth.setHours(0, 0, 0, 0);
-        const startOfMonthISO = startOfMonth.toISOString();
-
-        // Intermediate storage to group logs by user
-        const groupedLogs: Record<string, WorkoutLog[]> = {};
-        members.forEach(user => {
-            groupedLogs[user] = [];
-        });
-
-        // BOLT: Optimize filtering by using an early break.
-        // Since logs are sorted DESC, we can stop processing once they are older than the timeframe cutoff.
-        const cutoffISO = timeframe === 'weekly' ? startOfWeekISO : startOfMonthISO;
-
-        // Single pass filtering O(N) instead of O(U*N)
-        for (const l of logs) {
-            // Early exit if logs are older than the timeframe
-            if (l.date < cutoffISO) break;
-
-            // Skip if user not in our known list (safety)
-            if (!groupedLogs[l.user]) continue;
-
-            groupedLogs[l.user].push(l);
+        if (timeframe === 'weekly') {
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+            startOfWeek.setHours(0, 0, 0, 0);
+            cutoffISO = startOfWeek.toISOString();
+        } else {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            cutoffISO = startOfMonth.toISOString();
         }
 
-        const stats: Record<string, { xp: number, count: number }> = {};
+        // BOLT: Use index-based loops over members and logs to eliminate lambda allocations in hot paths.
+        const groupedLogs: Record<string, WorkoutLog[]> = {};
+        for (let i = 0; i < members.length; i++) {
+            groupedLogs[members[i]] = [];
+        }
 
-        members.forEach(user => {
+        // Single pass filtering O(N) with early exit when logs precede cutoff
+        for (let i = 0; i < logs.length; i++) {
+            const l = logs[i];
+            if (l.date < cutoffISO) break;
+            const uLogs = groupedLogs[l.user];
+            if (uLogs) {
+                uLogs.push(l);
+            }
+        }
+
+        const stats: Record<string, { xp: number; count: number }> = {};
+        for (let i = 0; i < members.length; i++) {
+            const user = members[i];
             const userLogs = groupedLogs[user];
-
-            // Calculate metrics (already filtered to only weekly/monthly here)
-            const xp = calculateXP(userLogs, { isSortedDesc: true });
-
             stats[user] = {
-                xp,
+                xp: calculateXP(userLogs, { isSortedDesc: true }),
                 count: userLogs.length
             };
-        });
+        }
 
         return stats;
     }, [logs, timeframe, gamificationState, members]);

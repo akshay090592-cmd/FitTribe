@@ -225,17 +225,12 @@ describe('User Journeys End-to-End (Integration)', () => {
         // Ensure getCurrentProfile returns null to show Wizard
         (storage.getCurrentProfile as any).mockResolvedValue(null);
 
-        // Expected: Wizard Step 1
+        // Expected: Wizard Step 2 (Name auto-filled from email)
         await waitFor(() => {
-            expect(screen.getByPlaceholderText(/Enter your name/i)).toBeInTheDocument();
+            expect(screen.getByText(/Tell us about yourself/i)).toBeInTheDocument();
         });
 
-        // Step 1: Name
-        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'Test User' } });
-        fireEvent.click(screen.getByText('Next'));
-
         // Step 2: Details
-        await waitFor(() => expect(screen.getByText(/Tell us about yourself/i)).toBeInTheDocument());
         fireEvent.click(screen.getByText('Next')); // Skip details
 
         // Step 3: Fitness

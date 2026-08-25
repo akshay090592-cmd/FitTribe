@@ -195,7 +195,7 @@ describe('E2E Full Verification Flow', () => {
         const chatTab = screen.getByText(/AI Coach/i);
         fireEvent.click(chatTab);
 
-        const input = screen.getByPlaceholderText(/Ask for advice/i);
+        const input = screen.getByPlaceholderText(/Ask Sage for advice/i);
         fireEvent.change(input, { target: { value: 'Hi' } });
 
         const buttons = screen.getAllByRole('button');
@@ -210,5 +210,42 @@ describe('E2E Full Verification Flow', () => {
         await waitFor(() => {
             expect(AICoachService.chatWithCoach).toHaveBeenCalled();
         });
+    });
+
+    it('Scenario: Interactive Diet Plan generation in Nutrition tab', async () => {
+        (AICoachService.generateDietPlan as any).mockResolvedValue({
+            days: [
+                {
+                    day: 'Monday',
+                    meals: [{ name: 'Breakfast', food: 'Oatmeal & Berries', calories: 400, macros: 'P:20 C:60 F:8' }]
+                }
+            ]
+        });
+
+        render(
+            <CoachView
+                userProfile={userProfile}
+                onFetching={() => { }}
+            />
+        );
+
+        const nutritionTab = screen.getByText(/Nutrition/i);
+        fireEvent.click(nutritionTab);
+
+        const createPlanBtn = screen.getByText(/CREATE PLAN/i);
+        fireEvent.click(createPlanBtn);
+
+        await waitFor(() => {
+            expect(screen.getByText(/Generate 7-Day Plan/i)).toBeInTheDocument();
+        });
+
+        const generateBtn = screen.getByText(/Generate 7-Day Plan/i);
+        fireEvent.click(generateBtn);
+
+        await waitFor(() => {
+            expect(AICoachService.generateDietPlan).toHaveBeenCalled();
+        });
+
+        expect(await screen.findByText(/Oatmeal & Berries/i)).toBeInTheDocument();
     });
 });

@@ -127,6 +127,12 @@ describe('WorkoutSession Persistence Bug', () => {
     // Go to cooldown
     fireEvent.click(screen.getByText(/Finish & Cool Down/i));
 
+    // Confirm finish popup
+    await waitFor(() => {
+      expect(screen.getByText(/Yes, Cool Down/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText(/Yes, Cool Down/i));
+
     // Wait for cooldown
     await waitFor(() => {
       expect(screen.getByText(/Complete Mission/i)).toBeInTheDocument();
@@ -135,10 +141,16 @@ describe('WorkoutSession Persistence Bug', () => {
     // Reset mock tracking so we only see what happens during finish
     (localStorageMock.setItem as any).mockClear();
 
-    // Start finishing the workout (this triggers state changes)
+    // Start finishing the workout (this opens feedback modal)
+    fireEvent.click(screen.getByText(/Complete Mission/i));
+
+    // Wait for feedback modal and click Complete Workout
+    await waitFor(() => {
+      expect(screen.getByText(/Complete Workout/i)).toBeInTheDocument();
+    });
+
     await act(async () => {
-      fireEvent.click(screen.getByText(/Complete Mission/i));
-      // Give it a moment to process the async tasks
+      fireEvent.click(screen.getByText(/Complete Workout/i));
       await new Promise(r => setTimeout(r, 100));
     });
 

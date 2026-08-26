@@ -19,6 +19,46 @@ interface Props {
     trackingType?: 'reps' | 'duration';
 }
 
+/**
+ * BOLT: Size-bounded Map cache for exercise image resolution.
+ * Completely eliminates repeated lowercasing (.toLowerCase()) and multiple .includes() checks
+ * across re-renders of ExerciseCard components. Bounded to 1000 items for memory safety.
+ */
+const exerciseImageCache = new Map<string, string>();
+
+/**
+ * Clears the exercise image cache. Exported for test isolation.
+ */
+export const clearExerciseImageCache = (): void => {
+    exerciseImageCache.clear();
+};
+
+export const getExerciseImage = (exerciseName: string, customImage?: string): string => {
+    if (customImage) return customImage;
+
+    const cached = exerciseImageCache.get(exerciseName);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    if (exerciseImageCache.size >= 1000) {
+        exerciseImageCache.clear();
+    }
+
+    const n = exerciseName.toLowerCase();
+    let result = '/assets/exercise_cardio.webp';
+    if (n.includes('squat') || n.includes('leg') || n.includes('lunge') || n.includes('calf') || n.includes('deadlift')) {
+        result = '/assets/exercise_legs.webp';
+    } else if (n.includes('press') || n.includes('push') || n.includes('bench') || n.includes('dip') || n.includes('extension') || n.includes('raise') || n.includes('tricep')) {
+        result = '/assets/exercise_push.webp';
+    } else if (n.includes('row') || n.includes('pull') || n.includes('curl') || n.includes('chin') || n.includes('lat')) {
+        result = '/assets/exercise_pull.webp';
+    }
+
+    exerciseImageCache.set(exerciseName, result);
+    return result;
+};
+
 // Internal component for handling swipe logic
 const SwipeableSetRow: React.FC<{ children: React.ReactNode; onDelete: () => void }> = ({ children, onDelete }) => {
     const [offsetX, setOffsetX] = useState(0);
@@ -227,17 +267,8 @@ export const ExerciseCard: React.FC<Props> = memo(({
         onChange(newSets);
     };
 
-    const getExerciseImage = (exerciseName: string) => {
-        if (image) return image;
-        const n = exerciseName.toLowerCase();
-        if (n.includes('squat') || n.includes('leg') || n.includes('lunge') || n.includes('calf') || n.includes('deadlift')) return '/assets/exercise_legs.webp';
-        if (n.includes('press') || n.includes('push') || n.includes('bench') || n.includes('dip') || n.includes('extension') || n.includes('raise') || n.includes('tricep')) return '/assets/exercise_push.webp';
-        if (n.includes('row') || n.includes('pull') || n.includes('curl') || n.includes('chin') || n.includes('lat')) return '/assets/exercise_pull.webp';
-        return '/assets/exercise_cardio.webp';
-    };
-
     const completedCount = sets.filter(s => s.completed).length;
-    const imageUrl = getExerciseImage(name);
+    const imageUrl = getExerciseImage(name, image);
 
     return (
         <>

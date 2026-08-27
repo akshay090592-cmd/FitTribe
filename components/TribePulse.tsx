@@ -26,22 +26,21 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
         if (!members || members.length === 0) return;
 
         const now = new Date();
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
 
-        // BOLT Optimization: Only fetch logs from the last 2 days (yesterday, today, tomorrow)
-        // to minimize data transfer while keeping pulse accuracy.
-        // We use a slightly larger page size (100) to ensure we get all recent activity for the tribe.
-        // This is standardized across components to leverage request deduplication and cache alignment.
+        // BOLT Optimization: Precompute local midnight timestamps and 48h cutoff timestamp.
+        // Native local Date constructors handle DST transitions (23h/25h days) correctly.
+        // Using Date.parse and numeric timestamp bounds completely eliminates `new Date()` heap allocations
+        // and `.toDateString()` locale formatting overhead inside the log iteration loop.
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const date = now.getDate();
+        const todayStart = new Date(year, month, date).getTime();
+        const tomorrowStart = new Date(year, month, date + 1).getTime();
+        const tomorrowEnd = new Date(year, month, date + 2).getTime();
+        const yesterdayStart = new Date(year, month, date - 1).getTime();
+        const cutoffTime = now.getTime() - (48 * 60 * 60 * 1000);
+
         const allLogs = await getLogs(tribeId, 0, 100);
-        const todayStr = now.toDateString();
-        
-        const tomorrow = new Date(now);
-        tomorrow.setDate(now.getDate() + 1);
-        const tomorrowStr = tomorrow.toDateString();
-
-        const yesterdayStr = yesterday.toDateString();
 
         // Performance Optimization: O(N + M) algorithm instead of O(N * M)
         // N = number of logs, M = number of members.
@@ -54,31 +53,26 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
             workedYesterday: boolean;
         }> = {};
 
-        members.forEach(m => {
-            memberFlags[m] = { workedToday: false, committedToday: false, committedTomorrow: false, committedYesterday: false, workedYesterday: false };
-        });
+        for (let i = 0; i < members.length; i++) {
+            memberFlags[members[i]] = { workedToday: false, committedToday: false, committedTomorrow: false, committedYesterday: false, workedYesterday: false };
+        }
 
-        // BOLT Optimization: Early exit for old logs.
-        // Since allLogs are sorted DESC, we stop processing once we hit logs older than 48h ago.
-        // This ensures we catch all "yesterday" logs across timezones while skipping years of history.
-        const cutoff = new Date(now.getTime() - (48 * 60 * 60 * 1000)).toISOString();
-
-        // Single pass over logs to populate flags for all tribe members
-        for (const log of allLogs) {
-            if (log.date < cutoff) break;
+        // Single pass over logs using zero-allocation timestamp comparisons and index loop
+        for (let i = 0; i < allLogs.length; i++) {
+            const log = allLogs[i];
+            const logTime = Date.parse(log.date);
+            if (logTime < cutoffTime) break;
             if (!memberSet.has(log.user)) continue;
 
-            const logDate = new Date(log.date);
-            const logDateStr = logDate.toDateString();
             const isCommitment = log.type === WorkoutType.COMMITMENT;
             const flags = memberFlags[log.user];
 
-            if (logDateStr === todayStr) {
+            if (logTime >= todayStart && logTime < tomorrowStart) {
                 if (isCommitment) flags.committedToday = true;
                 else flags.workedToday = true;
-            } else if (logDateStr === tomorrowStr) {
+            } else if (logTime >= tomorrowStart && logTime < tomorrowEnd) {
                 if (isCommitment) flags.committedTomorrow = true;
-            } else if (logDateStr === yesterdayStr) {
+            } else if (logTime >= yesterdayStart && logTime < todayStart) {
                 if (isCommitment) flags.committedYesterday = true;
                 else flags.workedYesterday = true;
             }

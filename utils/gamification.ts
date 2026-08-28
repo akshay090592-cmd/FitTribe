@@ -903,10 +903,20 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
   }
 
   // 10. Social Butterfly (Send 5 nudges/gifts)
+  // BOLT: Optimize by using early-exit manual for loop instead of full .filter() pass.
   if (!userState.badges.includes('social_butterfly')) {
     const allGifts = await getGiftTransactions(userProfile.tribeId);
-    const sentGifts = allGifts.filter(g => g.from === userProfile.displayName).length;
-    if (sentGifts >= 5) unlock('social_butterfly');
+    let sentGiftsCount = 0;
+    const giftLen = allGifts.length;
+    for (let i = 0; i < giftLen; i++) {
+      if (allGifts[i].from === userProfile.displayName) {
+        sentGiftsCount++;
+        if (sentGiftsCount >= 5) {
+          unlock('social_butterfly');
+          break;
+        }
+      }
+    }
   }
 
   // Log Badge Rewards
@@ -1233,9 +1243,16 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   }
 
   // Social Butterfly
+  // BOLT: Optimize by using early-exit manual for loop instead of full .filter() pass.
   const allGifts = await getGiftTransactions(userProfile.tribeId);
-  const sentGifts = allGifts.filter(g => g.from === userProfile.displayName).length;
-  if (sentGifts >= 5) keptBadges.push('social_butterfly');
+  let sentGiftsCount = 0;
+  for (let i = 0, giftLen = allGifts.length; i < giftLen; i++) {
+    if (allGifts[i].from === userProfile.displayName) {
+      sentGiftsCount++;
+      if (sentGiftsCount >= 5) break;
+    }
+  }
+  if (sentGiftsCount >= 5) keptBadges.push('social_butterfly');
 
   // Replace badges
   // Note: If we remove a badge, we technically should remove the "Bonus Points" gave by that badge?

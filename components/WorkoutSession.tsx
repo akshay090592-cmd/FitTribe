@@ -375,9 +375,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     const currentRecords = recordsRef.current;
 
     if (currentEx.isSuperset) {
-      const groupIndices = plan.exercises.map((e, i) => ({ ...e, idx: i }))
-        .filter(e => e.isSuperset && e.supersetGroup === currentEx.supersetGroup)
-        .map(e => e.idx);
+      // BOLT: Optimize superset index retrieval to a single-pass loop instead of chained map/filter calls
+      const groupIndices: number[] = [];
+      for (let i = 0; i < plan.exercises.length; i++) {
+        const e = plan.exercises[i];
+        if (e.isSuperset && e.supersetGroup === currentEx.supersetGroup) {
+          groupIndices.push(i);
+        }
+      }
 
       // Check if ALL other exercises in the group have this set completed
       const othersCompleted = groupIndices
@@ -588,10 +593,19 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // ... AI analysis ...
       try {
         setStep('analysis');
-        const summarize = (l: WorkoutLog) => l.exercises.map(e => ({
-          name: e.name,
-          bestSet: e.sets.filter(s => s.completed).reduce((max, curr) => curr.weight > max.weight ? curr : max, { weight: 0, reps: 0 })
-        }));
+        // BOLT: Allocation-free best set summary extraction using manual index loops
+        const summarize = (l: WorkoutLog) => l.exercises.map(e => {
+          let bestSet = { weight: 0, reps: 0 };
+          if (e.sets) {
+            for (let i = 0; i < e.sets.length; i++) {
+              const s = e.sets[i];
+              if (s.completed && s.weight > bestSet.weight) {
+                bestSet = s;
+              }
+            }
+          }
+          return { name: e.name, bestSet };
+        });
         const prompt = `
                   Compare the Current Workout vs Previous Workout (Type ${plan.id}).
                   Current: ${JSON.stringify(summarize(currentLog))}

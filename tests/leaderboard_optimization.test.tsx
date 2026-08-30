@@ -38,7 +38,7 @@ describe('Leaderboard Optimization & Correctness', () => {
     {
       id: '3',
       user: 'User1',
-      date: new Date(now.getTime() - 86400000).toISOString(),
+      date: new Date(now.getTime() - 3600000).toISOString(),
       type: WorkoutType.A,
       durationMinutes: 60,
       vibes: 5,

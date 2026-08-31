@@ -152,19 +152,22 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
             setCommentsMap(commentCounts);
 
             // BOLT: Optimize mood calculation.
-            // Single-pass over initialLogs to group them by user (O(L)),
-            // then synchronous calculateMood for each member (O(M)).
+            // Single-pass over initialLogs to group them by user using allocation-free index loops.
             // Total complexity O(L + M) vs previous O(L * M) + async overhead.
             const logsByUser: Record<string, WorkoutLog[]> = {};
-            memberNames.forEach(u => logsByUser[u] = []);
-            initialLogs.forEach(l => {
+            for (let i = 0; i < memberNames.length; i++) {
+                logsByUser[memberNames[i]] = [];
+            }
+            for (let i = 0; i < initialLogs.length; i++) {
+                const l = initialLogs[i];
                 if (logsByUser[l.user]) logsByUser[l.user].push(l);
-            });
+            }
 
             const moods: Record<string, 'fire' | 'tired' | 'normal'> = {};
-            memberNames.forEach(u => {
+            for (let i = 0; i < memberNames.length; i++) {
+                const u = memberNames[i];
                 moods[u] = calculateMood(logsByUser[u]);
-            });
+            }
             setUserMoods(moods);
 
             setFeedItems(combined);
@@ -235,17 +238,20 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
         setDeletingLogId(logId);
     }, []);
 
-    // Memoized Filtered List
+    // BOLT: Optimize filtered list calculation using single-pass index loop to avoid closure allocations
     const displayedItems = useMemo(() => {
-        let items = feedItems;
-        if (showMyWorkouts) {
-            items = items.filter(item => {
-                if (item.type === 'log') return item.data.user === currentUser;
-                if (item.type === 'gift') return item.data.from === currentUser || item.data.to === currentUser;
-                return false;
-            });
+        if (!showMyWorkouts) return feedItems;
+
+        const result: FeedItem[] = [];
+        for (let i = 0; i < feedItems.length; i++) {
+            const item = feedItems[i];
+            if (item.type === 'log') {
+                if (item.data.user === currentUser) result.push(item);
+            } else if (item.type === 'gift') {
+                if (item.data.from === currentUser || item.data.to === currentUser) result.push(item);
+            }
         }
-        return items;
+        return result;
     }, [feedItems, showMyWorkouts, currentUser]);
 
     const hasMore = useMemo(() => {
@@ -312,14 +318,17 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
         }
     }, [page, hasMoreLogs, hasMoreGifts, profile.tribeId, onFetching]);
 
-    // Calculate Leaderboard Popup Data On-Demand
+    // BOLT: Single-pass O(N) extraction for selected user logs to eliminate intermediate array allocations
     const leaderboardPopupData = useMemo(() => {
         if (!selectedLeaderboardUser) return { logs: [], breakdown: undefined };
 
-        // Filter logs for selected user from ALREADY loaded feedItems
-        const userLogs = feedItems
-            .filter(i => i.type === 'log' && i.data.user === selectedLeaderboardUser)
-            .map(i => i.data as WorkoutLog);
+        const userLogs: WorkoutLog[] = [];
+        for (let i = 0; i < feedItems.length; i++) {
+            const item = feedItems[i];
+            if (item.type === 'log' && item.data.user === selectedLeaderboardUser) {
+                userLogs.push(item.data as WorkoutLog);
+            }
+        }
 
         const breakdown = calculateLogXPBreakdown(userLogs, { isSortedDesc: true });
 

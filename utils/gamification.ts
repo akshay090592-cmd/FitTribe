@@ -1204,11 +1204,12 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
 
   // Consistency King
   const workoutsPerWeek = new Map<string, number>();
-  sortedLogs.forEach(l => {
-    if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) return;
+  for (let i = 0, len = sortedLogs.length; i < len; i++) {
+    const l = sortedLogs[i];
+    if ((l.type === WorkoutType.CUSTOM || l.type === WorkoutType.CUSTOM_TEMPLATE) && l.durationMinutes < 30) continue;
     const weekKey = getWeekKey(l.date);
     workoutsPerWeek.set(weekKey, (workoutsPerWeek.get(weekKey) || 0) + 1);
-  });
+  }
   const eligibleWeeks = Array.from(workoutsPerWeek.keys()).filter(k => workoutsPerWeek.get(k)! >= 3).sort();
   if (eligibleWeeks.length >= 4) {
     let consecutive = 1;

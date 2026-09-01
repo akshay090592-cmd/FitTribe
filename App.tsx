@@ -133,14 +133,12 @@ const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
   <button
     onClick={onClick}
     aria-label={label}
-    className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group ${active ? 'bg-gradient-to-tr from-emerald-500 to-emerald-400 text-white -translate-y-4 shadow-lg shadow-emerald-900/40 scale-110' : 'text-emerald-100/40 hover:text-white hover:bg-white/10'}`}
+    className={`relative flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl transition-all duration-300 group ${active ? 'bg-gradient-to-tr from-emerald-500 to-emerald-400 text-white -translate-y-1.5 shadow-lg shadow-emerald-900/40 scale-105' : 'text-emerald-100/50 hover:text-white hover:bg-white/10'}`}
   >
-    <Icon size={active ? 24 : 22} strokeWidth={active ? 2.5 : 2} className="transition-all" />
-    {active && (
-      <span className="absolute -bottom-8 text-[10px] font-bold text-emerald-300 whitespace-nowrap animate-fade-in-up bg-black/80 border border-white/10 px-2 py-1 rounded-full backdrop-blur-md">
-        {label}
-      </span>
-    )}
+    <Icon size={active ? 22 : 20} strokeWidth={active ? 2.5 : 2} className="transition-all" />
+    <span className={`text-[9px] font-bold tracking-wide whitespace-nowrap leading-none transition-opacity duration-300 ${active ? 'text-white opacity-100' : 'text-emerald-100/60 opacity-80'}`}>
+      {label}
+    </span>
   </button>
 );
 
@@ -1134,10 +1132,10 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        <div className="w-full max-w-md bg-white p-8 rounded-[32px] shadow-xl border-2 border-emerald-100">
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] shadow-[var(--shadow-lift)] border border-emerald-100">
           <div className="flex justify-between mb-6">
             {[1, 2, 3, 4].map(step => (
-              <div key={step} className={`h-2 rounded-full flex-1 mx-1 ${wizardStep >= step ? 'bg-emerald-500' : 'bg-emerald-100'}`}></div>
+              <div key={step} className={`h-1.5 rounded-full flex-1 mx-1 transition-colors duration-500 ${wizardStep >= step ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-emerald-100'}`}></div>
             ))}
           </div>
 
@@ -1155,7 +1153,7 @@ const App: React.FC = () => {
                 value={setupName}
                 onChange={e => setSetupName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full text-center text-xl p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 outline-none"
+                className="w-full text-center text-xl p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none bg-emerald-50/40"
               />
             )}
 
@@ -1360,7 +1358,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-0 font-sans selection:bg-emerald-200 selection:text-emerald-900" style={{ backgroundColor: 'var(--color-bg-page)' }}>
+    <div className="min-h-screen pb-safe antialiased font-sans selection:bg-emerald-200 selection:text-emerald-900" style={{ backgroundColor: 'var(--color-bg-page)' }}>
 
       {/* Header */}
       <div
@@ -1789,7 +1787,7 @@ const App: React.FC = () => {
       </div> {/* End of Main Grid */}
 
       {/* Floating Dock Navigation */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-3 z-50 w-[90%] max-w-sm md:hidden" style={{ background: 'hsla(140, 70%, 6%, 0.55)', backdropFilter: 'blur(20px) saturate(1.6)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="fixed safe-dock-bottom left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-2.5 z-50 w-[90%] max-w-sm md:hidden" style={{ background: 'hsla(140, 70%, 6%, 0.55)', backdropFilter: 'blur(20px) saturate(1.6)', WebkitBackdropFilter: 'blur(20px) saturate(1.6)', borderColor: 'rgba(255,255,255,0.08)' }}>
         <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" />
         <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" />
         <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" />

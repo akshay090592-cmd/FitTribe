@@ -25,18 +25,18 @@ export const DesktopNavigation: React.FC<Props> = React.memo(({ view, setView })
                 const Icon = item.icon;
                 const isActive = view === item.id;
                 return (
-                    <button
+            <button
                         key={item.id}
                         onClick={() => setView(item.id)}
                         className={`
               relative px-4 py-2 rounded-xl flex items-center transition-all duration-300 group
               ${isActive
-                                ? 'bg-gradient-to-tr from-emerald-500 to-emerald-400 text-white shadow-lg'
+                                ? 'bg-white/95 text-emerald-800 shadow-md'
                                 : 'text-emerald-100 hover:bg-white/10 hover:text-white'
                             }
             `}
                     >
-                        <Icon size={18} className={`mr-2 ${isActive ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'}`} />
+                        <Icon size={18} className={`mr-2 ${isActive ? 'drop-shadow-sm' : 'group-hover:scale-110 transition-transform'}`} />
                         <span className="font-bold text-sm tracking-wide font-['Fredoka']">{item.label}</span>
                     </button>
                 );

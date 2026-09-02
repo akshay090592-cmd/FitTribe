@@ -866,8 +866,13 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
       workoutsPerWeek.set(weekKey, (workoutsPerWeek.get(weekKey) || 0) + 1);
     }
 
-    const eligibleWeeks = Array.from(workoutsPerWeek.keys()).filter(k => workoutsPerWeek.get(k)! >= 3).sort();
+    // BOLT: Allocation-free extraction of eligible weeks with >= 3 workouts using a manual loop
+    const eligibleWeeks: string[] = [];
+    workoutsPerWeek.forEach((count, key) => {
+      if (count >= 3) eligibleWeeks.push(key);
+    });
     if (eligibleWeeks.length >= 4) {
+      eligibleWeeks.sort();
       let consecutive = 1;
       for (let i = 1; i < eligibleWeeks.length; i++) {
         const [y1, w1] = eligibleWeeks[i - 1].split('-W').map(Number);
@@ -1210,8 +1215,13 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
     const weekKey = getWeekKey(l.date);
     workoutsPerWeek.set(weekKey, (workoutsPerWeek.get(weekKey) || 0) + 1);
   }
-  const eligibleWeeks = Array.from(workoutsPerWeek.keys()).filter(k => workoutsPerWeek.get(k)! >= 3).sort();
+  // BOLT: Allocation-free extraction of eligible weeks with >= 3 workouts using a manual loop
+  const eligibleWeeks: string[] = [];
+  workoutsPerWeek.forEach((count, key) => {
+    if (count >= 3) eligibleWeeks.push(key);
+  });
   if (eligibleWeeks.length >= 4) {
+    eligibleWeeks.sort();
     let consecutive = 1;
     for (let i = 1; i < eligibleWeeks.length; i++) {
       const [y1, w1] = eligibleWeeks[i - 1].split('-W').map(Number);

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Check, X } from 'lucide-react';
 import { Notification } from '../types';
-import { shortDateFormatter } from '../utils/dateUtils';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 interface Props {
     notifications: Notification[];
@@ -12,7 +12,15 @@ interface Props {
     onNotificationClick: (notification: Notification) => void;
 }
 
-export const NotificationCenter: React.FC<Props> = ({
+/**
+ * BOLT: Optimized NotificationCenter component with memoization and cached relative date formatting.
+ * - Wrapped component in React.memo to prevent re-rendering when parent component state updates
+ *   and notification props remain identical.
+ * - Replaced custom, un-cached date formatting with the minute-keyed `formatTimeAgo` utility.
+ *   This eliminates repeated `new Date()` allocations and un-cached `Intl.DateTimeFormat` calls
+ *   during notification list rendering.
+ */
+export const NotificationCenter: React.FC<Props> = memo(({
     notifications,
     unreadCount,
     onMarkAsRead,
@@ -21,18 +29,6 @@ export const NotificationCenter: React.FC<Props> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     // Close dropdown when clicking outside is now handled by the backdrop
-
-
-    const formatTime = (dateStr: string) => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        return shortDateFormatter.format(date);
-    };
 
     return (
         <div className="relative">
@@ -121,7 +117,7 @@ export const NotificationCenter: React.FC<Props> = ({
                                                 </div>
                                             )}
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                                                {formatTime(notif.created_at)}
+                                                {formatTimeAgo(notif.created_at)}
                                             </span>
                                             {!notif.read && (
                                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400"></div>
@@ -137,4 +133,4 @@ export const NotificationCenter: React.FC<Props> = ({
             )}
         </div>
     );
-};
+});

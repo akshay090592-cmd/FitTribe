@@ -54,12 +54,12 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     // Optimized using nested allocation-free manual standard for loops instead of dual .reduce().
     const totalVolume = useMemo(() => {
         let vol = 0;
-        const exercises = log.exercises;
+        const exercises = log.exercises || [];
         for (let i = 0; i < exercises.length; i++) {
-            const sets = exercises[i].sets;
+            const sets = exercises[i]?.sets || [];
             for (let j = 0; j < sets.length; j++) {
                 const s = sets[j];
-                if (s.completed) {
+                if (s?.completed) {
                     vol += s.weight * s.reps;
                 }
             }
@@ -68,15 +68,21 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     }, [log.exercises]);
 
     // BOLT: Memoize displayed exercises to avoid $O(1)$ or $O(N)$ slicing on every render
-    const displayedExercises = useMemo(() => isExpanded ? log.exercises : log.exercises.slice(0, 3), [isExpanded, log.exercises]);
-    const remainingCount = log.exercises.length - 3;
+    const displayedExercises = useMemo(() => {
+        const exercises = log.exercises || [];
+        return isExpanded ? exercises : exercises.slice(0, 3);
+    }, [isExpanded, log.exercises]);
+    const remainingCount = (log.exercises?.length || 0) - 3;
 
-    // BOLT: Memoize date-based commitment check to avoid repeated Date object instantiation
+    // BOLT: Short-circuit date parsing for non-commitment logs to eliminate redundant Date object creations and setHours calls on standard workout feed renders.
     const isFailedCommitment = useMemo(() => {
+        if (log.type !== 'COMMITMENT' && log.type !== 'Commitment' && log.type?.toUpperCase() !== 'COMMITMENT') {
+            return false;
+        }
         const todayMidnight = new Date();
         todayMidnight.setHours(0, 0, 0, 0);
-        return new Date(log.date) < todayMidnight;
-    }, [log.date]);
+        return Date.parse(log.date) < todayMidnight.getTime();
+    }, [log.date, log.type]);
 
     // Avatar Logic: Use provided ID, else fallback to 'male' (or legacy name match if we wanted)
     const avatarImg = getAvatarPath(props.avatarId);

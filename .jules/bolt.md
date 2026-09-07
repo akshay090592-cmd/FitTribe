@@ -1,3 +1,7 @@
+## 2026-09-19 - Short-Circuiting Array Mapping & Formatting in Closed Modal Components
+**Learning:** Defining heavy `useMemo` hooks (such as logbook array processing, date formatting, and searchable text generation) before a component's visibility guard (e.g. `if (!isOpen) return null;`) causes array processing logic to run whenever props update, even when the modal is closed and invisible. Adding `if (!isOpen) return [];` to short-circuit `useMemo` blocks and wrapping modal components in `React.memo` completely eliminates array mapping and string formatting overhead while closed (~$O(1)$ zero-allocation evaluation).
+**Action:** Always short-circuit array processing inside `useMemo` hooks when a modal or collapsible container is closed (`if (!isOpen) return [];`), and include `isOpen` in hook dependencies.
+
 ## 2026-09-18 - Short-Circuit Commitment Checks in FeedLogItem
 **Learning:** Calculating date boundaries (`new Date()` and `setHours(0,0,0,0)`) on every item in a social feed render loop creates unnecessary heap allocations and CPU overhead, especially when over 90% of logs are standard workouts rather than commitments. Short-circuiting the check based on `log.type` and using direct numeric timestamp comparison (`Date.parse(log.date)`) completely bypasses Date creation for standard logs (~10x speedup in benchmarks).
 **Action:** Always short-circuit date or status evaluations in list components based on item type before creating Date objects or executing date math.

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { WorkoutLog, WorkoutType } from '../types';
 import { X, Dumbbell, Search, Filter, Download } from 'lucide-react';
 import { convertToCSV, downloadCSV } from '../utils/exportUtils';
@@ -12,17 +12,20 @@ interface HistoryModalProps {
   onDelete: (logId: string) => void;
 }
 
-export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, logs, onDelete }) => {
+/**
+ * BOLT: Optimized HistoryModal component.
+ * - Wrapped in React.memo to prevent re-renders when parent state (like timer ticks) updates while props remain identical.
+ * - Short-circuits log processing when !isOpen, avoiding expensive date formatting and searchable string generation over history when closed.
+ */
+export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose, logs, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  /**
-   * BOLT: Optimize HistoryModal by pre-processing logs once per data update.
-   * This hoists expensive date formatting and searchable text generation out of the
-   * filtering loop that runs on every keystroke.
-   */
   const processedLogs = useMemo(() => {
+    // BOLT: Early exit if modal is closed to bypass array mapping and date formatting overhead
+    if (!isOpen) return [];
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
@@ -39,7 +42,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, log
       };
     });
     // NOTE: Removal of .sort() as logs are already provided in descending order from storage/parent.
-  }, [logs]);
+  }, [logs, isOpen]);
 
   const filteredLogs = useMemo(() => {
     const term = searchTerm.toLowerCase();
@@ -153,4 +156,4 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, log
       </div>
     </div>
   );
-};
+});

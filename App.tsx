@@ -257,11 +257,23 @@ const App: React.FC = () => {
     [allLogs]
   );
 
-  // BOLT: Memoize "tomorrow commitment" check to avoid O(N) search and Date allocations on every render.
-  // Performance Impact: Eliminates ~2000 Date allocations per minute during active workouts.
+  // BOLT: Optimize tomorrow commitment check using pre-computed local midnight epoch bounds and early-exiting for-loop.
+  // Bypasses new Date() allocations and toDateString() formatting per log entry.
   const hasTomorrowCommitment = React.useMemo(() => {
-    const tomorrowStr = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString();
-    return allLogs.some(l => l.type === WorkoutType.COMMITMENT && new Date(l.date).toDateString() === tomorrowStr);
+    const now = new Date();
+    const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+    const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2).getTime();
+
+    for (let i = 0; i < allLogs.length; i++) {
+      const l = allLogs[i];
+      if (l.type === WorkoutType.COMMITMENT) {
+        const logTime = Date.parse(l.date);
+        if (logTime >= tomorrowStart && logTime < tomorrowEnd) {
+          return true;
+        }
+      }
+    }
+    return false;
   }, [allLogs]);
   const [quests, setQuests] = useState<any[]>([]);
   const [onboardingQuests, setOnboardingQuests] = useState<any[]>([]);
@@ -1832,14 +1844,21 @@ const App: React.FC = () => {
             if (!userProfile) return;
 
             const allUserLogs = await getUserLogs(currentUser);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
 
-            const commitLog = allUserLogs.find(l => {
-              const d = new Date(l.date);
-              d.setHours(0, 0, 0, 0);
-              return l.type === 'COMMITMENT' && d.getTime() === today.getTime();
-            });
+            let commitLog = undefined;
+            for (let i = 0; i < allUserLogs.length; i++) {
+              const l = allUserLogs[i];
+              if (l.type === 'COMMITMENT') {
+                const logTime = Date.parse(l.date);
+                if (logTime >= todayStart && logTime < todayEnd) {
+                  commitLog = l;
+                  break;
+                }
+              }
+            }
 
             if (commitLog) {
               log.id = commitLog.id; // Reuse ID

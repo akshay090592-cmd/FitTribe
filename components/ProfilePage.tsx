@@ -14,6 +14,7 @@ import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
 import { googleHealthService } from '../services/googleHealthService';
 import { ConfirmPopup } from './ConfirmPopup';
+import { BadgeIcon } from './BadgeIcon';
 
 interface Props {
     userProfile: UserProfile;
@@ -213,24 +214,6 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
             console.error("Failed to delete log", e);
             alert("Failed to delete log. Please try again.");
         }
-    };
-
-    const BadgeIcon = ({ name, size = 24 }: { name: string, size?: number }) => {
-        const icons: any = {
-            Footprints: Zap,
-            Sword: Trophy,
-            Sun: Star,
-            Moon: Star,
-            Flame: Zap,
-            Dumbbell: Crown,
-            Users: Trophy,
-            Coffee: Star,
-            Crown: Crown,
-            MessageCircle: MessageCircle,
-            Target: Target
-        };
-        const Icon = icons[name] || Trophy;
-        return <Icon size={size} />;
     };
 
     // Get Theme Background

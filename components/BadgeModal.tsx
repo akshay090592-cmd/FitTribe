@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { BADGES_DB } from '../utils/gamification';
-import { X, Lock, Zap, Trophy, Star, Crown, MessageCircle, Target, Award, Calendar, Clock, Flame } from 'lucide-react';
+import { X, Lock, Trophy } from 'lucide-react';
+import { BadgeIcon } from './BadgeIcon';
 
 interface BadgeModalProps {
   isOpen: boolean;
@@ -9,25 +10,6 @@ interface BadgeModalProps {
 }
 
 export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClose, unlockedBadgeIds = [] }) => {
-  const BadgeIcon = ({ name, size = 24 }: { name: string, size?: number }) => {
-    const icons: any = {
-      Footprints: Zap,
-      Sword: Trophy,
-      Sun: Star,
-      Moon: Star,
-      Flame: Flame,
-      Dumbbell: Crown,
-      Users: Trophy,
-      Coffee: Star,
-      Crown: Crown,
-      MessageCircle: MessageCircle,
-      Target: Target,
-      Clock: Clock,
-      Zap: Zap
-    };
-    const Icon = icons[name] || Award;
-    return <Icon size={size} />;
-  };
 
   // BOLT: Optimize progress calculation to be O(B + M) instead of O(M * B).
   // Uses a pre-constructed Set of badge IDs for O(1) checks.

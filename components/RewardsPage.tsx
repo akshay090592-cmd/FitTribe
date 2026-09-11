@@ -11,6 +11,7 @@ import { getUserLogs } from '../utils/storage';
 import { updateQuestProgress } from '../utils/questUtils';
 import { TribeStatusCard } from './TribeStatusCard';
 import { getAvatarPath } from '../utils/avatar';
+import { BadgeIcon } from './BadgeIcon';
 
 
 interface Props {
@@ -113,24 +114,6 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       setGiftModalItem(null);
       showToast(`Sent ${giftModalItem.name} to ${toUser}!`, 'success');
     }
-  };
-
-  const BadgeIcon = ({ name, size = 24 }: { name: string, size?: number }) => {
-    const icons: any = {
-      Footprints: Zap,
-      Sword: Trophy,
-      Sun: Star,
-      Moon: Star,
-      Flame: Zap,
-      Dumbbell: Crown,
-      Users: Trophy,
-      Coffee: Star,
-      Crown: Crown,
-      MessageCircle: MessageCircle,
-      Target: Target
-    };
-    const Icon = icons[name] || Trophy;
-    return <Icon size={size} />;
   };
 
   const getGiftImage = (giftId: string) => {

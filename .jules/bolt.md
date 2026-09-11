@@ -1,3 +1,7 @@
+## 2026-09-20 - Hoisting Subcomponents and Icon Maps to Prevent Subtree Remounting
+**Learning:** Defining subcomponents (such as `BadgeIcon`) inside the render scope of parent components (`BadgeModal`, `ProfilePage`, `RewardsPage`) causes React to treat the subcomponent as a brand-new component type on every parent render cycle. This forces React to unmount and remount DOM subtrees rather than updating existing DOM nodes. Hoisting `BadgeIcon` to a standalone memoized module file and extracting dictionary mappings to module scope guarantees a stable component type reference, preserving DOM nodes during parent state updates and eliminating per-render object dictionary allocations.
+**Action:** Always hoist subcomponents and static mapping dictionaries to module scope outside parent render functions.
+
 ## 2026-09-18 - Short-Circuit Commitment Checks in FeedLogItem
 **Learning:** Calculating date boundaries (`new Date()` and `setHours(0,0,0,0)`) on every item in a social feed render loop creates unnecessary heap allocations and CPU overhead, especially when over 90% of logs are standard workouts rather than commitments. Short-circuiting the check based on `log.type` and using direct numeric timestamp comparison (`Date.parse(log.date)`) completely bypasses Date creation for standard logs (~10x speedup in benchmarks).
 **Action:** Always short-circuit date or status evaluations in list components based on item type before creating Date objects or executing date math.

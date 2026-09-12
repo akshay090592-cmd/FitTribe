@@ -62,6 +62,7 @@ vi.mock('../utils/storage', () => ({
     getLogs: vi.fn().mockResolvedValue([]),
     getAllReactions: vi.fn().mockResolvedValue([]),
     getGiftTransactions: vi.fn().mockResolvedValue([]),
+    getCommentCounts: vi.fn().mockResolvedValue({}),
     processOfflineQueue: vi.fn(),
     getOfflineQueue: vi.fn().mockReturnValue([]),
     saveLog: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),

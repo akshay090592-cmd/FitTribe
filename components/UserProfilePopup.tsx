@@ -15,7 +15,11 @@ interface Props {
   userProfile?: UserProfile; // Optional for now
 }
 
-export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamificationState, userProfile }) => {
+/**
+ * BOLT: Memoized UserProfilePopup component to prevent unnecessary re-renders.
+ * Eliminates redundant re-render cycles when parent App.tsx updates global state while props remain unchanged.
+ */
+export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gamificationState, userProfile }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [xpLogs, setXpLogs] = useState<any[]>([]);
@@ -174,4 +178,4 @@ export const UserProfilePopup: React.FC<Props> = ({ isOpen, onClose, user, gamif
     </div>,
     document.body
   );
-};
+});

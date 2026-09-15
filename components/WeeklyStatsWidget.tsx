@@ -64,6 +64,23 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
     return `${m}m`;
   };
 
+  // BOLT: Optimize progress dots rendering by using an allocation-free manual for loop
+  // instead of Array.from({ length: goal }).map(...), eliminating intermediate array/closure churn.
+  const goal = userProfile?.weeklyGoal || 3;
+  const progressDots = [];
+  for (let i = 1; i <= goal; i++) {
+    progressDots.push(
+      <div
+        key={i}
+        className={`w-2 h-6 rounded-full transition-all duration-500 ${
+          i <= weeklyProgress
+            ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-sm scale-110'
+            : 'bg-emerald-100'
+        }`}
+      ></div>
+    );
+  }
+
   return (
     <div
       onClick={onClick}
@@ -89,16 +106,7 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
 
         {/* Progress Dots */}
         <div className="flex space-x-1">
-          {Array.from({ length: userProfile?.weeklyGoal || 3 }, (_, i) => i + 1).map(i => (
-            <div
-              key={i}
-              className={`w-2 h-6 rounded-full transition-all duration-500 ${
-                i <= weeklyProgress
-                  ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-sm scale-110'
-                  : 'bg-emerald-100'
-              }`}
-            ></div>
-          ))}
+          {progressDots}
         </div>
       </div>
 

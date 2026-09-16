@@ -22,40 +22,51 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose
   const [filterType, setFilterType] = useState<string>('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const processedLogs = useMemo(() => {
+  /**
+   * BOLT: Optimized single-pass log processing & filtering when HistoryModal is open.
+   * - Consolidates mapping and filtering into a single pass over `logs`.
+   * - Evaluates `filterType` and `searchTerm` checks inside an allocation-free loop first.
+   * - Bypasses `Date.parse`, date formatting (`formatWithCache`), and `ProcessedLog` object creation
+   *   for logs that don't match the current filters.
+   */
+  const filteredLogs = useMemo(() => {
     if (!isOpen) return [];
+
+    const term = searchTerm.toLowerCase().trim();
+    const hasTypeFilter = filterType !== 'ALL';
+    const hasSearchTerm = term.length > 0;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
 
-    return logs.map((log): ProcessedLog & { searchableText: string } => {
+    const result: (ProcessedLog & { searchableText: string })[] = [];
+
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+
+      // 1. Short-circuit check: filter by WorkoutType
+      if (hasTypeFilter && log.type !== filterType) continue;
+
+      // 2. Short-circuit check: filter by search term (case-insensitive on activity/type)
       const activityName = log.customActivity?.toLowerCase() || '';
       const typeName = log.type?.toLowerCase() || '';
 
-      return {
+      if (hasSearchTerm && !activityName.includes(term) && !typeName.includes(term)) {
+        continue;
+      }
+
+      // 3. Only construct ProcessedLog object for matching items
+      result.push({
         ...log,
         isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
         formattedDate: formatWithCache(monthDayFormatter, log.date),
         searchableText: `${activityName} ${typeName}`
-      };
-    });
-    // NOTE: Removal of .sort() as logs are already provided in descending order from storage/parent.
-  }, [logs, isOpen]);
+      });
+    }
 
-  const filteredLogs = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-
-    return processedLogs.filter(log => {
-      // Filter by Type
-      if (filterType !== 'ALL' && log.type !== filterType) return false;
-
-      // Filter by Search (using pre-generated searchableText)
-      if (term && !log.searchableText.includes(term)) return false;
-
-      return true;
-    });
-  }, [processedLogs, filterType, searchTerm]);
+    return result;
+  }, [logs, isOpen, filterType, searchTerm]);
 
   const handleExport = () => {
     if (filteredLogs.length === 0) return;

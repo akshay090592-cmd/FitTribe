@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { EXERCISE_MUSCLE_MAP } from '../utils/muscleMapping';
 import { WorkoutTemplate } from '../types';
 import { Plus, Trash2, Save, X, Dumbbell } from 'lucide-react';
@@ -9,17 +9,22 @@ interface Props {
   initialTemplate?: WorkoutTemplate;
 }
 
-export const TemplateEditor: React.FC<Props> = ({ onSave, onCancel, initialTemplate }) => {
+/**
+ * BOLT: Hoisted sorted exercise list to module scope to eliminate redundant
+ * Object.keys() calls, array allocations, and string sorting on every component mount.
+ */
+export const SORTED_AVAILABLE_EXERCISES = Object.keys(EXERCISE_MUSCLE_MAP).sort();
+
+/**
+ * BOLT: Wrap TemplateEditor in React.memo to prevent unnecessary re-renders
+ * when parent state changes.
+ */
+export const TemplateEditor: React.FC<Props> = React.memo(({ onSave, onCancel, initialTemplate }) => {
   const [name, setName] = useState(initialTemplate?.name || '');
   const [exercises, setExercises] = useState<{ name: string; sets: number; reps: string }[]>(
     initialTemplate?.exercises || []
   );
   const [selectedExercise, setSelectedExercise] = useState('');
-
-  // Sort exercises alphabetically for dropdown
-  const availableExercises = useMemo(() => {
-    return Object.keys(EXERCISE_MUSCLE_MAP).sort();
-  }, []);
 
   const handleAddExercise = () => {
     if (!selectedExercise) return;
@@ -90,7 +95,7 @@ export const TemplateEditor: React.FC<Props> = ({ onSave, onCancel, initialTempl
               className="flex-1 bg-white border border-emerald-100 rounded-xl p-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
             >
               <option value="">Select an exercise...</option>
-              {availableExercises.map(ex => (
+              {SORTED_AVAILABLE_EXERCISES.map(ex => (
                 <option key={ex} value={ex}>{ex}</option>
               ))}
             </select>
@@ -164,4 +169,4 @@ export const TemplateEditor: React.FC<Props> = ({ onSave, onCancel, initialTempl
       </div>
     </div>
   );
-};
+});

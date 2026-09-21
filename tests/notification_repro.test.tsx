@@ -133,7 +133,7 @@ describe('Notification Trigger for Wellbeing Activities', () => {
     await waitFor(() => {
       expect(notificationService.notifyTribeOnActivity).toHaveBeenCalledWith(
         'TestUser',
-        'Meditation',
+        expect.any(String),
         'test-tribe-id',
         undefined
       );

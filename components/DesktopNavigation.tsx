@@ -7,21 +7,24 @@ interface Props {
 }
 
 /**
+ * BOLT: Hoist static NAV_ITEMS array to module scope to eliminate per-render array and object allocations.
+ */
+const NAV_ITEMS = [
+    { id: 'dashboard', label: 'Home', icon: Dumbbell },
+    { id: 'social', label: 'Tribe', icon: Users },
+    { id: 'rewards', label: 'Loot', icon: Trophy },
+    { id: 'analytics', label: 'Stats', icon: BarChart3 },
+    { id: 'coach', label: 'Coach', icon: Sparkles },
+] as const;
+
+/**
  * BOLT: Memoize DesktopNavigation to prevent redundant re-renders.
  * Performance Impact: Ensures navigation bar remains snappy regardless of dashboard complexity.
  */
 export const DesktopNavigation: React.FC<Props> = React.memo(({ view, setView }) => {
-    const navItems = [
-        { id: 'dashboard', label: 'Home', icon: Dumbbell },
-        { id: 'social', label: 'Tribe', icon: Users },
-        { id: 'rewards', label: 'Loot', icon: Trophy },
-        { id: 'analytics', label: 'Stats', icon: BarChart3 },
-        { id: 'coach', label: 'Coach', icon: Sparkles },
-    ];
-
     return (
         <nav className="bg-white/10 backdrop-blur-md rounded-2xl px-2 py-1.5 flex gap-1 border border-white/10 shadow-inner mx-4">
-            {navItems.map((item) => {
+            {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = view === item.id;
                 return (

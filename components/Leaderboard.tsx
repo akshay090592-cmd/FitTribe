@@ -15,6 +15,66 @@ interface Props {
 
 type Timeframe = 'weekly' | 'monthly' | 'lifetime';
 
+/**
+ * BOLT: Hoist avatar error fallback handler to module scope to eliminate inline callback allocations.
+ */
+const handleAvatarError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = 'https://placehold.co/40x40';
+};
+
+interface LeaderboardUserRowProps {
+    user: string;
+    idx: number;
+    xp: number;
+    count: number;
+    avatarId?: string;
+    onUserClick?: (user: string) => void;
+}
+
+/**
+ * BOLT: Standalone memoized user row component prevents un-necessary DOM subtree re-renders
+ * when parent components or unrelated list items update.
+ */
+const LeaderboardUserRow = React.memo(({ user, idx, xp, count, avatarId, onUserClick }: LeaderboardUserRowProps) => {
+    return (
+        <div onClick={() => onUserClick?.(user)} className="flex items-center justify-between p-3 border-b border-emerald-100/30 last:border-0 hover:bg-emerald-50/40 spring-transition rounded-xl group cursor-pointer">
+            <div className="flex items-center flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 shadow-sm transition-transform group-hover:scale-110
+                    ${idx === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
+                        idx === 1 ? 'bg-slate-100 text-slate-600 ring-2 ring-slate-200' :
+                            idx === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                    {idx + 1}
+                </div>
+
+                <div className="relative w-10 h-10 mr-3">
+                    <div className="w-full h-full rounded-full overflow-hidden border border-slate-100">
+                        <img src={getAvatarPath(avatarId)} alt={user} className="w-full h-full object-cover" onError={handleAvatarError} />
+                    </div>
+                    {idx === 0 && <div className="absolute -top-2 -right-1 text-base animate-bounce">👑</div>}
+                </div>
+
+                <div>
+                    <div className="font-bold text-slate-800 text-sm flex items-center">
+                        {user}
+                        {idx === 0 && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded-full border border-yellow-200">Lead</span>}
+                    </div>
+                    <div className="flex items-center space-x-3 mt-0.5">
+                        <div className="text-xs text-amber-800 font-bold flex items-center bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded">
+                            <Zap size={10} className="mr-1 fill-current" /> {xp.toLocaleString()} XP
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col items-end">
+                <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100/50 px-2 py-1 rounded-lg flex items-center group-hover:bg-emerald-100/50 transition-all">
+                    <Activity size={12} className="mr-1" /> {count}
+                </div>
+            </div>
+        </div>
+    );
+});
+
 export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationState, members, avatarMap = {}, onUserClick }) => {
     const [timeframe, setTimeframe] = useState<Timeframe>('weekly');
 
@@ -123,41 +183,15 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                     const { xp, count } = filteredStats[user] || { xp: 0, count: 0 };
 
                     return (
-                        <div key={user} onClick={() => onUserClick?.(user)} className="flex items-center justify-between p-3 border-b border-emerald-100/30 last:border-0 hover:bg-emerald-50/40 spring-transition rounded-xl group cursor-pointer">
-                            <div className="flex items-center flex-1">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 shadow-sm transition-transform group-hover:scale-110
-                                    ${idx === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
-                                        idx === 1 ? 'bg-slate-100 text-slate-600 ring-2 ring-slate-200' :
-                                            idx === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' : 'bg-white text-slate-400 border border-slate-100'}`}>
-                                    {idx + 1}
-                                </div>
-
-                                <div className="relative w-10 h-10 mr-3">
-                                    <div className="w-full h-full rounded-full overflow-hidden border border-slate-100">
-                                        <img src={getAvatarPath(avatarMap[user])} alt={user} className="w-full h-full object-cover" onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40'} />
-                                    </div>
-                                    {idx === 0 && <div className="absolute -top-2 -right-1 text-base animate-bounce">👑</div>}
-                                </div>
-
-                                <div>
-                                    <div className="font-bold text-slate-800 text-sm flex items-center">
-                                        {user}
-                                        {idx === 0 && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded-full border border-yellow-200">Lead</span>}
-                                    </div>
-                                    <div className="flex items-center space-x-3 mt-0.5">
-                                        <div className="text-xs text-amber-800 font-bold flex items-center bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded">
-                                            <Zap size={10} className="mr-1 fill-current" /> {xp.toLocaleString()} XP
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-end">
-                                <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100/50 px-2 py-1 rounded-lg flex items-center group-hover:bg-emerald-100/50 transition-all">
-                                    <Activity size={12} className="mr-1" /> {count}
-                                </div>
-                            </div>
-                        </div>
+                        <LeaderboardUserRow
+                            key={user}
+                            user={user}
+                            idx={idx}
+                            xp={xp}
+                            count={count}
+                            avatarId={avatarMap[user]}
+                            onUserClick={onUserClick}
+                        />
                     );
                 })}
             </div>

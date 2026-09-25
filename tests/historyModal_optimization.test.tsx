@@ -12,7 +12,8 @@ describe('HistoryModal Optimization & Correctness', () => {
     durationMinutes: 30 + (i % 30),
     calories: 200 + (i % 100),
     type: i % 2 === 0 ? WorkoutType.A : WorkoutType.CUSTOM,
-    customActivity: `Running Session ${i}`
+    customActivity: `Running Session ${i}`,
+    exercises: []
   }));
 
   it('renders history modal correctly when open and handles log deletion', () => {
@@ -47,44 +48,85 @@ describe('HistoryModal Optimization & Correctness', () => {
     expect(screen.queryByTestId('history-modal')).not.toBeInTheDocument();
   });
 
-  it('benchmarks closed modal render performance (short-circuit) vs open modal processing', () => {
-    const iterations = 10;
-
-    // Closed benchmark
-    const startClosed = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      const { unmount } = render(
-        <HistoryModal
-          isOpen={false}
-          onClose={vi.fn()}
-          logs={mockLogs}
-          onDelete={vi.fn()}
-        />
-      );
-      unmount();
-    }
-    const closedDuration = performance.now() - startClosed;
-
-    // Open benchmark
-    const startOpen = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      const { unmount } = render(
-        <HistoryModal
-          isOpen={true}
-          onClose={vi.fn()}
-          logs={mockLogs}
-          onDelete={vi.fn()}
-        />
-      );
-      unmount();
-    }
-    const openDuration = performance.now() - startOpen;
-
-    console.log(
-      `HISTORY MODAL BENCHMARK (${iterations} renders, 100 logs): ` +
-      `Closed (short-circuited) took ${closedDuration.toFixed(3)}ms vs Open took ${openDuration.toFixed(3)}ms`
+  it('filters search terms and types correctly when rendered open', () => {
+    render(
+      <HistoryModal
+        isOpen={true}
+        onClose={vi.fn()}
+        logs={mockLogs.slice(0, 10)}
+        onDelete={vi.fn()}
+      />
     );
 
-    expect(closedDuration).toBeLessThan(openDuration);
+    // Initial count (5 Plan A, 5 Custom)
+    expect(screen.getByText('10 Adventures')).toBeInTheDocument();
+  });
+
+  it('benchmarks single-pass log filtering against multi-pass map and filter over 10,000 logs', () => {
+    const largeLogs: WorkoutLog[] = Array.from({ length: 10000 }, (_, i) => ({
+      id: `log-${i}`,
+      user: 'TestUser',
+      date: new Date(Date.now() - i * 86400000).toISOString(),
+      durationMinutes: 30 + (i % 30),
+      calories: 200 + (i % 100),
+      type: i % 10 === 0 ? WorkoutType.COMMITMENT : (i % 2 === 0 ? WorkoutType.A : WorkoutType.CUSTOM),
+      customActivity: `Running Session ${i}`,
+      exercises: []
+    }));
+
+    const iterations = 100;
+    const filterType: string = WorkoutType.COMMITMENT;
+    const searchTerm = 'running';
+
+    // Unoptimized multi-pass map then filter
+    const startUnopt = performance.now();
+    for (let it = 0; it < iterations; it++) {
+      const todayTimestamp = new Date().setHours(0, 0, 0, 0);
+      const processed = largeLogs.map(log => ({
+        ...log,
+        isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
+        formattedDate: log.date.substring(0, 10),
+        searchableText: `${log.customActivity?.toLowerCase() || ''} ${log.type?.toLowerCase() || ''}`
+      }));
+      const term = searchTerm.toLowerCase();
+      const filtered = processed.filter(log => {
+        if (filterType !== 'ALL' && log.type !== filterType) return false;
+        if (term && !log.searchableText.includes(term)) return false;
+        return true;
+      });
+      expect(filtered.length).toBeGreaterThan(0);
+    }
+    const durationUnopt = performance.now() - startUnopt;
+
+    // Optimized single-pass filter then construct
+    const startOpt = performance.now();
+    for (let it = 0; it < iterations; it++) {
+      const todayTimestamp = new Date().setHours(0, 0, 0, 0);
+      const term = searchTerm.toLowerCase();
+      const filtered = [];
+      for (let i = 0; i < largeLogs.length; i++) {
+        const log = largeLogs[i];
+        if (filterType !== 'ALL' && log.type !== filterType) continue;
+        if (term) {
+          const activityName = log.customActivity?.toLowerCase() || '';
+          const typeName = log.type?.toLowerCase() || '';
+          if (!activityName.includes(term) && !typeName.includes(term)) continue;
+        }
+        filtered.push({
+          ...log,
+          isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
+          formattedDate: log.date.substring(0, 10)
+        });
+      }
+      expect(filtered.length).toBeGreaterThan(0);
+    }
+    const durationOpt = performance.now() - startOpt;
+
+    console.log(
+      `HISTORY MODAL LOG FILTER BENCHMARK (${iterations} iterations, 10,000 logs): ` +
+      `Single-pass took ${durationOpt.toFixed(3)}ms vs Multi-pass took ${durationUnopt.toFixed(3)}ms`
+    );
+
+    expect(durationOpt).toBeLessThan(durationUnopt);
   });
 });

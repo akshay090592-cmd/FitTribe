@@ -13,49 +13,50 @@ interface HistoryModalProps {
 }
 
 /**
- * BOLT: Wrap HistoryModal in React.memo and short-circuit log processing when modal is closed.
- * - React.memo avoids re-rendering the modal on global parent updates (e.g. App.tsx) when props are unchanged.
- * - Short-circuiting processedLogs when isOpen is false avoids O(N) date formatting and string map operations when closed.
+ * BOLT: Single-pass log filtering and transformation in HistoryModal.
+ * - Wrap HistoryModal in React.memo and short-circuit when closed (isOpen=false) to avoid processing when invisible.
+ * - Consolidated map and filter passes into a single allocation-free index loop inside useMemo.
+ * - Filter by filterType and searchTerm first to bypass Date parsing, formatWithCache, and ProcessedLog allocations for non-matching items.
  */
 export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose, logs, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const processedLogs = useMemo(() => {
+  const filteredLogs = useMemo(() => {
     if (!isOpen) return [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
+    const term = searchTerm.toLowerCase();
+    const len = logs.length;
 
-    return logs.map((log): ProcessedLog & { searchableText: string } => {
-      const activityName = log.customActivity?.toLowerCase() || '';
-      const typeName = log.type?.toLowerCase() || '';
+    const result: ProcessedLog[] = [];
 
-      return {
+    for (let i = 0; i < len; i++) {
+      const log = logs[i];
+
+      // 1. Filter by Type first (short-circuit before date parsing & object allocations)
+      if (filterType !== 'ALL' && log.type !== filterType) continue;
+
+      // 2. Filter by Search term
+      if (term) {
+        const activityName = log.customActivity?.toLowerCase() || '';
+        const typeName = log.type?.toLowerCase() || '';
+        if (!activityName.includes(term) && !typeName.includes(term)) continue;
+      }
+
+      // 3. Construct ProcessedLog only for matching items
+      result.push({
         ...log,
         isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
-        formattedDate: formatWithCache(monthDayFormatter, log.date),
-        searchableText: `${activityName} ${typeName}`
-      };
-    });
-    // NOTE: Removal of .sort() as logs are already provided in descending order from storage/parent.
-  }, [logs, isOpen]);
+        formattedDate: formatWithCache(monthDayFormatter, log.date)
+      });
+    }
 
-  const filteredLogs = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-
-    return processedLogs.filter(log => {
-      // Filter by Type
-      if (filterType !== 'ALL' && log.type !== filterType) return false;
-
-      // Filter by Search (using pre-generated searchableText)
-      if (term && !log.searchableText.includes(term)) return false;
-
-      return true;
-    });
-  }, [processedLogs, filterType, searchTerm]);
+    return result;
+  }, [logs, isOpen, filterType, searchTerm]);
 
   const handleExport = () => {
     if (filteredLogs.length === 0) return;

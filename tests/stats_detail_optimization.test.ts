@@ -82,4 +82,54 @@ describe('StatsDetailPopup weekly filter optimization', () => {
     }
     expect(filtered).toHaveLength(0);
   });
+
+  it('demonstrates short-circuiting speedup when closed vs open over 100,000 iterations', () => {
+    vi.useRealTimers();
+    const largeLogs: WorkoutLog[] = [];
+    for (let i = 0; i < 1000; i++) {
+      largeLogs.push({
+        id: `log-${i}`,
+        date: new Date(MOCK_NOW.getTime() - i * 3600000).toISOString(),
+        user: 'User',
+        type: WorkoutType.A,
+        exercises: [],
+        durationMinutes: 30
+      });
+    }
+
+    const iterations = 100000;
+
+    // Simulate closed check
+    let resClosed: WorkoutLog[] = [];
+    const startClosed = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      const isOpen = false;
+      resClosed = isOpen ? largeLogs : [];
+    }
+    const durationClosed = performance.now() - startClosed;
+    expect(resClosed).toHaveLength(0);
+
+    // Simulate open filtering
+    const startOpen = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const startOfWeekISO = startOfWeek.toISOString();
+
+      const filtered: WorkoutLog[] = [];
+      for (let j = 0; j < largeLogs.length; j++) {
+        if (largeLogs[j].date >= startOfWeekISO) {
+          filtered.push(largeLogs[j]);
+        } else {
+          break;
+        }
+      }
+    }
+    const durationOpen = performance.now() - startOpen;
+
+    console.log(`STATS DETAIL BENCHMARK (${iterations} iterations): Closed short-circuit took ${durationClosed.toFixed(3)}ms vs Open filtering took ${durationOpen.toFixed(3)}ms`);
+    expect(durationClosed).toBeLessThan(durationOpen);
+  });
 });

@@ -13,71 +13,77 @@ interface Props {
     xpBreakdown?: Map<string, { base: number, bonus: number, total: number, streak: number }>;
 }
 
+// BOLT: Hoisted title mapping dictionary to module level to prevent per-render object allocations.
+const DEFAULT_TITLES = {
+    workouts: 'Workout History',
+    streak: 'Streak Details',
+    weekly: 'Weekly Goal Progress',
+    points: 'Points History'
+} as const;
+
+// BOLT: Hoisted getRowData helper to module scope to eliminate function allocations on every component render.
+const getRowData = (
+    log: WorkoutLog | XPLog | PointLog,
+    type: 'workouts' | 'streak' | 'weekly' | 'points',
+    xpBreakdown?: Map<string, { base: number, bonus: number, total: number, streak: number }>
+) => {
+    let xp = 0;
+    let bonus = 0;
+    let streak = 0;
+    let points = 0;
+    let isValidForGoal = false;
+    let activityName = 'Activity';
+    let iconType = 'workout';
+    let vibes = 0;
+
+    if ('amount' in log) { // PointLog or XPLog
+        const l = log as (XPLog | PointLog);
+        if (type === 'points') points = l.amount;
+        else xp = l.amount;
+
+        // Format Activity Name from Source
+        if (l.source === 'workout') {
+            activityName = 'Workout Completed';
+            iconType = 'workout';
+        } else if (l.source === 'badge') {
+            activityName = 'Badge Earned';
+            iconType = 'badge';
+        } else if (l.source === 'quest') {
+            activityName = 'Quest Complete';
+            iconType = 'quest';
+        } else if (l.source === 'shop') {
+            activityName = 'Shop Purchase';
+            iconType = 'shop';
+        }
+    } else {
+        // Legacy WorkoutLog
+        const l = log as WorkoutLog;
+        isValidForGoal = l.durationMinutes >= 30;
+        activityName = l.type === 'Custom' ? (l.customActivity || 'Custom Workout') : (l.type === 'A' ? 'Plan A' : 'Plan B');
+        vibes = l.vibes || 0;
+
+        if (xpBreakdown && xpBreakdown.has(l.id)) {
+            const data = xpBreakdown.get(l.id)!;
+            xp = data.total;
+            bonus = data.bonus;
+            streak = data.streak;
+        } else {
+            if (l.durationMinutes < 30) xp = l.durationMinutes;
+            else if (l.type === WorkoutType.CUSTOM) xp = Math.floor((l.calories || 0) / 10);
+            else xp = l.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;
+        }
+        points = calculatePoints(l);
+    }
+
+    return { xp, bonus, isValidForGoal, points, streak, activityName, iconType, vibes };
+};
+
 // Performance Optimization: Wrap in React.memo to prevent redundant re-renders of the detailed stats list on parent view changes.
 export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, logs, title: customTitle, xpBreakdown }) => {
-    if (!isOpen) return null;
-
-    const title = customTitle || {
-        workouts: 'Workout History',
-        streak: 'Streak Details',
-        weekly: 'Weekly Goal Progress',
-        points: 'Points History'
-    }[type];
-
-    // Helper to calculate XP/Status
-    const getRowData = (log: WorkoutLog | XPLog | PointLog) => {
-        let xp = 0;
-        let bonus = 0;
-        let streak = 0;
-        let points = 0;
-        let isValidForGoal = false;
-        let activityName = 'Activity';
-        let iconType = 'workout';
-        let vibes = 0;
-
-        if ('amount' in log) { // PointLog or XPLog
-            const l = log as (XPLog | PointLog);
-            if (type === 'points') points = l.amount;
-            else xp = l.amount;
-
-            // Format Activity Name from Source
-            if (l.source === 'workout') {
-                activityName = 'Workout Completed';
-                iconType = 'workout';
-            } else if (l.source === 'badge') {
-                activityName = 'Badge Earned';
-                iconType = 'badge';
-            } else if (l.source === 'quest') {
-                activityName = 'Quest Complete';
-                iconType = 'quest';
-            } else if (l.source === 'shop') {
-                activityName = 'Shop Purchase';
-                iconType = 'shop';
-            }
-        } else {
-            // Legacy WorkoutLog
-            const l = log as WorkoutLog;
-            isValidForGoal = l.durationMinutes >= 30;
-            activityName = l.type === 'Custom' ? (l.customActivity || 'Custom Workout') : (l.type === 'A' ? 'Plan A' : 'Plan B');
-            vibes = l.vibes || 0;
-
-            if (xpBreakdown && xpBreakdown.has(l.id)) {
-                const data = xpBreakdown.get(l.id)!;
-                xp = data.total;
-                bonus = data.bonus;
-                streak = data.streak;
-            } else {
-                if (l.durationMinutes < 30) xp = l.durationMinutes;
-                else if (l.type === WorkoutType.CUSTOM) xp = Math.floor((l.calories || 0) / 10);
-                else xp = l.type === WorkoutType.B ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT;
-            }
-            points = calculatePoints(l);
-        }
-
-        return { xp, bonus, isValidForGoal, points, streak, activityName, iconType, vibes };
-    };
-
+    // BOLT: Place useMemo above the early return to ensure hooks obey React's Rules of Hooks.
+    // Short-circuits when isOpen is false to return an empty array immediately without performing date math or filtering.
     const processedLogs = useMemo(() => {
+        if (!isOpen) return [];
         if (type === 'workouts' || type === 'points') return logs;
 
         if (type === 'weekly') {
@@ -104,7 +110,11 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
         }
 
         return logs;
-    }, [logs, type]);
+    }, [isOpen, logs, type]);
+
+    if (!isOpen) return null;
+
+    const title = customTitle || DEFAULT_TITLES[type];
 
     const renderIcon = (iconType: string, isShop: boolean) => {
         if (isShop) return <ShoppingBag size={16} className="text-indigo-400" />;
@@ -144,7 +154,7 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
                                     const logId = 'id' in log ? log.id : (log as any).id;
                                     const logDate = 'created_at' in log ? (log as any).created_at : (log as any).date;
 
-                                    const { xp, bonus, streak, isValidForGoal, points, activityName, iconType, vibes } = getRowData(log);
+                                    const { xp, bonus, streak, isValidForGoal, points, activityName, iconType, vibes } = getRowData(log, type, xpBreakdown);
                                     const dateStr = formatWithCache(monthDayFormatter, logDate);
 
                                     const isShop = iconType === 'shop';

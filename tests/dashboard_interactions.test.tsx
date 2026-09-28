@@ -49,6 +49,7 @@ vi.mock('../utils/gamification', () => ({
     checkAchievements: vi.fn().mockResolvedValue([]),
     getStreakRisk: vi.fn().mockResolvedValue(true),
     SHOP_THEMES: [{ id: 'default', type: 'color', value: 'bg-emerald-900', cost: 0, name: 'Default' }],
+    GIFT_ITEMS: [{ id: 'fist_bump', name: 'Fist Bump', emoji: '👊', image: '/assets/icon_fist_bump.webp' }],
 }));
 
 vi.mock('../utils/storage', () => ({
@@ -67,11 +68,12 @@ vi.mock('../utils/storage', () => ({
     getOfflineQueue: vi.fn().mockReturnValue([]),
     saveLog: vi.fn(), addXPLog: vi.fn(), addPointLog: vi.fn(),
     updateLog: vi.fn(),
-    checkAchievements: vi.fn().mockResolvedValue([]), // This is actually in gamification usually, but App might import from storage? Re-check imports.
+    checkAchievements: vi.fn().mockResolvedValue([]),
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     deleteLog: vi.fn(),
     getTribeMembers: vi.fn().mockResolvedValue([]),
+    getTribe: vi.fn().mockResolvedValue(null),
     createTribe: vi.fn(),
     joinTribe: vi.fn(),
     saveGamificationState: vi.fn(),

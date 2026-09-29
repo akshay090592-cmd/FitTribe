@@ -1,13 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { GIFT_IMAGE_MAP } from '../components/RewardsPage';
-import { GIFT_ITEMS } from '../utils/gamification';
+import { GIFT_IMAGE_MAP, BADGE_MAP, THEME_MAP, GIFT_ITEMS, BADGES_DB, SHOP_THEMES } from '../utils/gamification';
 
-describe('RewardsPage Gift Image Optimization & Benchmark', () => {
-  it('correctly maps gift item IDs to image paths via GIFT_IMAGE_MAP', () => {
+describe('RewardsPage Gift Image & Gamification Maps Optimization & Benchmark', () => {
+  it('correctly maps entity IDs via GIFT_IMAGE_MAP, BADGE_MAP, and THEME_MAP', () => {
     GIFT_ITEMS.forEach(gift => {
       expect(GIFT_IMAGE_MAP.get(gift.id)).toBe(gift.image);
     });
     expect(GIFT_IMAGE_MAP.get('non_existent_gift_id')).toBeUndefined();
+
+    BADGES_DB.forEach(badge => {
+      expect(BADGE_MAP.get(badge.id)).toBe(badge);
+    });
+    expect(BADGE_MAP.get('non_existent_badge_id')).toBeUndefined();
+
+    SHOP_THEMES.forEach(theme => {
+      expect(THEME_MAP.get(theme.id)).toBe(theme);
+    });
+    expect(THEME_MAP.get('non_existent_theme_id')).toBeUndefined();
   });
 
   it('benchmarks O(1) GIFT_IMAGE_MAP lookup against O(N) array .find() over 100,000 lookups', () => {

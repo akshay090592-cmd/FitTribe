@@ -59,6 +59,22 @@ export const GIFT_ITEMS = [
   { id: 'medal', name: 'Tiny Medal', emoji: '🏅', image: '/assets/icon_medal.webp' },
 ];
 
+/**
+ * BOLT: Pre-computed module-scoped Map lookups for static gamification DBs.
+ * Replaces linear O(N) .find() searches with O(1) constant time Map lookups.
+ */
+export const GIFT_IMAGE_MAP = new Map<string, string | undefined>(
+  GIFT_ITEMS.map(g => [g.id, g.image])
+);
+
+export const BADGE_MAP = new Map<string, Badge>(
+  BADGES_DB.map(b => [b.id, b])
+);
+
+export const THEME_MAP = new Map<string, Theme>(
+  SHOP_THEMES.map(t => [t.id, t])
+);
+
 // --- LOGIC ---
 
 export const XP_PER_WORKOUT = 100;
@@ -691,7 +707,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
       userState.points += 50;
       userState.lifetimeXp! += 50;
 
-      newBadges.push(BADGES_DB.find(b => b.id === badgeId)!);
+      newBadges.push(BADGE_MAP.get(badgeId)!);
     }
   };
 

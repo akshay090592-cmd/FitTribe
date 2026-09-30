@@ -3,6 +3,9 @@ import { BADGES_DB } from '../utils/gamification';
 import { X, Lock, Trophy } from 'lucide-react';
 import { BadgeIcon } from './BadgeIcon';
 
+// BOLT: Module-level Set of all badge IDs to avoid re-allocating BADGES_DB.map(b => b.id) and new Set() on every progress calculation.
+const ALL_BADGE_IDS_SET = new Set(BADGES_DB.map(b => b.id));
+
 interface BadgeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,14 +14,16 @@ interface BadgeModalProps {
 
 export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClose, unlockedBadgeIds = [] }) => {
 
-  // BOLT: Optimize progress calculation to be O(B + M) instead of O(M * B).
-  // Uses a pre-constructed Set of badge IDs for O(1) checks.
+  // BOLT: Optimize progress calculation and short-circuit when modal is closed (isOpen = false).
+  // Uses module-scoped ALL_BADGE_IDS_SET to avoid array allocations during unlocks.
   const progress = useMemo(() => {
-    const badgeIdsSet = new Set(BADGES_DB.map(b => b.id));
+    if (!isOpen) {
+      return { current: 0, total: BADGES_DB.length, percentage: 0 };
+    }
     let unlockedCount = 0;
     const len = unlockedBadgeIds.length;
     for (let i = 0; i < len; i++) {
-        if (badgeIdsSet.has(unlockedBadgeIds[i])) {
+        if (ALL_BADGE_IDS_SET.has(unlockedBadgeIds[i])) {
             unlockedCount++;
         }
     }
@@ -28,11 +33,12 @@ export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClo
         total: total,
         percentage: Math.round((unlockedCount / total) * 100)
     };
-  }, [unlockedBadgeIds]);
+  }, [isOpen, unlockedBadgeIds]);
 
-  // BOLT: Optimize sorting to drop complexity from O(M * B log B) to O(B log B).
+  // BOLT: Optimize sorting and short-circuit when modal is closed (isOpen = false).
   // Pre-constructs a Set of unlocked badge IDs once so that lookup inside the comparator is O(1).
   const sortedBadges = useMemo(() => {
+    if (!isOpen) return [];
     const unlockedSet = new Set(unlockedBadgeIds);
     return [...BADGES_DB].sort((a, b) => {
         // Sort by unlocked status first (unlocked first)
@@ -46,7 +52,7 @@ export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClo
         const rarityOrder = { legendary: 3, rare: 2, common: 1 };
         return rarityOrder[b.rarity] - rarityOrder[a.rarity];
     });
-  }, [unlockedBadgeIds]);
+  }, [isOpen, unlockedBadgeIds]);
 
   if (!isOpen) return null;
 

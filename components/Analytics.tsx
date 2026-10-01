@@ -210,14 +210,22 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
     });
   };
 
-  const chartData = useMemo(() => getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : [], selectedExercise), [logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
+  // BOLT: Short-circuit useMemo calculations when isVisible is false to avoid $O(N)$ log processing when hidden.
+  const chartData = useMemo(() => {
+    if (!isVisible) return [];
+    return getChartData(viewMode, versusUser, versusUser ? rivalLogsCache[versusUser] || [] : [], selectedExercise);
+  }, [isVisible, logs, rivalLogsCache, selectedExercise, viewMode, versusUser]);
+
   // BOLT: Remove selectedExercise from dependency array because frequency chart doesn't use it.
   // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
   // BOLT: Set isFrequencyOnly to true to skip expensive calculations.
-  const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
+  const freqChartData = useMemo(() => {
+    if (!isVisible) return [];
+    return getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true);
+  }, [isVisible, logs, rivalLogsCache, freqViewMode, freqVersusUser]);
 
   const muscleData = useMemo(() => {
-    if (!logs.length) return [];
+    if (!isVisible || !logs.length) return [];
 
     // BOLT: Calculate date boundary for filtering
     const now = new Date();
@@ -329,7 +337,13 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   }, [user, isVisible]); // Re-run when user changes
 
   // BOLT: Memoize exercise list sorting to prevent redundant $O(N \log N)$ on every render
-  const exerciseList = useMemo(() => Object.keys(stats || {}).sort(), [stats]);
+  const exerciseList = useMemo(() => {
+    if (!isVisible) return [];
+    return Object.keys(stats || {}).sort();
+  }, [isVisible, stats]);
+
+  // BOLT: Short-circuit early return when hidden to completely avoid JSX evaluation and subtree DOM reconciliation.
+  if (!isVisible) return null;
 
   if (loading && !hasLoaded) return <div className="p-10 text-center text-emerald-600 font-bold animate-pulse">Computing Jungle Stats...</div>;
 

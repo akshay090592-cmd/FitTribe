@@ -5,10 +5,8 @@ import { notifyOnGiftReceived } from '../services/notificationService';
 import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES } from '../utils/gamification';
 import { Trophy, Lock, Gift, Zap, Crown, Star, Send, Target, MessageCircle, Store, Palette, CheckCircle, LogOut, X } from 'lucide-react';
 
-// BOLT: Pre-compute module-scoped map for O(1) gift image lookups to avoid O(N) array .find() calls during renders
-export const GIFT_IMAGE_MAP = new Map<string, string | undefined>(
-  GIFT_ITEMS.map(g => [g.id, g.image])
-);
+// BOLT: Re-export GIFT_IMAGE_MAP from gamification.ts for backwards compatibility
+export { GIFT_IMAGE_MAP } from '../utils/gamification';
 import { useToast } from './Toast';
 import { InfoTooltip } from './InfoTooltip';
 import { StatsDetailPopup } from './StatsDetailPopup';

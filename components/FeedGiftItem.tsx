@@ -1,6 +1,6 @@
 import React from 'react';
 import { GiftTransaction } from '../types';
-import { GIFT_ITEMS } from '../utils/gamification';
+import { GIFT_IMAGE_MAP } from '../utils/gamification';
 import { formatTimeAgo } from '../utils/dateUtils';
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export const FeedGiftItem: React.FC<Props> = React.memo(({ gift }) => {
-    const giftImg = GIFT_ITEMS.find(g => g.id === gift.giftId)?.image;
+    const giftImg = GIFT_IMAGE_MAP.get(gift.giftId);
 
     return (
         <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 p-4 rounded-[24px] border border-pink-100 shadow-sm flex items-center space-x-4 relative overflow-hidden">

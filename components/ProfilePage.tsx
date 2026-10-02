@@ -8,7 +8,7 @@ import { convertToCSV, downloadCSV } from '../utils/exportUtils';
 import { HistoryModal } from './HistoryModal';
 import { BadgeModal } from './BadgeModal';
 import { StatsDetailPopup } from './StatsDetailPopup';
-import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank } from '../utils/gamification';
+import { BADGES_DB, SHOP_THEMES, BADGE_MAP, THEME_MAP, calculateLevel, getLevelProgress, getStreaks, getRank } from '../utils/gamification';
 import { getAvatarPath } from '../utils/avatar';
 import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
@@ -218,7 +218,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
 
     // Get Theme Background
     const activeThemeId = gamificationState?.activeTheme || 'default';
-    const themeObj = SHOP_THEMES.find(t => t.id === activeThemeId);
+    const themeObj = THEME_MAP.get(activeThemeId);
     const headerStyle = themeObj
         ? (themeObj.type === 'image' ? { backgroundImage: `url('${themeObj.value}')` } : { backgroundColor: themeObj.value.replace('bg-', '#') })
         : { backgroundColor: '#10b981' };
@@ -341,7 +341,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                 {gamificationState?.badges && gamificationState.badges.length > 0 ? (
                                     <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
                                         {gamificationState.badges.slice(0, 4).map(badgeId => {
-                                            const badge = BADGES_DB.find(b => b.id === badgeId);
+                                            const badge = BADGE_MAP.get(badgeId);
                                             if (!badge) return null;
                                             return (
                                                 <div key={badgeId} className="aspect-square glass-panel p-2 flex items-center justify-center text-yellow-600 spring-transition" style={{ background: 'linear-gradient(135deg, hsl(48,95%,92%), hsl(38,90%,85%))', border: '1px solid hsl(48,70%,80%)', borderRadius: '16px' }} title={badge.title}>

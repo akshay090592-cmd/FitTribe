@@ -59,6 +59,22 @@ export const GIFT_ITEMS = [
   { id: 'medal', name: 'Tiny Medal', emoji: '🏅', image: '/assets/icon_medal.webp' },
 ];
 
+/**
+ * BOLT: Module-scoped Map lookups for O(1) constant-time access across components and utilities.
+ * Avoids repeated O(N) array .find() operations on GIFT_ITEMS, BADGES_DB, and SHOP_THEMES.
+ */
+export const GIFT_IMAGE_MAP = new Map<string, string | undefined>(
+  GIFT_ITEMS.map(g => [g.id, g.image])
+);
+
+export const BADGE_MAP = new Map<string, Badge>(
+  BADGES_DB.map(b => [b.id, b])
+);
+
+export const THEME_MAP = new Map<string, Theme>(
+  SHOP_THEMES.map(t => [t.id, t])
+);
+
 // --- LOGIC ---
 
 export const XP_PER_WORKOUT = 100;
@@ -691,7 +707,7 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
       userState.points += 50;
       userState.lifetimeXp! += 50;
 
-      newBadges.push(BADGES_DB.find(b => b.id === badgeId)!);
+      newBadges.push(BADGE_MAP.get(badgeId)!);
     }
   };
 

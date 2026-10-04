@@ -7,6 +7,9 @@ interface Props {
     logs: WorkoutLog[];
 }
 
+// BOLT: Hoist static header array to module scope to eliminate per-render array allocations
+const WEEK_DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
 // Performance Optimization: Wrap in React.memo to prevent unnecessary re-renders of the Calendar view on global state updates in App.tsx when the logs prop reference is identical.
 export const Calendar: React.FC<Props> = memo(({ logs }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -23,9 +26,8 @@ export const Calendar: React.FC<Props> = memo(({ logs }) => {
 
         const monthLabel = monthLongYearFormatter.format(currentDate);
 
-        // BOLT: Optimized identifying workout days using a single-pass loop with an early break.
-        // Since logs are sorted DESC, we stop processing once we hit logs older than the current month.
-        // We also skip expensive Date instantiations for logs far in the future (newer months).
+        // BOLT: Optimized identifying workout days using a single-pass loop with early break on ISO strings.
+        // Direct ISO string comparisons avoid Date.parse calls on skipped/broken logs.
         const workoutDays = new Set<number>();
 
         // Boundaries with 48h buffer for timezone safety
@@ -39,7 +41,8 @@ export const Calendar: React.FC<Props> = memo(({ logs }) => {
 
         for (let i = 0; i < logs.length; i++) {
             const log = logs[i];
-            // Early break: logs are sorted DESC
+
+            // Early break: logs are sorted DESC (ISO string comparison avoids Date creation or parsing)
             if (log.date < lowerBoundISO) break;
             // Skip logs far in the future
             if (log.date > upperBoundISO) continue;
@@ -82,8 +85,6 @@ export const Calendar: React.FC<Props> = memo(({ logs }) => {
         );
     }
 
-    const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
     return (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -111,7 +112,7 @@ export const Calendar: React.FC<Props> = memo(({ logs }) => {
             </div>
 
             <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                {weekDays.map(d => (
+                {WEEK_DAYS.map(d => (
                     <div key={d} className="text-[10px] font-bold text-slate-400 uppercase">
                         {d}
                     </div>

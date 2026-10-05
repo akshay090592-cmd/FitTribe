@@ -34,10 +34,11 @@ const QuestIcon = React.memo(({ name, size = 20, className = "" }: { name: strin
   return <Icon size={size} className={className} />;
 });
 
-const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void, theme?: 'emerald' | 'indigo' }> = React.memo(({ quest, onManualComplete, theme = 'emerald' }) => {
-  const isManual = quest.type === 'manual';
-
-  const colors = theme === 'indigo' ? {
+/**
+ * BOLT: Hoist theme styles object to module scope to eliminate per-render object allocations for quest items.
+ */
+const QUEST_THEME_STYLES = {
+  indigo: {
     bgCompleted: 'bg-indigo-50 border-indigo-100',
     textCompleted: 'text-indigo-800',
     iconCompletedBg: 'bg-indigo-200 text-indigo-700',
@@ -46,7 +47,8 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
     rewardBg: 'bg-indigo-100 text-indigo-600',
     checkColor: 'text-indigo-500',
     radioHover: 'group-hover:border-indigo-400'
-  } : {
+  },
+  emerald: {
     bgCompleted: 'bg-emerald-50 border-emerald-100',
     textCompleted: 'text-emerald-800',
     iconCompletedBg: 'bg-emerald-200 text-emerald-700',
@@ -55,7 +57,12 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
     rewardBg: 'bg-emerald-100 text-emerald-600',
     checkColor: 'text-emerald-500',
     radioHover: 'group-hover:border-emerald-400'
-  };
+  }
+};
+
+const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void, theme?: 'emerald' | 'indigo' }> = React.memo(({ quest, onManualComplete, theme = 'emerald' }) => {
+  const isManual = quest.type === 'manual';
+  const colors = QUEST_THEME_STYLES[theme];
 
   return (
     <div

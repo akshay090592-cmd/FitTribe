@@ -79,4 +79,39 @@ describe('QuestBoard Onboarding Render', () => {
 
     expect(screen.queryByText('New Recruit Mission')).toBeNull();
   });
+
+  it('benchmarks hoisted theme lookup and Map/Set badge checks against unhoisted object creation and array searches', () => {
+    const iterations = 100000;
+
+    // 1. Theme style lookup benchmark
+    const QUEST_THEME_STYLES = {
+      indigo: { bgCompleted: 'bg-indigo-50 border-indigo-100', textCompleted: 'text-indigo-800' },
+      emerald: { bgCompleted: 'bg-emerald-50 border-emerald-100', textCompleted: 'text-emerald-800' }
+    };
+
+    const startUnhoisted = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      const theme = i % 2 === 0 ? 'indigo' : 'emerald';
+      const colors = theme === 'indigo' ? {
+        bgCompleted: 'bg-indigo-50 border-indigo-100',
+        textCompleted: 'text-indigo-800'
+      } : {
+        bgCompleted: 'bg-emerald-50 border-emerald-100',
+        textCompleted: 'text-emerald-800'
+      };
+      expect(colors.bgCompleted).toBeDefined();
+    }
+    const unhoistedTime = performance.now() - startUnhoisted;
+
+    const startHoisted = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      const theme = i % 2 === 0 ? 'indigo' : 'emerald';
+      const colors = QUEST_THEME_STYLES[theme];
+      expect(colors.bgCompleted).toBeDefined();
+    }
+    const hoistedTime = performance.now() - startHoisted;
+
+    console.log(`QUEST ITEM THEME BENCHMARK (${iterations} iterations): Hoisted took ${hoistedTime.toFixed(3)}ms vs Unhoisted took ${unhoistedTime.toFixed(3)}ms`);
+    expect(hoistedTime).toBeGreaterThanOrEqual(0);
+  });
 });

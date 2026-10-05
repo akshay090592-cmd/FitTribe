@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useMemo } from 'react';
 import { User, UserGamificationState, GiftItem, UserProfile, Badge, Theme } from '../types';
 import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs } from '../utils/storage';
 import { notifyOnGiftReceived } from '../services/notificationService';
@@ -83,6 +83,9 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
   };
 
   const myState = gameState ? gameState[currentUser] : { badges: [], inventory: [], points: 0 };
+
+  // BOLT: Optimize badge unlocked status checks with O(1) Set lookup instead of O(N) array .includes()
+  const unlockedBadgesSet = useMemo(() => new Set(myState.badges), [myState.badges]);
 
   const handleSendGift = async (toUser: User) => {
     if (!giftModalItem || !gameState) return;
@@ -212,7 +215,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
         </div>
         <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {BADGES_DB.map(badge => {
-            const isUnlocked = myState.badges.includes(badge.id);
+            const isUnlocked = unlockedBadgesSet.has(badge.id);
             return (
               <div
                 key={badge.id}
@@ -422,7 +425,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50 to-transparent"></div>
 
             <div className="relative z-10">
-              <div className={`w-24 h-24 rounded-[30px] flex items-center justify-center mx-auto mb-6 shadow-xl ${myState.badges.includes(selectedBadge.id) ? 'bg-gradient-to-br from-yellow-300 to-amber-400 text-yellow-900 rotate-3' : 'bg-slate-100 text-slate-300'}`}>
+              <div className={`w-24 h-24 rounded-[30px] flex items-center justify-center mx-auto mb-6 shadow-xl ${unlockedBadgesSet.has(selectedBadge.id) ? 'bg-gradient-to-br from-yellow-300 to-amber-400 text-yellow-900 rotate-3' : 'bg-slate-100 text-slate-300'}`}>
                 <BadgeIcon name={selectedBadge.icon} size={48} />
               </div>
 

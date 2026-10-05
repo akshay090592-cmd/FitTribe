@@ -22,6 +22,9 @@ export const BADGES_DB: Badge[] = [
   { id: 'heavy_lifter', title: 'Heavy Lifter', description: 'Lift 5000kg total volume in one session', icon: 'Dumbbell', rarity: 'legendary' }
 ];
 
+// BOLT: Pre-computed Map for O(1) constant-time badge lookups across ProfilePage and RewardsPage
+export const BADGE_MAP = new Map<string, Badge>(BADGES_DB.map(b => [b.id, b]));
+
 /**
  * BOLT: High-performance, allocation-free volume calculation for workout exercises.
  * Replaces nested .reduce() calls with manual index-based for loops to eliminate lambda closure

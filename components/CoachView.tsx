@@ -51,6 +51,15 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
         }
     };
 
+    const formatWeekday = (dateStr?: string) => {
+        if (!dateStr) return '???';
+        try {
+            return formatWithCache(weekdayShortFormatter, dateStr);
+        } catch (e) {
+            return '???';
+        }
+    };
+
     return (
         <div className="space-y-3">
             {plan.schedule?.map((day: any, idx: number) => (
@@ -72,7 +81,7 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
                         </div>
                     )}
                     <div className="w-16 text-xs font-bold text-slate-400 uppercase flex flex-col leading-tight">
-                        <span>{day.day?.substring(0, 3) || (day.date ? weekdayShortFormatter.format(new Date(day.date)) : '???')}</span>
+                        <span>{day.day?.substring(0, 3) || formatWeekday(day.date)}</span>
                         <span className="text-[9px] opacity-70 font-medium">{formatDate(day.date)}</span>
                     </div>
                     <div className="flex-1">

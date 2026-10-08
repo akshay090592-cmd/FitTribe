@@ -4,10 +4,9 @@ import { calculateXP, calculateLogXPBreakdown, calculateStreaks } from '../utils
 import { getWeekKey } from '../utils/dateUtils';
 
 describe('Gamification Timestamp & Streak Optimization Correctness & Benchmark', () => {
-  const now = new Date('2026-09-16T12:00:00Z');
-  const baseTime = now.getTime();
+  const baseTime = Date.now();
 
-  // Generate 10 mock logs for correctness checks
+  // Generate 10 mock logs for correctness checks relative to current time
   const mockLogs: WorkoutLog[] = [
     {
       id: 'log-1',

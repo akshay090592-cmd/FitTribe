@@ -30,4 +30,30 @@ describe('exportUtils', () => {
     expect(lines[1]).toContain('60');
     expect(lines[1]).toContain('300');
   });
+
+  it('benchmarks convertToCSV performance with 10,000 logs', () => {
+    const largeLogs: WorkoutLog[] = [];
+    const baseTime = Date.now();
+    for (let i = 0; i < 10000; i++) {
+      largeLogs.push({
+        id: `log-${i}`,
+        date: new Date(baseTime - i * 3600000).toISOString(),
+        type: WorkoutType.A,
+        user: 'BenchmarkUser',
+        exercises: [{ id: 'ex1', name: 'Bench Press', sets: [] }],
+        durationMinutes: 45,
+        calories: 350,
+        customActivity: `Session ${i}`
+      });
+    }
+
+    const start = performance.now();
+    const csv = convertToCSV(largeLogs);
+    const duration = performance.now() - start;
+
+    const lines = csv.split('\n');
+    expect(lines.length).toBe(10001); // Header + 10,000 Rows
+    console.log(`CSV EXPORT BENCHMARK: 10,000 logs converted to CSV in ${duration.toFixed(3)}ms`);
+    expect(duration).toBeGreaterThan(0);
+  });
 });

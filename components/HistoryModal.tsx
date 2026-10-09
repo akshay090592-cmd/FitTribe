@@ -13,49 +13,48 @@ interface HistoryModalProps {
 }
 
 /**
- * BOLT: Wrap HistoryModal in React.memo and short-circuit log processing when modal is closed.
- * - React.memo avoids re-rendering the modal on global parent updates (e.g. App.tsx) when props are unchanged.
- * - Short-circuiting processedLogs when isOpen is false avoids O(N) date formatting and string map operations when closed.
+ * BOLT: Wrap HistoryModal in React.memo and consolidate filtering/processing in a single pass.
+ * - React.memo avoids re-rendering the modal on global parent updates when props are unchanged.
+ * - Short-circuiting filterType and searchTerm before date formatting and ProcessedLog creation
+ *   completely eliminates date formatting and object allocations for non-matching log items.
  */
 export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose, logs, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const processedLogs = useMemo(() => {
+  const filteredLogs = useMemo(() => {
     if (!isOpen) return [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
+    const term = searchTerm.trim().toLowerCase();
 
-    return logs.map((log): ProcessedLog & { searchableText: string } => {
+    const result: (ProcessedLog & { searchableText: string })[] = [];
+
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+
+      // 1. Short-circuit on filterType before any string transformation or Date parsing
+      if (filterType !== 'ALL' && log.type !== filterType) continue;
+
       const activityName = log.customActivity?.toLowerCase() || '';
       const typeName = log.type?.toLowerCase() || '';
 
-      return {
+      // 2. Short-circuit on searchTerm before date formatting and object construction
+      if (term && !activityName.includes(term) && !typeName.includes(term)) continue;
+
+      result.push({
         ...log,
         isFailedCommitment: log.type === WorkoutType.COMMITMENT && Date.parse(log.date) < todayTimestamp,
         formattedDate: formatWithCache(monthDayFormatter, log.date),
         searchableText: `${activityName} ${typeName}`
-      };
-    });
-    // NOTE: Removal of .sort() as logs are already provided in descending order from storage/parent.
-  }, [logs, isOpen]);
+      });
+    }
 
-  const filteredLogs = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-
-    return processedLogs.filter(log => {
-      // Filter by Type
-      if (filterType !== 'ALL' && log.type !== filterType) return false;
-
-      // Filter by Search (using pre-generated searchableText)
-      if (term && !log.searchableText.includes(term)) return false;
-
-      return true;
-    });
-  }, [processedLogs, filterType, searchTerm]);
+    return result;
+  }, [logs, isOpen, filterType, searchTerm]);
 
   const handleExport = () => {
     if (filteredLogs.length === 0) return;

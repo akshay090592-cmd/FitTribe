@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, HelpCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmPopupProps {
   isOpen: boolean;
@@ -13,7 +13,37 @@ interface ConfirmPopupProps {
   type?: 'danger' | 'warning' | 'info';
 }
 
-export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
+/**
+ * BOLT: Hoisted static type configuration to module scope.
+ * Prevents per-render object allocations and JSX icon creations when rendering or re-rendering modals.
+ */
+const TYPE_CONFIG = {
+  danger: {
+    bg: 'bg-red-500/10 border-red-100',
+    text: 'text-red-900',
+    btn: 'bg-red-500 hover:bg-red-600 text-white border-b-4 border-red-700 shadow-md shadow-red-200',
+    icon: <AlertTriangle className="text-red-500" size={24} />
+  },
+  warning: {
+    bg: 'bg-amber-500/10 border-amber-100',
+    text: 'text-amber-900',
+    btn: 'bg-amber-500 hover:bg-amber-600 text-white border-b-4 border-amber-700 shadow-md shadow-amber-200',
+    icon: <AlertTriangle className="text-amber-500" size={24} />
+  },
+  info: {
+    bg: 'bg-emerald-500/10 border-emerald-100',
+    text: 'text-emerald-900',
+    btn: 'bg-emerald-600 hover:bg-emerald-700 text-white border-b-4 border-emerald-800 shadow-md shadow-emerald-200',
+    icon: <span className="text-2xl" role="img" aria-label="panda">🐼</span>
+  }
+};
+
+/**
+ * BOLT: Wrap ConfirmPopup in React.memo.
+ * Prevents unnecessary re-renders when parent components (e.g. HistoryLogItem in large lists, WorkoutSession, SocialFeed)
+ * update global state while modal props remain unchanged.
+ */
+export const ConfirmPopup: React.FC<ConfirmPopupProps> = React.memo(({
   isOpen,
   title = "Are you sure?",
   message,
@@ -25,28 +55,7 @@ export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const typeConfig = {
-    danger: {
-      bg: 'bg-red-500/10 border-red-100',
-      text: 'text-red-900',
-      btn: 'bg-red-500 hover:bg-red-600 text-white border-b-4 border-red-700 shadow-md shadow-red-200',
-      icon: <AlertTriangle className="text-red-500" size={24} />
-    },
-    warning: {
-      bg: 'bg-amber-500/10 border-amber-100',
-      text: 'text-amber-900',
-      btn: 'bg-amber-500 hover:bg-amber-600 text-white border-b-4 border-amber-700 shadow-md shadow-amber-200',
-      icon: <AlertTriangle className="text-amber-500" size={24} />
-    },
-    info: {
-      bg: 'bg-emerald-500/10 border-emerald-100',
-      text: 'text-emerald-900',
-      btn: 'bg-emerald-600 hover:bg-emerald-700 text-white border-b-4 border-emerald-800 shadow-md shadow-emerald-200',
-      icon: <span className="text-2xl" role="img" aria-label="panda">🐼</span>
-    }
-  };
-
-  const config = typeConfig[type] || typeConfig.info;
+  const config = TYPE_CONFIG[type] || TYPE_CONFIG.info;
 
   return createPortal(
     <div
@@ -87,4 +96,4 @@ export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
     </div>,
     document.body
   );
-};
+});

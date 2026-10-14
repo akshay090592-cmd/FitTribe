@@ -14,12 +14,13 @@ vi.mock('../utils/storage', async (importOriginal) => {
         saveGamificationState: vi.fn(),
         saveLog: vi.fn(),
         sendGift: vi.fn(),
+        getGiftTransactions: vi.fn(),
         getFromCache: vi.fn(),
         setInCache: vi.fn(),
     };
 });
 
-import { getUserLogs, getGamificationState, saveGamificationState, sendGift, getLogs } from '../utils/storage';
+import { getUserLogs, getGamificationState, saveGamificationState, sendGift, getLogs, getGiftTransactions } from '../utils/storage';
 
 describe('Verification Tests', () => {
     const mockProfile: UserProfile = {
@@ -30,8 +31,9 @@ describe('Verification Tests', () => {
 
     beforeEach(() => {
         vi.resetAllMocks();
-        // Prevent team stats network calls inside checkAchievements
+        // Prevent team stats and gift network calls inside checkAchievements
         (getLogs as Mock).mockResolvedValue([]);
+        (getGiftTransactions as Mock).mockResolvedValue([]);
     });
 
     describe('Points System', () => {

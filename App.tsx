@@ -133,12 +133,19 @@ const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
   <button
     onClick={onClick}
     aria-label={label}
-    className={`relative flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl transition-all duration-300 group ${active ? 'bg-gradient-to-tr from-emerald-500 to-emerald-400 text-white -translate-y-1.5 shadow-lg shadow-emerald-900/40 scale-105' : 'text-emerald-100/50 hover:text-white hover:bg-white/10'}`}
+    className={`relative flex flex-col items-center justify-center gap-1 flex-1 max-w-[64px] h-14 rounded-2xl transition-all duration-300 tactile-press group ${
+      active
+        ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white -translate-y-1.5 shadow-lg shadow-emerald-950/50 scale-105 ring-2 ring-lime-300/40'
+        : 'text-emerald-100/60 hover:text-white hover:bg-white/10 active:scale-95'
+    }`}
   >
-    <Icon size={active ? 22 : 20} strokeWidth={active ? 2.5 : 2} className="transition-all" />
-    <span className={`text-[9px] font-bold tracking-wide whitespace-nowrap leading-none transition-opacity duration-300 ${active ? 'text-white opacity-100' : 'text-emerald-100/60 opacity-80'}`}>
+    <Icon size={active ? 22 : 20} strokeWidth={active ? 2.5 : 2} className="transition-transform duration-300 group-hover:scale-110" />
+    <span className={`text-[10px] font-bold tracking-wide whitespace-nowrap leading-none transition-all duration-300 ${active ? 'text-white opacity-100' : 'text-emerald-100/70 opacity-85'}`}>
       {label}
     </span>
+    {active && (
+      <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300 shadow-[0_0_8px_#bef264]" />
+    )}
   </button>
 );
 
@@ -1124,138 +1131,152 @@ const App: React.FC = () => {
       }
     };
 
+    const stepLabels = ['Identity', 'Body Stats', 'Level', 'Tribe'];
+    const stepEmojis = ['🐼', '🎋', '🥋', '🌿'];
+
     return (
-      <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-6">
-        <div className="flex items-center justify-center space-x-3 mb-8">
-          <button onClick={handleLogout} className="absolute top-6 right-6 text-emerald-400 hover:text-emerald-600 font-bold text-sm flex items-center">
-            <LogOut size={16} className="mr-1" /> Logout
+      <div className="min-h-screen bg-gradient-to-b from-[#E8F8EE] via-[#F0FDF4] to-[#ECFDF5] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        {/* Ambient Jungle Blobs */}
+        <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-300/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-lime-300/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex items-center justify-center space-x-3 mb-4">
+          <button onClick={handleLogout} className="absolute top-5 right-5 bg-white/80 backdrop-blur-sm px-3.5 py-2 rounded-full border border-emerald-100 text-emerald-600 hover:text-emerald-800 font-bold text-xs flex items-center shadow-sm active:scale-95 transition-all">
+            <LogOut size={14} className="mr-1.5" /> Logout
           </button>
         </div>
 
-        <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] shadow-[var(--shadow-lift)] border border-emerald-100">
-          <div className="flex justify-between mb-6">
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-md p-6 sm:p-8 rounded-[32px] shadow-[var(--shadow-lift)] border border-emerald-100/80 relative z-10 animate-fade-in">
+          {/* Step Progress Header */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+              Step {wizardStep} of 4 • {stepLabels[wizardStep - 1]}
+            </span>
+            <span className="text-xl animate-float-gentle">{stepEmojis[wizardStep - 1]}</span>
+          </div>
+
+          <div className="flex justify-between mb-6 gap-1.5">
             {[1, 2, 3, 4].map(step => (
-              <div key={step} className={`h-1.5 rounded-full flex-1 mx-1 transition-colors duration-500 ${wizardStep >= step ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-emerald-100'}`}></div>
+              <div key={step} className={`h-2 rounded-full flex-1 transition-all duration-500 ${wizardStep >= step ? 'bg-gradient-to-r from-emerald-500 to-lime-400 shadow-xs' : 'bg-emerald-100/80'}`}></div>
             ))}
           </div>
 
-          <h2 className="text-3xl font-bold text-emerald-900 mb-6 font-['Fredoka'] text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-emerald-950 mb-2 font-['Fredoka'] text-center">
             {wizardStep === 1 && "What's your name?"}
             {wizardStep === 2 && "Tell us about yourself"}
             {wizardStep === 3 && "Select Fitness Level"}
             {wizardStep === 4 && "Find your pack"}
           </h2>
+          <p className="text-xs text-slate-500 font-medium text-center mb-6">
+            {wizardStep === 1 && "Every legend in the bamboo forest needs a warrior name."}
+            {wizardStep === 2 && (setupName ? `Welcome, ${setupName}! Let's personalize your training metrics.` : "Help Coach Panda tailor your calorie & recovery targets.")}
+            {wizardStep === 3 && "Choose the training pace that fits your current routine."}
+            {wizardStep === 4 && "Start a brand new squad or join friends with an invite code."}
+          </p>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             {wizardStep === 1 && (
-              <input
-                type="text"
-                value={setupName}
-                onChange={e => setSetupName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full text-center text-xl p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none bg-emerald-50/40"
-              />
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={setupName}
+                  onChange={e => setSetupName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full text-center text-xl font-bold text-emerald-950 p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none bg-emerald-50/40 transition-all placeholder:text-slate-300 placeholder:font-medium"
+                />
+              </div>
             )}
 
             {wizardStep === 2 && (
-              <>
-                {setupName && (
-                  <p className="text-center text-emerald-700 font-medium mb-4">
-                    Welcome, {setupName}! Let's complete your profile.
-                  </p>
-                )}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-slate-600 mb-1 font-medium">Height (cm)</label>
-                      <input
-                        type="number"
-                        value={setupHeight}
-                        onChange={e => setSetupHeight(e.target.value)}
-                        placeholder="170"
-                        className="w-full p-3 border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-600 mb-1 font-medium">Weight (kg)</label>
-                      <input
-                        type="number"
-                        value={setupWeight}
-                        onChange={e => setSetupWeight(e.target.value)}
-                        placeholder="70"
-                        className="w-full p-3 border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-slate-600 mb-2 font-medium">Gender</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setSetupGender('male')}
-                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'male' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
-                      >
-                        <div className="text-xl mb-1">👨</div>
-                        <div className="text-sm font-medium">Male</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSetupGender('female')}
-                        className={`p-3 rounded-xl border-2 transition-all ${setupGender === 'female' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-emerald-200'}`}
-                      >
-                        <div className="text-xl mb-1">👩</div>
-                        <div className="text-sm font-medium">Female</div>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-slate-600 mb-1 font-medium">Date of Birth</label>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="bg-emerald-50/40 p-3 rounded-2xl border border-emerald-100/80">
+                    <label className="block text-[11px] uppercase tracking-wider text-emerald-800 mb-1.5 font-bold">Height (cm)</label>
                     <input
-                      type="date"
-                      value={setupDob}
-                      onChange={e => setSetupDob(e.target.value)}
-                      className="w-full p-3 border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center"
-                      max={new Date().toISOString().split('T')[0]}
+                      type="number"
+                      value={setupHeight}
+                      onChange={e => setSetupHeight(e.target.value)}
+                      placeholder="170"
+                      className="w-full p-2.5 bg-white border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center font-bold text-emerald-950"
                     />
                   </div>
-
-                  <p className="text-xs text-center text-slate-400 mt-2">
-                    These details help us calculate accurate calories burned. You can skip this step.
-                  </p>
+                  <div className="bg-emerald-50/40 p-3 rounded-2xl border border-emerald-100/80">
+                    <label className="block text-[11px] uppercase tracking-wider text-emerald-800 mb-1.5 font-bold">Weight (kg)</label>
+                    <input
+                      type="number"
+                      value={setupWeight}
+                      onChange={e => setSetupWeight(e.target.value)}
+                      placeholder="70"
+                      className="w-full p-2.5 bg-white border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center font-bold text-emerald-950"
+                    />
+                  </div>
                 </div>
-              </>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-2 font-bold">Gender</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSetupGender('male')}
+                      className={`p-3.5 rounded-2xl border-2 transition-all tactile-press flex items-center justify-center gap-2.5 ${setupGender === 'male' ? 'border-emerald-500 bg-emerald-50 text-emerald-950 shadow-sm' : 'border-slate-100 bg-slate-50/60 hover:border-emerald-200 text-slate-600'}`}
+                    >
+                      <span className="text-2xl">👨</span>
+                      <span className="text-sm font-bold">Male</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSetupGender('female')}
+                      className={`p-3.5 rounded-2xl border-2 transition-all tactile-press flex items-center justify-center gap-2.5 ${setupGender === 'female' ? 'border-emerald-500 bg-emerald-50 text-emerald-950 shadow-sm' : 'border-slate-100 bg-slate-50/60 hover:border-emerald-200 text-slate-600'}`}
+                    >
+                      <span className="text-2xl">👩</span>
+                      <span className="text-sm font-bold">Female</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1.5 font-bold">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={setupDob}
+                    onChange={e => setSetupDob(e.target.value)}
+                    className="w-full p-3 bg-emerald-50/30 border-2 border-emerald-100 rounded-xl focus:border-emerald-500 outline-none text-center font-bold text-emerald-950"
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+
+                <p className="text-[11px] text-center text-slate-400 font-medium">
+                  These details help us calculate accurate calories burned. You can skip this step.
+                </p>
+              </div>
             )}
 
             {wizardStep === 3 && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setSetupFitness('beginner')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'beginner' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:border-emerald-200'}`}
-                  >
-                    <div className="text-3xl mb-2">🌱</div>
-                    <div className="font-bold text-emerald-900">Beginner</div>
-                    <div className="text-xs text-slate-500 mt-1">Starting my journey</div>
-                  </button>
-                  <button
-                    onClick={() => setSetupFitness('advanced')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${setupFitness === 'advanced' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:border-emerald-200'}`}
-                  >
-                    <div className="text-3xl mb-2">🔥</div>
-                    <div className="font-bold text-emerald-900">Advanced</div>
-                    <div className="text-xs text-slate-500 mt-1">Pushing limits</div>
-                  </button>
-                </div>
-              </>
+              <div className="grid grid-cols-2 gap-3.5">
+                <button
+                  onClick={() => setSetupFitness('beginner')}
+                  className={`p-5 rounded-2xl border-2 transition-all tactile-press text-center ${setupFitness === 'beginner' ? 'border-emerald-500 bg-emerald-50/90 shadow-md shadow-emerald-900/5 ring-2 ring-emerald-500/20' : 'border-slate-100 bg-slate-50/50 hover:border-emerald-200'}`}
+                >
+                  <div className="text-4xl mb-2.5">🌱</div>
+                  <div className="font-bold text-emerald-950 font-['Fredoka'] text-base">Beginner</div>
+                  <div className="text-[11px] text-slate-500 font-medium mt-1">Starting my journey</div>
+                </button>
+                <button
+                  onClick={() => setSetupFitness('advanced')}
+                  className={`p-5 rounded-2xl border-2 transition-all tactile-press text-center ${setupFitness === 'advanced' ? 'border-emerald-500 bg-emerald-50/90 shadow-md shadow-emerald-900/5 ring-2 ring-emerald-500/20' : 'border-slate-100 bg-slate-50/50 hover:border-emerald-200'}`}
+                >
+                  <div className="text-4xl mb-2.5">🔥</div>
+                  <div className="font-bold text-emerald-950 font-['Fredoka'] text-base">Advanced</div>
+                  <div className="text-[11px] text-slate-500 font-medium mt-1">Pushing limits</div>
+                </button>
+              </div>
             )}
 
             {wizardStep === 4 && (
               <div className="space-y-4">
-                <div className="flex p-1 bg-slate-100 rounded-xl mb-4">
-                  <button onClick={() => setIsCreatingTribe(true)} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${isCreatingTribe ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>Create Tribe</button>
-                  <button onClick={() => setIsCreatingTribe(false)} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!isCreatingTribe ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>Join Tribe</button>
+                <div className="flex p-1.5 bg-emerald-50/80 border border-emerald-100 rounded-2xl">
+                  <button onClick={() => setIsCreatingTribe(true)} className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isCreatingTribe ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-emerald-700'}`}>Create Tribe</button>
+                  <button onClick={() => setIsCreatingTribe(false)} className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${!isCreatingTribe ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-emerald-700'}`}>Join Tribe</button>
                 </div>
 
                 {isCreatingTribe ? (
@@ -1264,7 +1285,7 @@ const App: React.FC = () => {
                     value={setupTribeName}
                     onChange={e => setSetupTribeName(e.target.value)}
                     placeholder="Tribe Name (e.g. Jungle Gym)"
-                    className="w-full p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 outline-none"
+                    className="w-full p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none bg-emerald-50/30 font-bold text-emerald-950 placeholder:font-medium placeholder:text-slate-400"
                   />
                 ) : (
                   <input
@@ -1272,7 +1293,7 @@ const App: React.FC = () => {
                     value={setupTribeCode}
                     onChange={e => setSetupTribeCode(e.target.value)}
                     placeholder="Enter 6-char Code"
-                    className="w-full p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 outline-none uppercase tracking-widest text-center font-mono"
+                    className="w-full p-4 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none uppercase tracking-widest text-center font-mono text-lg font-bold text-emerald-950 bg-emerald-50/30"
                     maxLength={6}
                   />
                 )}
@@ -1282,13 +1303,13 @@ const App: React.FC = () => {
             <button
               onClick={handleWizardSubmit}
               disabled={authLoading}
-              className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 hover:brightness-110 active:scale-95 transition-all text-lg"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/25 hover:brightness-110 active:scale-[0.98] transition-all text-lg font-['Fredoka'] tracking-wide"
             >
               {authLoading ? <LoadingSpinner /> : (wizardStep === 4 ? (isCreatingTribe ? 'Create & Start' : 'Join & Start') : 'Next')}
             </button>
 
             {wizardStep > 1 && (
-              <button onClick={() => setWizardStep(prev => prev - 1)} className="w-full text-slate-400 text-sm font-bold hover:text-slate-600">Back</button>
+              <button onClick={() => setWizardStep(prev => prev - 1)} className="w-full py-2 text-slate-400 text-sm font-bold hover:text-emerald-700 transition-colors">Back</button>
             )}
           </div>
         </div>
@@ -1297,7 +1318,6 @@ const App: React.FC = () => {
   }
 
   // 3. Main App
-  // 3. Main App
   const currentPlan = activeCustomPlan || allUserPlans[currentUser]?.[selectedWorkoutType] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][selectedWorkoutType];
 
   const themeObj = SHOP_THEMES.find(t => t.id === activeTheme);
@@ -1305,7 +1325,7 @@ const App: React.FC = () => {
     ? (themeObj.type === 'image' ? { backgroundImage: `url('${themeObj.value}')` } : { backgroundColor: themeObj.value.replace('bg-', '#') })
     : { backgroundImage: "url('/assets/forest_header_bg.webp')" };
 
-  const headerClass = `mx-4 mt-2 shadow-2xl shadow-emerald-900/20 border border-white/20 rounded-[32px] relative overflow-hidden bg-cover bg-center transition-all duration-500`;
+  const headerClass = `mx-3 sm:mx-4 mt-2.5 shadow-xl shadow-emerald-950/15 border border-white/25 rounded-[28px] sm:rounded-[32px] relative overflow-hidden bg-cover bg-center transition-all duration-500`;
 
   if (view === 'workout') {
     return (
@@ -1365,28 +1385,33 @@ const App: React.FC = () => {
         className={headerClass}
         style={(!themeObj || themeObj.type === 'image') ? headerStyle : {}}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-emerald-900/40 backdrop-blur-[2px]"></div>
-        <div className="p-5 relative z-10 w-full">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-emerald-950/25 to-emerald-950/55 backdrop-blur-[2px]"></div>
+        <div className="p-4 sm:p-5 relative z-10 w-full">
           <div className="flex justify-between items-center relative z-10">
-            <div className="flex items-center">
+            <div className="flex items-center min-w-0">
               <div
                 onClick={() => setView('profile')}
-                className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mr-4 border-2 border-white/50 shadow-lg backdrop-blur-md overflow-hidden relative group cursor-pointer"
+                className="w-13 h-13 sm:w-14 sm:h-14 bg-white/20 rounded-2xl flex items-center justify-center mr-3.5 border-2 border-white/60 shadow-lg backdrop-blur-md overflow-hidden relative group cursor-pointer shrink-0 active:scale-95 transition-transform"
               >
                 <img src={getAvatarPath(userProfile?.avatarId, mood)} onError={handleImgError} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                {mood === 'fire' && <div className="absolute -top-1 -right-1 text-xl animate-bounce drop-shadow-md">🔥</div>}
-                {mood === 'tired' && <div className="absolute -top-1 -right-1 text-xl animate-pulse drop-shadow-md">💤</div>}
+                {mood === 'fire' && <div className="absolute -top-1 -right-1 text-lg animate-bounce drop-shadow-md">🔥</div>}
+                {mood === 'tired' && <div className="absolute -top-1 -right-1 text-lg animate-pulse drop-shadow-md">💤</div>}
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white drop-shadow-lg font-['Fredoka'] tracking-wide">Hi, {currentUser}!</h1>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md font-['Fredoka'] tracking-wide truncate">Hi, {currentUser}!</h1>
+                  {streak > 0 && (
+                    <span className="inline-flex items-center gap-0.5 bg-amber-400/25 border border-amber-300/40 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                      🔥 {streak}d
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center space-x-2 mt-1">
                   {xpData && (
-                    <div className="flex flex-col">
-                      <div className="flex items-center text-xs text-white/90 font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
-                        <span className="mr-2 text-lime-300">Lvl {xpData.level}</span>
-                        <div className="w-16 h-2 bg-black/30 rounded-full overflow-hidden">
-                          <div className="h-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.5)]" style={{ width: `${xpData.progress}%` }}></div>
-                        </div>
+                    <div className="flex items-center text-[11px] text-white/95 font-bold uppercase tracking-wider bg-black/30 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15">
+                      <span className="mr-2 text-lime-300">Lvl {xpData.level}</span>
+                      <div className="w-16 sm:w-20 h-2 bg-black/40 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-lime-400 to-emerald-300 shadow-[0_0_10px_rgba(163,230,53,0.6)] transition-all duration-500" style={{ width: `${xpData.progress}%` }}></div>
                       </div>
                     </div>
                   )}
@@ -1398,10 +1423,10 @@ const App: React.FC = () => {
               <DesktopNavigation view={view} setView={setView} />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 shrink-0">
               {isFetching && (
-                <div className="bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/10 shadow-sm animate-fade-in">
-                  <Loader2 size={20} className="text-emerald-100 animate-spin" />
+                <div className="bg-white/15 p-2 rounded-full backdrop-blur-md border border-white/15 shadow-sm animate-fade-in">
+                  <Loader2 size={18} className="text-emerald-100 animate-spin" />
                 </div>
               )}
 
@@ -1419,25 +1444,25 @@ const App: React.FC = () => {
 
       {
         isOffline && (
-          <div className="mx-6 mt-2 bg-amber-500/90 backdrop-blur-sm text-white text-center py-2 rounded-xl text-xs font-bold animate-pulse flex items-center justify-center shadow-lg">
-            <WifiOff size={14} className="mr-2" /> You are offline. Changes will be saved locally.
+          <div className="mx-4 mt-2 bg-amber-500/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold animate-pulse flex items-center justify-center shadow-lg">
+            <WifiOff size={14} className="mr-2 shrink-0" /> You are offline. Changes will be saved locally.
           </div>
         )
       }
 
       {
         isSyncing && (
-          <div className="mx-6 mt-2 bg-blue-500/90 backdrop-blur-sm text-white text-center py-2 rounded-xl text-xs font-bold flex items-center justify-center shadow-lg">
-            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div> Syncing data...
+          <div className="mx-4 mt-2 bg-blue-500/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold flex items-center justify-center shadow-lg">
+            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 shrink-0"></div> Syncing data...
           </div>
         )
       }
 
       {/* Main Content Grid Wrapper */}
-      <div className="md:max-w-7xl md:mx-auto md:grid md:grid-cols-12 md:gap-8 md:px-6 md:mt-6 transition-all relative z-0">
+      <div className="md:max-w-7xl md:mx-auto md:grid md:grid-cols-12 md:gap-8 md:px-6 md:mt-6 transition-all relative">
 
         {/* Left Column: Main Views */}
-        <div className="md:col-span-8 lg:col-span-9 space-y-6">
+        <div className="md:col-span-8 lg:col-span-9 space-y-5">
 
           {/* Tribe Pulse Widget - Mobile Only (at top of dashboard) */}
           <div className="md:hidden">
@@ -1470,14 +1495,195 @@ const App: React.FC = () => {
           )}
 
           <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
-            <div className="p-4 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+            <div className="p-3.5 sm:p-4 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-4 sm:space-y-5 animate-fade-in md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+
+              {streak > 0 && streakRisk && (
+                <div className="bg-gradient-to-r from-amber-100 to-orange-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-2xl flex items-center shadow-md md:col-span-2">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0">
+                    <Flame size={22} className="text-amber-600 animate-bounce" />
+                  </div>
+                  <div>
+                    <div className="font-bold font-['Fredoka'] text-sm sm:text-base">Streak at Risk!</div>
+                    <div className="text-xs font-bold text-amber-800/80">Workout soon to keep your {streak} day streak alive!</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Next Workout Hero Card - Prioritized on Mobile for Thumb Ergonomics */}
+              <div className="bg-gradient-to-br from-[#1E6B34] via-[#1B5E20] to-[#0F3D17] rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden border-2 border-emerald-300/20 group cursor-default md:col-span-2">
+                <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/jungle_bg_pattern.webp')] opacity-[0.07] group-hover:opacity-10 transition-opacity pointer-events-none"></div>
+
+                {/* Decorative circles */}
+                <div className="absolute -top-10 -right-10 w-36 h-36 bg-lime-400/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -bottom-10 -left-10 w-36 h-36 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="bg-black/25 px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border border-white/15 text-lime-300 uppercase tracking-widest flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-ping" />
+                      Next Mission
+                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setIsLibraryOpen(true)}
+                        className="text-[11px] font-bold text-emerald-50 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                      >
+                        Library <Sparkles size={12} className="ml-1.5 text-lime-300" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const next = selectedWorkoutType === WorkoutType.A ? WorkoutType.B : WorkoutType.A;
+                          setSelectedWorkoutType(next);
+                          localStorage.setItem('next_workout_type', next); // Manual override persists
+                        }}
+                        className="text-[11px] font-bold text-emerald-50 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                      >
+                        Switch <TrendingUp size={12} className="ml-1.5 text-lime-300" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-5">
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">Plan {selectedWorkoutType}</h2>
+                    <p className="text-emerald-100/90 text-xs sm:text-sm font-semibold">{currentPlan.title}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
+                    <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                      <div className="bg-lime-400/20 p-2 rounded-xl mr-2.5 text-lime-300 shrink-0"><TrendingUp size={16} /></div>
+                      <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">{currentPlan.focus}</span>
+                    </div>
+                    <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                      <div className="bg-lime-400/20 p-2 rounded-xl mr-2.5 text-lime-300 shrink-0"><Activity size={16} /></div>
+                      <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setView('workout')}
+                    className="w-full bg-gradient-to-r from-lime-400 via-lime-400 to-emerald-400 text-emerald-950 py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn"
+                  >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                    <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
+                  </button>
+
+                  <button
+                    onClick={handleCommit}
+                    disabled={isCommitting || hasTomorrowCommitment}
+                    className="w-full mt-2.5 bg-black/25 text-emerald-100 py-3 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isCommitting ? 'Committing...' : hasTomorrowCommitment ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Dashboard Action Bento Grid */}
+              <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+                {/* Streak Card */}
+                <button
+                  onClick={() => handleOpenStats('streak')}
+                  className="card-streak spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
+                >
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <Flame size={48} className="text-amber-500" />
+                  </div>
+
+                  <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                    <Flame size={20} className="fill-current" />
+                  </div>
+
+                  <div className="text-left z-10">
+                    <div className="text-amber-950 font-bold text-xs sm:text-sm leading-tight flex items-center">
+                      Daily Streak
+                      <InfoTooltip text="Consecutive days with workouts. Keep the fire burning!" color="text-amber-500" />
+                    </div>
+                    <div className="text-amber-700 text-lg sm:text-xl font-bold font-['Fredoka'] flex items-center mt-0.5">
+                      {streak} {streak === 1 ? 'Day' : 'Days'}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Recent Activity Widget - Compact */}
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  disabled={!lastWorkout}
+                  className={`card-activity spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left ${!lastWorkout ? 'opacity-65 cursor-default' : ''}`}
+                >
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <History size={48} className="text-teal-700" />
+                  </div>
+
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${!lastWorkout ? 'bg-teal-100 text-teal-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-teal-200/80 text-teal-700' : 'bg-teal-200/80 text-teal-800'}`}>
+                    {!lastWorkout ? <History size={20} /> : lastWorkout.type === WorkoutType.CUSTOM ? <Activity size={20} /> : <Dumbbell size={20} />}
+                  </div>
+
+                  <div className="text-left z-10">
+                    <div className={`font-bold text-xs sm:text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-teal-500' : 'text-teal-950'}`}>
+                      {!lastWorkout ? 'No Recent Activity' : (lastWorkout.type === WorkoutType.CUSTOM ? lastWorkout.customActivity : `Plan ${lastWorkout.type}`)}
+                    </div>
+                    {lastWorkout && (
+                      <div className="text-teal-700 text-[10px] font-bold flex items-center mt-0.5">
+                        <Clock size={10} className="mr-1" />
+                        {formatTimeAgo(lastWorkout.date)}
+                      </div>
+                    )}
+                  </div>
+                </button>
+
+                {/* Fitness Track Button - Compact */}
+                <button
+                  onClick={() => { setActivityModalMode('fitness'); setIsActivityModalOpen(true); }}
+                  className="card-fitness spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
+                >
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <Flame size={48} className="text-orange-500" />
+                  </div>
+
+                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center text-orange-600 group-hover:rotate-12 transition-transform duration-300">
+                    <Flame size={20} className="fill-current" />
+                  </div>
+                  <div className="text-left z-10">
+                    <div className="text-orange-950 font-bold text-xs sm:text-sm leading-tight">Log Fitness Activities</div>
+                    <div className="text-orange-700 text-[10px] font-bold mt-0.5">Sports, Cardio...</div>
+                  </div>
+                </button>
+
+                {/* Wellbeing Track Button - Compact */}
+                <button
+                  onClick={() => { setActivityModalMode('wellbeing'); setIsActivityModalOpen(true); }}
+                  className="card-wellbeing spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
+                >
+                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
+                    <Heart size={48} className="text-rose-500" />
+                  </div>
+
+                  <div className="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300">
+                    <Heart size={20} className="fill-current" />
+                  </div>
+                  <div className="text-left z-10">
+                    <div className="text-rose-950 font-bold text-xs sm:text-sm leading-tight">Log Wellbeing Activities</div>
+                    <div className="text-rose-600 text-[10px] font-bold mt-0.5">Cooking, Music...</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Weekly Stats Widget */}
+              <div>
+                <WeeklyStatsWidget
+                  logs={allLogs}
+                  userProfile={userProfile}
+                  weeklyProgress={weeklyProgress}
+                  onClick={() => handleOpenStats('weekly')}
+                />
+              </div>
 
               <div className="relative md:col-span-2">
                 <button
                   onClick={() => setIsChallengeModalOpen(true)}
-                  className="absolute top-4 right-4 z-20 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 p-2 rounded-xl transition-colors active:scale-95 shadow-sm md:hidden"
+                  aria-label="New Challenge"
+                  className="absolute top-4 right-4 z-20 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors active:scale-95 shadow-xs flex items-center gap-1 md:hidden"
                 >
-                  <Plus size={20} />
+                  <Plus size={15} /> Challenge
                 </button>
                 <div className="md:hidden">
                   <QuestBoard
@@ -1490,185 +1696,9 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {streak > 0 && streakRisk && (
-                <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-4 rounded-xl flex items-center shadow-lg animate-pulse md:col-span-2">
-                  <Flame size={24} className="text-amber-500 mr-3 flex-shrink-0" />
-                  <div>
-                    <div className="font-bold font-['Fredoka']">Streak at Risk!</div>
-                    <div className="text-xs font-bold opacity-80">Workout soon to keep your {streak} day streak alive!</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Dashboard Action Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Streak Card */}
-                <button
-                  onClick={() => handleOpenStats('streak')}
-                  className="card-streak spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
-                    <Flame size={48} className="text-amber-500" />
-                  </div>
-
-                  <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                    <Flame size={20} className="fill-current" />
-                  </div>
-
-                  <div className="text-left z-10">
-                    <div className="text-amber-900 font-bold text-sm leading-tight flex items-center">
-                      Daily Streak
-                      <InfoTooltip text="Consecutive days with workouts. Keep the fire burning!" color="text-amber-400" />
-                    </div>
-                    <div className="text-amber-700 text-lg font-bold font-['Fredoka'] flex items-center mt-0.5">
-                      {streak} {streak === 1 ? 'Day' : 'Days'}
-                    </div>
-                  </div>
-                </button>
-
-                {/* Recent Activity Widget - Compact */}
-                <button
-                  onClick={() => setIsHistoryOpen(true)}
-                  disabled={!lastWorkout}
-                  className={`card-activity spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left ${!lastWorkout ? 'opacity-60 cursor-default' : ''}`}
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
-                    <History size={48} className="text-teal-700" />
-                  </div>
-
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${!lastWorkout ? 'bg-teal-100 text-teal-400' : lastWorkout.type === WorkoutType.CUSTOM ? 'bg-teal-200 text-teal-600' : 'bg-teal-200 text-teal-700'}`}>
-                    {!lastWorkout ? <History size={20} /> : lastWorkout.type === WorkoutType.CUSTOM ? <Activity size={20} /> : <Dumbbell size={20} />}
-                  </div>
-
-                  <div className="text-left z-10">
-                    <div className={`font-bold text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-teal-400' : 'text-teal-900'}`}>
-                      {!lastWorkout ? 'No Recent Activity' : (lastWorkout.type === WorkoutType.CUSTOM ? lastWorkout.customActivity : `Plan ${lastWorkout.type}`)}
-                    </div>
-                    {lastWorkout && (
-                      <div className="text-teal-600 text-[10px] font-bold flex items-center mt-0.5">
-                        <Clock size={10} className="mr-1" />
-                        {formatTimeAgo(lastWorkout.date)}
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Fitness Track Button - Compact */}
-                <button
-                  onClick={() => { setActivityModalMode('fitness'); setIsActivityModalOpen(true); }}
-                  className="card-fitness spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
-                    <Flame size={48} className="text-orange-500" />
-                  </div>
-
-                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center text-orange-600 group-hover:rotate-12 transition-transform duration-300">
-                    <Flame size={20} className="fill-current" />
-                  </div>
-                  <div className="text-left z-10">
-                    <div className="text-orange-900 font-bold text-sm leading-tight">Log Fitness Activities</div>
-                    <div className="text-orange-600 text-[10px] font-bold">Sports, Cardio...</div>
-                  </div>
-                </button>
-
-                {/* Wellbeing Track Button - Compact */}
-                <button
-                  onClick={() => { setActivityModalMode('wellbeing'); setIsActivityModalOpen(true); }}
-                  className="card-wellbeing spring-transition p-3 rounded-[24px] shadow-lg flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
-                    <Heart size={48} className="text-rose-500" />
-                  </div>
-
-                  <div className="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300">
-                    <Heart size={20} className="fill-current" />
-                  </div>
-                  <div className="text-left z-10">
-                    <div className="text-rose-900 font-bold text-sm leading-tight">Log Wellbeing Activities</div>
-                    <div className="text-rose-500 text-[10px] font-bold">Cooking, Music...</div>
-                  </div>
-                </button>
-              </div>
-
-
-              {/* Weekly Stats Widget */}
-              <div>
-                <WeeklyStatsWidget
-                  logs={allLogs}
-                  userProfile={userProfile}
-                  weeklyProgress={weeklyProgress}
-                  onClick={() => handleOpenStats('weekly')}
-                />
-              </div>
-
-              {/* Next Workout Card */}
-              <div className="bg-gradient-to-br from-[#2E7D32] to-[#1B5E20] rounded-[32px] p-6 text-white shadow-2xl shadow-emerald-900/20 relative overflow-hidden border-[4px] border-emerald-50/20 group cursor-default md:col-span-2">
-                <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/jungle_bg_pattern.webp')] opacity-[0.07] group-hover:opacity-10 transition-opacity"></div>
-
-                {/* Decorative circles */}
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-lime-400/20 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-3xl"></div>
-
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="bg-emerald-900/40 px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border border-white/10 text-emerald-100 uppercase tracking-wider">Next Mission</span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setIsLibraryOpen(true)}
-                        className="text-[10px] font-bold text-emerald-100 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full border border-white/5 active:scale-95"
-                      >
-                        Library <Sparkles size={12} className="ml-1.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const next = selectedWorkoutType === WorkoutType.A ? WorkoutType.B : WorkoutType.A;
-                          setSelectedWorkoutType(next);
-                          localStorage.setItem('next_workout_type', next); // Manual override persists
-                        }}
-                        className="text-[10px] font-bold text-emerald-100 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full border border-white/5 active:scale-95"
-                      >
-                        Switch <TrendingUp size={12} className="ml-1.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h2 className="text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">Plan {selectedWorkoutType}</h2>
-                    <p className="text-emerald-100 text-sm font-medium opacity-90">{currentPlan.title}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="flex items-center bg-black/20 p-2.5 rounded-xl backdrop-blur-sm border border-white/5">
-                      <div className="bg-lime-400/20 p-1.5 rounded-lg mr-2.5 text-lime-300"><TrendingUp size={16} /></div>
-                      <span className="text-xs font-bold text-white flex-1 leading-tight">{currentPlan.focus}</span>
-                    </div>
-                    <div className="flex items-center bg-black/20 p-2.5 rounded-xl backdrop-blur-sm border border-white/5">
-                      <div className="bg-lime-400/20 p-1.5 rounded-lg mr-2.5 text-lime-300"><Activity size={16} /></div>
-                      <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setView('workout')}
-                    className="w-full bg-gradient-to-r from-lime-400 to-lime-500 text-emerald-950 py-3.5 rounded-xl font-bold text-lg shadow-lg active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center relative overflow-hidden group/btn"
-                  >
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                    <span className="relative z-10 flex items-center">Start Adventure <ArrowRight size={18} className="ml-2" /></span>
-                  </button>
-
-                  <button
-                    onClick={handleCommit}
-                    disabled={isCommitting || hasTomorrowCommitment}
-                    className="w-full mt-2.5 bg-emerald-900/30 text-emerald-100 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-900/50 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isCommitting ? 'Committing...' : hasTomorrowCommitment ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
-                  </button>
-                </div>
-              </div>
-
               {/* Motivational Quote */}
-              <div className="mt-6 text-center px-4 opacity-80 hover:opacity-100 transition-opacity duration-700 md:col-span-2">
-                <p className="text-emerald-800 text-sm font-bold leading-relaxed font-sans">"{randomQuote}"</p>
+              <div className="mt-4 text-center px-4 opacity-85 hover:opacity-100 transition-opacity duration-700 md:col-span-2">
+                <p className="text-emerald-900/80 text-xs sm:text-sm font-bold leading-relaxed font-sans italic">"{randomQuote}"</p>
               </div>
 
             </div>
@@ -1787,7 +1817,7 @@ const App: React.FC = () => {
       </div> {/* End of Main Grid */}
 
       {/* Floating Dock Navigation */}
-      <div className="fixed safe-dock-bottom left-1/2 transform -translate-x-1/2 glass-panel border-white/10 shadow-2xl shadow-black/40 rounded-[32px] flex justify-between px-6 py-2.5 z-50 w-[90%] max-w-sm md:hidden" style={{ background: 'hsla(140, 70%, 6%, 0.55)', backdropFilter: 'blur(20px) saturate(1.6)', WebkitBackdropFilter: 'blur(20px) saturate(1.6)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="fixed safe-dock-bottom left-1/2 transform -translate-x-1/2 glass-panel border-white/15 shadow-2xl shadow-emerald-950/50 rounded-[28px] flex justify-around items-center px-3 py-2 z-50 w-[92%] max-w-md md:hidden" style={{ background: 'hsla(145, 65%, 8%, 0.78)', backdropFilter: 'blur(22px) saturate(1.8)', WebkitBackdropFilter: 'blur(22px) saturate(1.8)', borderColor: 'rgba(255,255,255,0.12)' }}>
         <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" />
         <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" />
         <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" />

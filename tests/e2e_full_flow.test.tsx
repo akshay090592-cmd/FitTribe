@@ -165,6 +165,8 @@ describe('E2E Full Verification Flow', () => {
             />
         );
 
+        fireEvent.click(screen.getByRole('button', { name: /Schedule/i }));
+
         expect(screen.getByText(/New Week/i)).toBeInTheDocument();
 
         const startBtn = screen.getByText(/Start Check-in/i);

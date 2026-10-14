@@ -84,47 +84,47 @@ export const WeeklyStatsWidget: React.FC<Props> = memo(({ logs, userProfile, onC
   return (
     <div
       onClick={onClick}
-      className="glass-panel p-4 spring-transition relative overflow-hidden group cursor-pointer"
-      style={{ background: 'hsla(140,50%,98%,0.80)', borderRadius: '24px' }}
+      className="glass-panel p-4 sm:p-5 spring-transition tactile-press relative overflow-hidden group cursor-pointer border border-emerald-100/80 shadow-sm"
+      style={{ background: 'hsla(140,50%,98%,0.88)', borderRadius: '24px' }}
     >
       {/* Background Gradient */}
-      <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-emerald-50 to-transparent opacity-50 pointer-events-none"></div>
+      <div className="absolute right-0 top-0 w-36 h-full bg-gradient-to-l from-emerald-100/40 to-transparent opacity-60 pointer-events-none"></div>
 
       {/* Header Section */}
-      <div className="flex items-center justify-between relative z-10 mb-3">
+      <div className="flex items-center justify-between relative z-10 mb-3.5">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-emerald-50 border border-emerald-100/50 rounded-xl flex items-center justify-center mr-3 text-emerald-700 shadow-inner group-hover:rotate-12 transition-transform">
+          <div className="w-11 h-11 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center mr-3 text-emerald-700 shadow-inner group-hover:rotate-6 transition-transform">
             <Activity size={20} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']" title="Goals reset every Sunday">Weekly Goal</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
+            <h3 className="text-sm sm:text-base font-bold text-emerald-950 font-['Fredoka']" title="Goals reset every Sunday">Weekly Goal</h3>
+            <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">
               {weeklyProgress}/{userProfile?.weeklyGoal || 3} Workouts
             </p>
           </div>
         </div>
 
-        {/* Progress Dots */}
+        {/* Progress Dots - Keep .flex.space-x-1 for test compatibility */}
         <div className="flex space-x-1">
           {progressDots}
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2 relative z-10 pt-2 border-t border-emerald-100/40">
-        <div className="flex flex-col items-center p-2 rounded-xl transition-all" style={{ background: 'hsla(200,60%,96%,0.4)' }}>
-          <div className="text-blue-500 mb-1"><Clock size={14} /></div>
-          <div className="text-xs font-bold text-emerald-950 font-['Fredoka']">{formatDuration(stats.duration)}</div>
+      <div className="grid grid-cols-3 gap-2.5 relative z-10 pt-3 border-t border-emerald-100/60">
+        <div className="flex flex-col items-center p-2.5 rounded-2xl transition-all border border-sky-100/60" style={{ background: 'hsla(200,70%,96%,0.55)' }}>
+          <div className="text-sky-600 mb-1 flex items-center gap-1"><Clock size={14} /><span className="text-[9px] font-bold uppercase tracking-wider text-sky-700/80">Time</span></div>
+          <div className="text-xs sm:text-sm font-bold text-emerald-950 font-['Fredoka']">{formatDuration(stats.duration)}</div>
         </div>
 
-        <div className="flex flex-col items-center p-2 rounded-xl transition-all" style={{ background: 'hsla(270,50%,96%,0.4)' }}>
-          <div className="text-purple-500 mb-1"><Dumbbell size={14} /></div>
-          <div className="text-xs font-bold text-emerald-950 font-['Fredoka']">{formatVolume(stats.volume)}</div>
+        <div className="flex flex-col items-center p-2.5 rounded-2xl transition-all border border-purple-100/60" style={{ background: 'hsla(270,60%,96%,0.55)' }}>
+          <div className="text-purple-600 mb-1 flex items-center gap-1"><Dumbbell size={14} /><span className="text-[9px] font-bold uppercase tracking-wider text-purple-700/80">Volume</span></div>
+          <div className="text-xs sm:text-sm font-bold text-emerald-950 font-['Fredoka']">{formatVolume(stats.volume)}</div>
         </div>
 
-        <div className="flex flex-col items-center p-2 rounded-xl transition-all" style={{ background: 'hsla(25,90%,96%,0.4)' }}>
-          <div className="text-orange-500 mb-1"><Flame size={14} /></div>
-          <div className="text-xs font-bold text-emerald-950 font-['Fredoka']">{stats.calories}</div>
+        <div className="flex flex-col items-center p-2.5 rounded-2xl transition-all border border-orange-100/60" style={{ background: 'hsla(25,90%,96%,0.55)' }}>
+          <div className="text-orange-500 mb-1 flex items-center gap-1"><Flame size={14} /><span className="text-[9px] font-bold uppercase tracking-wider text-orange-700/80">Kcal</span></div>
+          <div className="text-xs sm:text-sm font-bold text-emerald-950 font-['Fredoka']">{stats.calories}</div>
         </div>
       </div>
     </div>

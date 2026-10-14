@@ -4,7 +4,7 @@ import { calculateXP, calculateLogXPBreakdown, calculateStreaks } from '../utils
 import { getWeekKey } from '../utils/dateUtils';
 
 describe('Gamification Timestamp & Streak Optimization Correctness & Benchmark', () => {
-  const now = new Date('2026-09-16T12:00:00Z');
+  const now = new Date();
   const baseTime = now.getTime();
 
   // Generate 10 mock logs for correctness checks
@@ -93,20 +93,16 @@ describe('Gamification Timestamp & Streak Optimization Correctness & Benchmark',
 
     const iterations = 1000;
 
-    // Build Map once per iteration to compare badge calculation pass
-    const buildMap = () => {
-      const map = new Map<string, number>();
-      for (let i = 0; i < logs.length; i++) {
-        const key = getWeekKey(logs[i].date);
-        map.set(key, (map.get(key) || 0) + 1);
-      }
-      return map;
-    };
+    // Build Map once to compare the badge calculation pass
+    const workoutsPerWeek = new Map<string, number>();
+    for (let i = 0; i < logs.length; i++) {
+      const key = getWeekKey(logs[i].date);
+      workoutsPerWeek.set(key, (workoutsPerWeek.get(key) || 0) + 1);
+    }
 
     // Unoptimized approach
     const startUnopt = performance.now();
     for (let i = 0; i < iterations; i++) {
-      const workoutsPerWeek = buildMap();
       const eligibleWeeks = Array.from(workoutsPerWeek.keys())
         .filter(k => workoutsPerWeek.get(k)! >= 3)
         .sort();
@@ -117,7 +113,6 @@ describe('Gamification Timestamp & Streak Optimization Correctness & Benchmark',
     // Optimized approach
     const startOpt = performance.now();
     for (let i = 0; i < iterations; i++) {
-      const workoutsPerWeek = buildMap();
       const eligibleWeeks: string[] = [];
       workoutsPerWeek.forEach((count, key) => {
         if (count >= 3) eligibleWeeks.push(key);

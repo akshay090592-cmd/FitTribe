@@ -60,48 +60,55 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
   return (
     <div
       onClick={() => isManual && !quest.completed ? onManualComplete(quest.id) : null}
-      className={`flex items-center p-3 rounded-2xl border transition-all duration-300 relative overflow-hidden ${quest.completed
-        ? `${colors.bgCompleted} opacity-80`
+      className={`group flex items-center p-3.5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${quest.completed
+        ? `${colors.bgCompleted} opacity-85`
         : isManual
-          ? `glass-panel border-emerald-100/50 spring-transition cursor-pointer`
-          : 'glass-panel border-slate-100/30'
+          ? `glass-panel border-emerald-100/70 spring-transition tactile-press cursor-pointer hover:shadow-md`
+          : 'glass-panel border-slate-100/50'
         }`}
-      style={!quest.completed ? { background: 'hsla(140,50%,98%,0.75)' } : {}}
+      style={!quest.completed ? { background: 'hsla(140,50%,99%,0.85)' } : {}}
     >
       {/* Progress Bar Background for non-manual */}
       {!quest.completed && !isManual && (
         <div
           className={`absolute left-0 top-0 bottom-0 ${colors.progressBg} transition-all duration-500`}
-          style={{ width: `${(quest.progress / quest.target) * 100}%` }}
+          style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }}
         ></div>
       )}
 
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 shrink-0 transition-colors ${quest.completed ? colors.iconCompletedBg : 'bg-slate-100 text-slate-400'
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center mr-3.5 shrink-0 transition-transform duration-300 group-hover:scale-105 ${quest.completed ? colors.iconCompletedBg : 'bg-emerald-50/80 text-emerald-600 border border-emerald-100/60'
         }`}>
         <QuestIcon name={quest.icon} />
       </div>
 
-      <div className="flex-1 min-w-0 mr-2 relative z-10">
-        <h4 className={`text-sm font-bold truncate ${quest.completed ? `${colors.textCompleted} line-through` : 'text-slate-700'}`}>
-          {quest.title}
-        </h4>
-        <div className="flex justify-between items-center">
-          <p className="text-[10px] text-slate-400 font-medium truncate pr-2">{quest.description}</p>
+      <div className="flex-1 min-w-0 mr-2.5 relative z-10">
+        <div className="flex items-center gap-2">
+          <h4 className={`text-sm font-bold truncate ${quest.completed ? `${colors.textCompleted} line-through` : 'text-emerald-950'}`}>
+            {quest.title}
+          </h4>
+          {isManual && !quest.completed && (
+            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
+              Tap
+            </span>
+          )}
+        </div>
+        <div className="flex justify-between items-center mt-0.5">
+          <p className="text-[11px] text-slate-500 font-medium truncate pr-2">{quest.description}</p>
           {!quest.completed && (
-            <div className={`text-[10px] font-bold ${colors.rewardBg} px-1.5 py-0.5 rounded-md whitespace-nowrap`}>
+            <div className={`text-[10px] font-bold ${colors.rewardBg} px-2 py-0.5 rounded-full whitespace-nowrap shadow-2xs`}>
               +{quest.rewardXp} XP
             </div>
           )}
         </div>
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 shrink-0">
         {quest.completed ? (
           <CheckCircle2 className={`${colors.checkColor} animate-scale-up`} size={24} />
         ) : isManual ? (
-          <div className={`w-6 h-6 rounded-full border-2 border-slate-300 ${colors.radioHover} transition-colors`}></div>
+          <div className={`w-6 h-6 rounded-full border-2 border-emerald-300 bg-white ${colors.radioHover} transition-colors shadow-2xs`}></div>
         ) : (
-          <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
+          <span className="text-xs font-bold text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-xl border border-emerald-200/60">
             {quest.progress}/{quest.target}
           </span>
         )}
@@ -123,6 +130,7 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
     if (quests[i].completed) completedCount++;
   }
   const allComplete = completedCount === quests.length && quests.length > 0;
+  const completionPct = quests.length > 0 ? Math.round((completedCount / quests.length) * 100) : 0;
 
   let onboardingCompletedCount = 0;
   if (onboardingQuests) {
@@ -135,19 +143,19 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   return (
     <>
       {showOnboarding && (
-        <div className="glass-panel p-5 mb-6 relative overflow-hidden group" style={{ background: 'linear-gradient(135deg, hsl(230,80%,97%) 0%, hsl(250,75%,95%) 100%)', border: '1px solid hsl(230,60%,90%)', borderRadius: '24px' }}>
+        <div className="glass-panel p-5 mb-5 relative overflow-hidden group shadow-sm" style={{ background: 'linear-gradient(135deg, hsl(230,80%,97%) 0%, hsl(250,75%,95%) 100%)', border: '1px solid hsl(230,60%,90%)', borderRadius: '24px' }}>
           {/* Header for Onboarding */}
-          <div className="flex justify-between items-center mb-4 relative z-10">
+          <div className="flex justify-between items-center mb-3.5 relative z-10">
             <div>
-              <h3 className="font-bold text-indigo-900 text-lg font-['Fredoka'] flex items-center">
-                New Recruit Mission
+              <h3 className="font-bold text-indigo-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
+                <span>🎍</span> New Recruit Mission
               </h3>
-              <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">
+              <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mt-0.5">
                 {onboardingCompletedCount}/{onboardingQuests!.length} Completed
               </p>
             </div>
           </div>
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-2.5 relative z-10">
             {onboardingQuests!.map(quest => (
               <QuestItem key={quest.id} quest={quest} onManualComplete={onManualComplete} theme="indigo" />
             ))}
@@ -155,27 +163,37 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
         </div>
       )}
 
-      <div className="glass-panel p-5 mb-6 relative overflow-hidden group" style={{ background: 'hsla(140,50%,98%,0.80)', borderRadius: '24px' }}>
+      <div className="glass-panel p-5 relative overflow-hidden group shadow-sm border border-emerald-100/80" style={{ background: 'hsla(140,50%,98%,0.88)', borderRadius: '24px' }}>
         {/* Background Decor */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-lime-100/60 rounded-full blur-3xl -mr-10 -mt-10 opacity-60 pointer-events-none"></div>
 
-        <div className="flex justify-between items-center mb-4 relative z-10">
+        <div className="flex justify-between items-center mb-3 relative z-10 pr-24 md:pr-0">
           <div>
-            <h3 className="font-bold text-emerald-900 text-lg font-['Fredoka'] flex items-center">
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
               Daily Quest
             </h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
               {allComplete ? 'All missions complete!' : `${completedCount}/${quests.length} Completed`}
             </p>
           </div>
           {allComplete && (
-            <div className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-sm">
+            <div className="bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-2xs">
               🎉 Bonus Unlocked!
             </div>
           )}
         </div>
 
-        <div className="space-y-3 relative z-10">
+        {/* Overall Quest Progress Bar */}
+        {quests.length > 0 && (
+          <div className="w-full h-1.5 bg-emerald-100/80 rounded-full overflow-hidden mb-3.5 relative z-10">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full transition-all duration-500"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+        )}
+
+        <div className="space-y-2.5 relative z-10">
           {quests.map((quest) => (
             <QuestItem key={quest.id} quest={quest} onManualComplete={onManualComplete} theme="emerald" />
           ))}

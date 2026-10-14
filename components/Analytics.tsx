@@ -335,9 +335,11 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
   return (
     <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in md:grid md:grid-cols-2 md:gap-6 space-y-5 md:space-y-0">
-      <div className="relative mb-4 text-center md:col-span-2">
-        <h2 className="text-2xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle Insights</h2>
-        <p className="text-[#5D4037] font-bold text-[10px] uppercase tracking-widest mt-0.5">Track Your Journey</p>
+      <div className="relative mb-2 text-center md:col-span-2">
+        <div className="inline-flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-3 py-1 rounded-full text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1.5 shadow-sm">
+          <span>📊</span> Track Your Journey
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm">Jungle Insights</h2>
       </div>
 
       {/* Calendar Section */}
@@ -345,25 +347,23 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
         <Calendar logs={logs} />
       </div>
 
-
-
       {/* Muscle Breakdown Chart */}
-      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Muscle Balance</h3>
-            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Sets per Muscle Group</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Muscle Balance</h3>
+            <p className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Sets per Muscle Group</p>
           </div>
-          <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
+          <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
             <button
               onClick={() => setMuscleViewMode('week')}
-              className={`px-3 py-1 rounded-lg transition-all spring-transition ${muscleViewMode === 'week' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${muscleViewMode === 'week' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               Week
             </button>
             <button
               onClick={() => setMuscleViewMode('month')}
-              className={`px-3 py-1 rounded-lg transition-all spring-transition ${muscleViewMode === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${muscleViewMode === 'month' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               Month
             </button>
@@ -375,56 +375,56 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={muscleData}>
                 <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-                <Radar name="Sets" dataKey="A" stroke="#10b981" fill="#10b981" fillOpacity={0.5} />
+                <Radar name="Sets" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.45} />
                 <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '14px', border: '1px solid #d1fae5', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.08)', fontSize: '12px', fontWeight: 'bold' }}
                   itemStyle={{ color: '#065f46' }}
                 />
               </RadarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">
-              <Activity className="mr-2 opacity-50" /> No muscle data yet
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80 ml-2">
+              <Activity className="mr-2 opacity-50 text-emerald-500" size={18} /> No muscle data yet
             </div>
           )}
         </div>
       </div>
 
       {/* Frequency Chart */}
-      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
-        <div className="flex justify-between items-center mb-4 relative z-10">
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+        <div className="flex justify-between items-center mb-4 relative z-10 gap-2">
           <div>
-            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Frequency</h3>
-            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Workouts per Period</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Frequency</h3>
+            <p className="text-[10px] text-amber-600/90 font-extrabold uppercase tracking-wider">Workouts per Period</p>
           </div>
-          <div className="flex space-x-2">
-            {/* Comparion Toggle */}
+          <div className="flex items-center space-x-2">
+            {/* Comparison Toggle */}
             <div className="relative">
               <select
                 value={freqVersusUser || ''}
                 onChange={(e) => setFreqVersusUser(e.target.value ? e.target.value as User : null)}
-                className="appearance-none bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-xl py-1.5 pl-3 pr-6 outline-none hover:bg-emerald-100/50 transition-all cursor-pointer"
+                className="appearance-none bg-emerald-50/90 border border-emerald-200/70 text-emerald-800 text-[11px] font-bold rounded-xl py-1.5 pl-3 pr-6 outline-none hover:bg-emerald-100/60 transition-all cursor-pointer shadow-sm"
               >
                 <option value="">Compare</option>
                 {tribeMembers.filter(u => u !== user).map(u => (
                   <option key={u} value={u}>{u}</option>
                 ))}
               </select>
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-emerald-600/70">▼</div>
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-emerald-600 text-[10px]">▼</div>
             </div>
 
-            <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
+            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
               <button
                 onClick={() => setFreqViewMode('weekly')}
-                className={`px-3 py-1 rounded-lg transition-all spring-transition ${freqViewMode === 'weekly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${freqViewMode === 'weekly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setFreqViewMode('monthly')}
-                className={`px-3 py-1 rounded-lg transition-all spring-transition ${freqViewMode === 'monthly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${freqViewMode === 'monthly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Month
               </button>
@@ -432,47 +432,47 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           </div>
         </div>
 
-        <div className="h-36 w-full relative z-10">
+        <div className="h-40 w-full relative z-10">
           {freqChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={freqChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ecfdf5" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
                   cursor={{ fill: '#f0fdf4' }}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '16px', border: '1px solid #fef3c7', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.08)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
                 />
-                <Bar dataKey="workoutCount" fill="#f59e0b" radius={[4, 4, 0, 0]} name="You" />
+                <Bar dataKey="workoutCount" fill="#f59e0b" radius={[6, 6, 0, 0]} name="You" />
                 {freqVersusUser && (
-                  <Bar dataKey="rivalWorkoutCount" fill="#ef4444" radius={[4, 4, 0, 0]} name={freqVersusUser} />
+                  <Bar dataKey="rivalWorkoutCount" fill="#ef4444" radius={[6, 6, 0, 0]} name={freqVersusUser} />
                 )}
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">No data to display</div>
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80">No data to display</div>
           )}
         </div>
       </div>
 
       {/* Volume Chart */}
-      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
-            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Volume</h3>
-            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Avg Load per Workout</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Volume</h3>
+            <p className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Avg Load per Workout</p>
           </div>
           <div className="flex space-x-2">
-            <div className="glass-panel p-0.5 rounded-xl flex text-[10px] font-bold border border-emerald-100/40" style={{ background: 'hsla(140,40%,95%,0.6)' }}>
+            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
               <button
                 onClick={() => setViewMode('weekly')}
-                className={`px-3 py-1 rounded-lg transition-all spring-transition ${viewMode === 'weekly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${viewMode === 'weekly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setViewMode('monthly')}
-                className={`px-3 py-1 rounded-lg transition-all spring-transition ${viewMode === 'monthly' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${viewMode === 'monthly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Month
               </button>
@@ -480,83 +480,99 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           </div>
         </div>
 
-        <div className="h-36 w-full relative z-10">
+        <div className="h-40 w-full relative z-10">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ecfdf5" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} />
                 <Tooltip
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '16px', border: '1px solid #d1fae5', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.08)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
                 />
                 <Line type="monotone" dataKey="avgVolume" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} name="You" />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">No data to display</div>
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80">No data to display</div>
           )}
         </div>
       </div>
 
       {/* Exercise Trend Chart */}
-      <div className="glass-panel p-4 mb-4 relative overflow-hidden" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka']">Strength</h3>
-            <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Estimated 1RM Trend</p>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Strength</h3>
+            <p className="text-[10px] text-purple-600/80 font-extrabold uppercase tracking-wider">Estimated 1RM Trend</p>
           </div>
           <div className="relative">
             <select
               value={selectedExercise}
               onChange={(e) => setSelectedExercise(e.target.value)}
-              className="appearance-none bg-white/40 backdrop-blur-md border border-emerald-100/60 text-emerald-700 text-[10px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none hover:bg-emerald-50/50 transition-all cursor-pointer max-w-[120px] truncate"
+              className="appearance-none bg-emerald-50/90 border border-emerald-200/70 text-emerald-800 text-[11px] font-bold rounded-xl py-2 pl-3 pr-8 outline-none hover:bg-emerald-100/60 transition-all cursor-pointer max-w-[140px] truncate shadow-sm"
             >
               {exerciseList.map(ex => <option key={ex} value={ex}>{ex}</option>)}
             </select>
-            <Filter size={12} className="absolute right-2.5 top-2.5 text-emerald-400 pointer-events-none" />
+            <Filter size={12} className="absolute right-2.5 top-2.5 text-emerald-600 pointer-events-none" />
           </div>
         </div>
 
-        <div className="h-36 w-full">
+        <div className="h-40 w-full">
           {chartData.length > 0 && chartData.some(d => d.exerciseAvg > 0) ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3e8ff" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
                 <Tooltip
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '16px', border: '1px solid #f3e8ff', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.08)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
                 />
                 <Line type="monotone" dataKey="exerciseAvg" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">No data for this move</div>
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80">No data for this move</div>
           )}
         </div>
       </div>
 
-      <h3 className="font-bold text-emerald-950 mb-3 text-lg font-['Fredoka'] flex items-center md:col-span-2"><Trophy className="mr-2 text-amber-500 fill-current" size={18} /> Personal Records</h3>
+      <div className="flex items-center justify-between md:col-span-2 pt-1">
+        <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center">
+          <span className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200/70 flex items-center justify-center mr-2.5 text-amber-600 shadow-sm">
+            <Trophy className="fill-current" size={16} />
+          </span>
+          Personal Records
+        </h3>
+        {Object.keys(stats).length > 0 && (
+          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full uppercase tracking-wider">
+            {Object.keys(stats).length} Moves
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:col-span-2">
         {Object.entries(stats).map(([name, stat]: [string, any]) => (
-          <div key={name} className="glass-panel p-4 spring-transition flex justify-between items-center group cursor-default" style={{ background: 'hsla(140,50%,98%,0.75)' }}>
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-emerald-700 mr-3 border border-emerald-100/60 bg-emerald-50 group-hover:scale-110 transition-transform">
+          <div key={name} className="glass-panel p-4 rounded-2xl spring-transition flex justify-between items-center group cursor-default border border-emerald-100/80 hover:border-emerald-300 shadow-sm hover:-translate-y-0.5 transition-all" style={{ background: 'hsla(140,50%,99%,0.88)' }}>
+            <div className="flex items-center min-w-0 mr-3">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-emerald-700 mr-3 border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-lime-50 group-hover:scale-110 transition-transform shrink-0 shadow-inner">
                 <Dumbbell size={18} />
               </div>
-              <div>
-                <div className="font-bold text-emerald-950 text-sm">{name}</div>
-                <div className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-wider">Est. 1RM: {Math.round(stat.estimated1RM)}kg</div>
+              <div className="min-w-0">
+                <div className="font-bold text-emerald-950 text-sm truncate font-['Fredoka']">{name}</div>
+                <div className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Est. 1RM: {Math.round(stat.estimated1RM)}kg</div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xl font-bold text-emerald-750 font-['Fredoka']">{stat.maxWeight}kg</div>
-              <div className="text-[10px] text-emerald-500/60 font-bold">x {stat.maxReps} reps</div>
+            <div className="text-right shrink-0 bg-emerald-50/70 px-3 py-1.5 rounded-xl border border-emerald-100">
+              <div className="text-lg font-bold text-emerald-900 font-['Fredoka'] leading-tight">{stat.maxWeight}kg</div>
+              <div className="text-[10px] text-emerald-600/80 font-extrabold">x {stat.maxReps} reps</div>
             </div>
           </div>
         ))}
-        {Object.keys(stats).length === 0 && <p className="text-slate-400 text-center text-sm font-bold bg-white/50 p-4 rounded-2xl border-2 border-dashed border-slate-200 backdrop-blur-sm">Complete a workout to unlock stats!</p>}
+        {Object.keys(stats).length === 0 && (
+          <p className="text-slate-400 text-center text-sm font-bold bg-white/70 p-6 rounded-2xl border-2 border-dashed border-slate-200/80 backdrop-blur-sm md:col-span-2 lg:col-span-3">
+            Complete a workout to unlock stats!
+          </p>
+        )}
       </div>
     </div>
   );

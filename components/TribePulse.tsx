@@ -105,22 +105,30 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
     if (loading && members.length > 0) return null;
     if (members.length === 0) return null;
 
+    const activeTodayCount = members.filter(u => statuses[u] === 'done' || statuses[u] === 'committing').length;
+
     return (
-        <div className="mx-4 mt-4 bg-white/80 backdrop-blur-sm rounded-[24px] p-4 shadow-sm border border-emerald-50">
+        <div className="mx-3.5 sm:mx-4 mt-3.5 bg-white/85 backdrop-blur-md rounded-[24px] p-4 shadow-sm border border-emerald-100/80">
             <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest">Tribe Pulse</span>
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold text-emerald-900 uppercase tracking-widest">Tribe Pulse</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                    {activeTodayCount}/{members.length} Active Today
+                </span>
             </div>
-            <div className="grid grid-cols-3 gap-y-4 gap-x-2 justify-items-center">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
                 {members.map(user => (
                     <button
                         key={user}
                         onClick={() => onUserClick?.(user)}
-                        className={`flex flex-col items-center min-w-[60px] transition-all active:scale-95 group ${user === currentUser ? 'opacity-100' : 'opacity-80'}`}
+                        className={`flex flex-col items-center min-w-[64px] shrink-0 transition-all active:scale-95 group ${user === currentUser ? 'opacity-100' : 'opacity-90'}`}
                     >
                         <div className="relative group-hover:scale-110 transition-transform">
-                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden ${
-                                statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50' : 
-                                statuses[user] === 'committing' ? 'border-amber-400 bg-amber-50 animate-pulse' : 
+                            <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center overflow-hidden shadow-xs transition-all ${
+                                statuses[user] === 'done' ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/25' : 
+                                statuses[user] === 'committing' ? 'border-amber-400 bg-amber-50 animate-pulse ring-2 ring-amber-400/25' : 
                                 statuses[user] === 'tomorrow' ? 'border-blue-400 bg-blue-50' :
                                 statuses[user] === 'failed' ? 'border-red-400 bg-red-50' :
                                 'border-slate-200 bg-slate-50'
@@ -128,37 +136,37 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
                                 <img
                                     src={getAvatarPath(avatarMap[user])}
                                     alt={user}
-                                    className={`w-full h-full object-cover ${(statuses[user] === 'resting' || statuses[user] === 'tomorrow' || statuses[user] === 'failed') ? 'grayscale opacity-70' : ''}`}
+                                    className={`w-full h-full object-cover ${(statuses[user] === 'resting' || statuses[user] === 'tomorrow' || statuses[user] === 'failed') ? 'grayscale opacity-75' : ''}`}
                                     onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40/10b981/ffffff?text=P'}
                                 />
                             </div>
                             {statuses[user] === 'done' && (
                                 <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                                    <CheckCircle2 size={10} />
+                                    <CheckCircle2 size={11} />
                                 </div>
                             )}
                             {statuses[user] === 'committing' && (
                                 <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                                    <Hand size={10} />
+                                    <Hand size={11} />
                                 </div>
                             )}
                             {statuses[user] === 'tomorrow' && (
                                 <div className="absolute -bottom-1 -right-1 bg-blue-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                                    <CalendarDays size={10} />
+                                    <CalendarDays size={11} />
                                 </div>
                             )}
                             {statuses[user] === 'failed' && (
                                 <div className="absolute -bottom-1 -right-1 bg-red-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm animate-bounce">
-                                    <AlertTriangle size={10} />
+                                    <AlertTriangle size={11} />
                                 </div>
                             )}
                             {statuses[user] === 'resting' && (
                                 <div className="absolute -bottom-1 -right-1 bg-slate-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                                    <BedDouble size={10} />
+                                    <BedDouble size={11} />
                                 </div>
                             )}
                         </div>
-                        <span className="text-[10px] font-bold mt-1 text-slate-600 truncate max-w-[60px] group-hover:text-emerald-600">{user === currentUser ? 'You' : user}</span>
+                        <span className="text-[11px] font-bold mt-1.5 text-slate-700 truncate max-w-[68px] group-hover:text-emerald-700">{user === currentUser ? 'You' : user}</span>
                     </button>
                 ))}
             </div>

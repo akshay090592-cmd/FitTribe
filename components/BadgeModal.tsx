@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { BADGES_DB } from '../utils/gamification';
 import { X, Lock, Trophy } from 'lucide-react';
 import { BadgeIcon } from './BadgeIcon';
@@ -48,13 +49,13 @@ export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClo
     });
   }, [unlockedBadgeIds]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-emerald-950/75 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-scale-up border-4 border-white">
+      <div className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-pop-in border-4 border-white">
 
         {/* Header */}
         <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white shrink-0 relative overflow-hidden">
@@ -149,6 +150,7 @@ export const BadgeModal: React.FC<BadgeModalProps> = React.memo(({ isOpen, onClo
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

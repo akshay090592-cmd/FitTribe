@@ -1,4 +1,5 @@
 import React, { useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { WorkoutLog, WorkoutType, XPLog, PointLog } from '../types';
 import { X, Calendar, Activity, Zap, TrendingUp, CheckCircle, XCircle, Star, ShoppingBag, Flame, Trophy, Lock, Heart } from 'lucide-react';
 import { XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculatePoints } from '../utils/gamification';
@@ -15,7 +16,7 @@ interface Props {
 
 // Performance Optimization: Wrap in React.memo to prevent redundant re-renders of the detailed stats list on parent view changes.
 export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, logs, title: customTitle, xpBreakdown }) => {
-    if (!isOpen) return null;
+    if (!isOpen || typeof document === 'undefined') return null;
 
     const title = customTitle || {
         workouts: 'Workout History',
@@ -113,7 +114,7 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
         return <Zap size={16} className="text-emerald-500" />;
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
             <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-up" onClick={e => e.stopPropagation()}>
                 <div className="bg-emerald-50 p-6 flex justify-between items-center border-b border-emerald-100">
@@ -204,6 +205,7 @@ export const StatsDetailPopup: React.FC<Props> = memo(({ isOpen, onClose, type, 
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 });

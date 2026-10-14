@@ -354,10 +354,12 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
     if (loading) return <div className="p-10 text-center text-emerald-500 font-bold animate-pulse">Loading Jungle News...</div>;
 
     return (
-        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in">
-            <div className="relative mb-4 text-center">
-                <h2 className="text-2xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle News</h2>
-                <p className="text-[#5D4037] font-bold text-[10px] uppercase tracking-widest mt-1">Tribe Activity</p>
+        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in pb-8">
+            <div className="relative mb-2 text-center">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100/80 border border-emerald-200/60 text-emerald-800 text-[10px] font-bold uppercase tracking-widest mb-1.5 shadow-sm">
+                    <span className="mr-1.5">🌿</span> Tribe Activity
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle News</h2>
             </div>
 
             <TribeVictoryPhoto tribeId={profile.tribeId} />
@@ -390,21 +392,22 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
 
 
             {teamStats && (
-                <div className="mb-4 rounded-[32px] p-5 text-white shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(140,65%,12%) 0%, hsl(150,70%,8%) 100%)', border: '4px solid hsla(140,60%,30%,0.25)' }}>
+                <div className="mb-4 rounded-[32px] p-5 text-white shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(140,65%,12%) 0%, hsl(150,70%,8%) 100%)', border: '3px solid hsla(140,60%,35%,0.35)' }}>
                     <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(255,255,255,0.08) 6px, rgba(255,255,255,0.08) 7px)', borderRadius: 'inherit' }} />
+                    <div className="absolute -top-12 -right-12 w-36 h-36 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
 
                     {/* Tabs */}
-                    <div className="flex justify-center space-x-2 mb-4 relative z-10">
+                    <div className="flex justify-center bg-black/25 p-1 rounded-2xl border border-white/10 mb-4 relative z-10 max-w-xs mx-auto">
                         {(['weekly', 'monthly', 'yearly'] as const).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                className={`flex-1 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all tactile-press ${
                                     activeTab === tab
-                                        ? 'text-emerald-950 shadow-lg scale-105'
+                                        ? 'text-emerald-950 shadow-md scale-[1.02]'
                                         : 'text-emerald-300/70 hover:text-emerald-200'
                                 }`}
-                                style={activeTab === tab ? { background: 'linear-gradient(90deg, hsl(75,90%,58%), hsl(140,75%,48%))' } : { background: 'hsla(140,50%,15%,0.6)' }}
+                                style={activeTab === tab ? { background: 'linear-gradient(90deg, hsl(75,90%,58%), hsl(140,75%,48%))' } : {}}
                             >
                                 {tab}
                             </button>
@@ -412,8 +415,10 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                     </div>
 
                     <div className="flex justify-between items-center mb-3 relative z-10 text-xs">
-                        <span className="font-bold uppercase tracking-widest text-emerald-200/70">{activeTab} Goal</span>
-                        <div className="flex items-center px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm" style={{ background: 'hsla(0,0%,0%,0.3)' }}>
+                        <span className="font-bold uppercase tracking-widest text-emerald-200/80 flex items-center">
+                            <span className="mr-1.5">🎋</span> {activeTab} Goal
+                        </span>
+                        <div className="flex items-center px-3.5 py-1 rounded-full border border-white/15 backdrop-blur-sm" style={{ background: 'hsla(0,0%,0%,0.35)' }}>
                             <span className="font-bold" style={{ color: 'hsl(75,90%,70%)' }}>
                                 {activeTab === 'weekly' ? teamStats.weeklyCount : activeTab === 'monthly' ? teamStats.monthlyCount : teamStats.yearlyCount}
                                 <span className="text-emerald-400/60 mx-1">/</span>
@@ -439,18 +444,23 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
 
             {/* Invite Friends Card */}
             {tribeInfo && tribeInfo.code && (
-                <div className="mb-4 p-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[32px] text-white shadow-xl shadow-indigo-500/30 relative overflow-hidden">
+                <div className="mb-4 p-5 bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900 rounded-[32px] text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden border border-emerald-500/30">
                     <div className="relative z-10">
-                        <h3 className="text-white font-bold text-lg mb-3 font-['Fredoka'] flex items-center">
-                            <Users size={20} className="mr-2 text-indigo-200" /> Invite Tribe Members
-                        </h3>
-                        <p className="text-indigo-100 text-xs mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-white font-bold text-lg font-['Fredoka'] flex items-center">
+                                <Users size={20} className="mr-2 text-lime-300" /> Invite Tribe Members
+                            </h3>
+                            <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/10 text-lime-200 border border-white/15">
+                                {tribeInfo.name || 'Your Tribe'}
+                            </span>
+                        </div>
+                        <p className="text-emerald-100/80 text-xs mb-4 leading-relaxed">
                             Grow your tribe! Share this code with friends to let them join your fitness journey.
                         </p>
 
-                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 mb-4 flex flex-col items-center text-center">
-                            <span className="text-indigo-200 text-[10px] uppercase tracking-widest font-bold mb-1">Tribe Code</span>
-                            <div className="text-3xl font-black tracking-wider text-white drop-shadow-sm font-mono">
+                        <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 mb-4 flex items-center justify-between px-5">
+                            <span className="text-emerald-200/80 text-[10px] uppercase tracking-widest font-bold">Tribe Code</span>
+                            <div className="text-2xl md:text-3xl font-black tracking-widest text-lime-300 drop-shadow-sm font-mono">
                                 {tribeInfo.code}
                             </div>
                         </div>
@@ -461,7 +471,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                     navigator.clipboard.writeText(tribeInfo.code);
                                     alert("Code copied to clipboard!");
                                 }}
-                                className="flex items-center justify-center py-3 bg-white text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-50 transition-colors shadow-sm"
+                                className="flex items-center justify-center py-3.5 bg-white text-emerald-900 rounded-2xl font-bold text-xs hover:bg-emerald-50 transition-all shadow-md tactile-press"
                             >
                                 <Copy size={14} className="mr-2" /> Copy Code
                             </button>
@@ -470,7 +480,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                     const text = `Join my FitTribe! Use code: ${tribeInfo.code}`;
                                     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                                 }}
-                                className="flex items-center justify-center py-3 bg-[#25D366] text-white rounded-xl font-bold text-xs hover:bg-[#20bd5a] transition-colors shadow-sm"
+                                className="flex items-center justify-center py-3.5 bg-[#25D366] text-white rounded-2xl font-bold text-xs hover:bg-[#20bd5a] transition-all shadow-md tactile-press"
                             >
                                 <Share2 size={14} className="mr-2" /> WhatsApp
                             </button>
@@ -478,20 +488,25 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                     </div>
 
                     {/* Decorative Background Elements */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/30 rounded-full blur-xl translate-y-10 -translate-x-10"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/15 rounded-full blur-2xl -translate-y-10 translate-x-10 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal-400/20 rounded-full blur-xl translate-y-10 -translate-x-10 pointer-events-none"></div>
                 </div>
             )}
 
             {/* Tribe Members Status */}
-            <div className="mb-4 p-4 glass-panel rounded-[32px]" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
-                <h3 className="text-emerald-900 font-bold text-lg mb-4 font-['Fredoka'] flex items-center">
-                    <span className="mr-2">🐼</span> Campfire Circle
-                    <InfoTooltip text="See who has been active this week. Nudge them if they are slacking!" />
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="mb-4 p-5 glass-panel rounded-[32px]" style={{ background: 'hsla(140,50%,98%,0.88)' }}>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-emerald-950 font-bold text-lg font-['Fredoka'] flex items-center">
+                        <span className="mr-2">🐼</span> Campfire Circle
+                        <InfoTooltip text="See who has been active this week. Nudge them if they are slacking!" />
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full">
+                        Weekly Check
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {tribeMembers.filter(u => u !== currentUser).length === 0 ? (
-                        <div className="col-span-1 md:col-span-2 text-center py-6 text-slate-400 font-bold text-sm italic border-2 border-dashed border-emerald-100 rounded-xl">
+                        <div className="col-span-1 md:col-span-2 text-center py-6 text-slate-400 font-bold text-sm italic border-2 border-dashed border-emerald-100 rounded-2xl bg-white/50">
                             Your tribe is quiet... Invite some friends! 🌿
                         </div>
                     ) : (
@@ -503,9 +518,9 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                             const isActive = weeklyCount > 0;
 
                             return (
-                                <div key={u} className="glass-panel p-3 rounded-2xl flex items-center justify-between spring-transition group" style={{ background: isActive ? 'hsla(140,55%,96%,0.7)' : 'hsla(0,0%,98%,0.7)' }}>
+                                <div key={u} className="p-3.5 rounded-2xl flex items-center justify-between spring-transition group border" style={{ background: isActive ? 'hsla(140,60%,96%,0.9)' : 'hsla(0,0%,99%,0.85)', borderColor: isActive ? 'hsl(140,55%,84%)' : 'hsl(0,0%,90%)' }}>
                                     <div className="flex items-center">
-                                        <div className={`relative w-10 h-10 mr-3 ${isActive ? 'avatar-pulse-ring' : ''}`}>
+                                        <div className={`relative w-11 h-11 mr-3 ${isActive ? 'avatar-pulse-ring' : ''}`}>
                                             <div className="w-full h-full rounded-xl overflow-hidden border-2 border-white shadow-sm bg-white">
                                                 <img src={getAvatarPathHelper(u)} className="w-full h-full object-cover" onError={handleImgError} />
                                             </div>
@@ -513,8 +528,8 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                             {mood === 'tired' && <div className="absolute -top-1 -right-1 text-sm animate-pulse drop-shadow-sm">💤</div>}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-slate-800 text-sm">{u}</div>
-                                            <div className="text-[10px] font-bold flex items-center mt-0.5" style={{ color: isActive ? 'hsl(140,55%,35%)' : 'hsl(0,0%,60%)' }}>
+                                            <div className="font-bold text-slate-800 text-sm font-['Fredoka']">{u}</div>
+                                            <div className="text-[10px] font-bold flex items-center mt-0.5" style={{ color: isActive ? 'hsl(140,60%,32%)' : 'hsl(0,0%,55%)' }}>
                                                 <Activity size={10} className="mr-1" /> {weeklyCount} workouts this week
                                             </div>
                                         </div>
@@ -522,14 +537,14 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                     <button
                                         onClick={() => handleNudge(u)}
                                         disabled={isNudged}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center transition-all ${
+                                        className={`px-3.5 py-2 rounded-xl text-[11px] font-bold flex items-center transition-all tactile-press ${
                                             isNudged
                                                 ? 'bg-slate-100 text-slate-400 cursor-default'
-                                                : 'hover:scale-105 active:scale-95 shadow-sm text-amber-800'
+                                                : 'hover:scale-105 active:scale-95 shadow-sm text-amber-900'
                                         }`}
-                                        style={isNudged ? {} : { background: 'linear-gradient(135deg, hsl(38,85%,85%), hsl(33,75%,78%))', border: '1px solid hsl(33,60%,70%)' }}
+                                        style={isNudged ? {} : { background: 'linear-gradient(135deg, hsl(42,95%,84%), hsl(35,85%,75%))', border: '1px solid hsl(35,70%,68%)' }}
                                     >
-                                        {isNudged ? '✅ Nudged!' : <><Bell size={12} className="mr-1" /> Roar 🦁</>}
+                                        {isNudged ? '✅ Nudged!' : <><Bell size={12} className="mr-1.5" /> Roar 🦁</>}
                                     </button>
                                 </div>
                             );
@@ -540,15 +555,15 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
 
             {/* Workout Logs Header & Filter */}
             <div className="flex items-center justify-between px-2 pt-2">
-                <h3 className="text-emerald-900 font-bold text-lg font-['Fredoka'] flex items-center">
-                    Workout Logs
+                <h3 className="text-emerald-950 font-bold text-lg font-['Fredoka'] flex items-center">
+                    <span className="mr-2">📜</span> Workout Logs
                 </h3>
                 <button
                     onClick={() => {
                         setShowMyWorkouts(!showMyWorkouts);
                         setPage(0); // Reset pagination on filter change
                     }}
-                    className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-full transition-all ${showMyWorkouts ? 'bg-emerald-500 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`flex items-center text-xs font-bold px-3.5 py-2 rounded-full transition-all tactile-press ${showMyWorkouts ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white text-emerald-800 border border-emerald-200/80 hover:bg-emerald-50 shadow-sm'}`}
                 >
                     <Filter size={12} className="mr-1.5" />
                     {showMyWorkouts ? 'My Workouts' : 'All Workouts'}
@@ -584,20 +599,20 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                 {hasMore && (
                     <button
                         onClick={loadMore}
-                        className="w-full py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-2xl flex items-center justify-center hover:bg-slate-50 transition-colors shadow-sm active:scale-95"
+                        className="w-full py-3.5 bg-white border border-emerald-200/80 text-emerald-700 font-bold rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-colors shadow-sm active:scale-95 tactile-press"
                     >
                         <ChevronDown size={16} className="mr-2" /> Load More
                     </button>
                 )}
 
                 {!hasMore && displayedItems.length > 0 && (
-                    <div className="text-center text-slate-300 text-xs font-bold py-4">
+                    <div className="text-center text-emerald-700/50 text-xs font-bold py-4">
                         You've reached the end of the jungle! 🌴
                     </div>
                 )}
 
                 {displayedItems.length === 0 && (
-                    <div className="text-center py-10 text-slate-400 font-bold bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="text-center py-10 text-slate-400 font-bold bg-white/70 rounded-3xl border-2 border-dashed border-emerald-100">
                         No logs found. Time to make some history! 🚀
                     </div>
                 )}

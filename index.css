@@ -247,6 +247,22 @@ input, textarea, select {
   }
 }
 
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-5px); }
+}
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.9); }
+  70%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
 /* ============================================================
    Animation Utility Classes
    ============================================================ */
@@ -258,6 +274,14 @@ input, textarea, select {
 .animate-leaf-check   { animation: leaf-check    var(--dur-base) var(--ease-bounce) both; }
 .animate-breathing    { animation: breathing-pulse 4s ease-in-out infinite; }
 .animate-slide-in-right { animation: slide-in-right 0.35s var(--ease-spring) both; }
+.animate-float-gentle { animation: float-gentle  3.2s ease-in-out infinite; }
+.animate-pop-in       { animation: pop-in        0.35s var(--ease-bounce) both; }
+.animate-pulse-subtle { animation: pulse-subtle  2.4s ease-in-out infinite; }
+
+.delay-75  { animation-delay: 75ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-225 { animation-delay: 225ms; }
+.delay-300 { animation-delay: 300ms; }
 
 /* Shimmer loading effect */
 .shimmer {
@@ -286,6 +310,14 @@ input, textarea, select {
   .spring-transition:hover { transform: translateY(-3px) scale(1.02); }
 }
 .spring-transition:active { transform: translateY(0px) scale(0.97); }
+
+/* Tactile Press — subtle mobile press feedback without hover lift */
+.tactile-press {
+  transition: transform 150ms var(--ease-spring), box-shadow 150ms var(--ease-spring), background-color 150ms ease;
+}
+.tactile-press:active {
+  transform: scale(0.96);
+}
 
 /* ============================================================
    Gradient Card System

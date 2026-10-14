@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { User, UserGamificationState, GiftItem, UserProfile, Badge, Theme } from '../types';
 import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs } from '../utils/storage';
 import { notifyOnGiftReceived } from '../services/notificationService';
@@ -144,11 +145,13 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
   return (
     <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-5 animate-fade-in">
-      <div className="relative mb-4 text-center">
-        <h2 className="text-2xl font-bold text-emerald-900 font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
+      <div className="relative mb-2 text-center">
+        <div className="inline-flex items-center gap-1.5 bg-amber-50/90 border border-amber-200/80 px-3 py-1 rounded-full text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 shadow-sm">
+          <span>🏆</span> Loot &amp; Rewards
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
           Treasure Trove
         </h2>
-        <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest mt-0.5">Loot & Rewards</p>
       </div>
 
       {/* Team Stats Card - Mobile Only (Desktop uses sidebar) */}
@@ -158,59 +161,69 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
       {/* My Stats Rows */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default">
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="glass-panel p-3.5 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default border border-orange-100/80 bg-white/90 shadow-sm hover:-translate-y-0.5 transition-all">
+          <div className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Days in a row you've worked out." iconSize={12} color="text-orange-400" />
           </div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-orange-500" style={{ background: 'linear-gradient(135deg, hsl(38,95%,92%), hsl(25,95%,88%))' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 text-orange-500 shadow-inner border border-orange-200/50" style={{ background: 'linear-gradient(135deg, hsl(38,95%,92%), hsl(25,95%,88%))' }}>
             <Zap size={24} className="fill-current" />
           </div>
-          <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{streaks}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streak</span>
+          <span className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{streaks}</span>
+          <span className="text-[10px] font-extrabold text-orange-700/70 uppercase tracking-widest">Streak</span>
         </div>
-        <div className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default">
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="glass-panel p-3.5 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-default border border-purple-100/80 bg-white/90 shadow-sm hover:-translate-y-0.5 transition-all">
+          <div className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Special awards for hitting milestones." iconSize={12} color="text-purple-400" />
           </div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-purple-500" style={{ background: 'linear-gradient(135deg, hsl(270,65%,94%), hsl(285,60%,90%))' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 text-purple-500 shadow-inner border border-purple-200/50" style={{ background: 'linear-gradient(135deg, hsl(270,65%,94%), hsl(285,60%,90%))' }}>
             <Trophy size={24} className="fill-current" />
           </div>
-          <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{myState.badges.length}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Badges</span>
+          <span className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{myState.badges.length}</span>
+          <span className="text-[10px] font-extrabold text-purple-700/70 uppercase tracking-widest">Badges</span>
         </div>
         <div
           onClick={handleOpenPointsHistory}
-          className="glass-panel p-3 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-pointer"
+          className="glass-panel p-3.5 rounded-[24px] spring-transition flex flex-col items-center justify-center relative group cursor-pointer border border-blue-100/80 bg-white/90 shadow-sm hover:border-blue-300 hover:-translate-y-0.5 active:scale-95 transition-all"
           role="button"
           tabIndex={0}
         >
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Currency to buy shop items. Earn by working out!" iconSize={12} color="text-blue-400" />
           </div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 text-blue-500" style={{ background: 'linear-gradient(135deg, hsl(210,80%,93%), hsl(215,75%,88%))' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 text-blue-500 shadow-inner border border-blue-200/50" style={{ background: 'linear-gradient(135deg, hsl(210,80%,93%), hsl(215,75%,88%))' }}>
             <Star size={24} className="fill-current" />
           </div>
-          <span className="text-2xl font-bold text-slate-800 font-['Fredoka']">{myState.points || 0}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points</span>
+          <span className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{myState.points || 0}</span>
+          <span className="text-[10px] font-extrabold text-blue-700/70 uppercase tracking-widest">Points</span>
         </div>
       </div>
 
-      <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-center">
-        <p className="text-xs text-emerald-700 font-bold mr-2">💡 Tip: Plan workouts earn 10 Points. Long custom workouts earn points too!</p>
-        <InfoTooltip text="Plan A/B: 10 Pts. Custom (<30m): 0 Pts. Custom (>30m): 1 Pt per 10 mins (Max 6 Pts)." iconSize={14} color="text-emerald-500" />
+      <div className="bg-emerald-50/80 border border-emerald-200/70 rounded-2xl p-3.5 text-center flex items-center justify-center shadow-sm">
+        <p className="text-xs text-emerald-800 font-bold mr-2">💡 Tip: Plan workouts earn 10 Points. Long custom workouts earn points too!</p>
+        <InfoTooltip text="Plan A/B: 10 Pts. Custom (<30m): 0 Pts. Custom (>30m): 1 Pt per 10 mins (Max 6 Pts)." iconSize={14} color="text-emerald-600" />
       </div>
 
       {/* Badge Cabinet */}
-      <div className="glass-panel rounded-[32px] p-5" style={{ background: 'linear-gradient(160deg, hsl(48,80%,97%) 0%, hsl(140,50%,96%) 100%)', border: '1px solid hsl(48,60%,88%)' }}>
-        {/* Bamboo shelf header */}
-        <div className="relative mb-5">
-          <div className="absolute inset-x-0 bottom-0 h-2 rounded-full" style={{ background: 'linear-gradient(90deg, hsl(33,65%,45%), hsl(33,60%,52%), hsl(33,65%,45%))', boxShadow: '0 2px 8px hsla(33,65%,45%,0.4)' }} />
-          <h3 className="font-bold text-amber-900 mb-3 flex items-center font-['Fredoka'] text-lg relative z-10">
-            <span className="rounded-xl mr-3 text-yellow-600 text-xl">🎖️</span>
-            Achievements
-          </h3>
+      <div className="glass-panel rounded-[32px] p-5 shadow-md" style={{ background: 'linear-gradient(160deg, hsl(48,80%,97%) 0%, hsl(140,50%,96%) 100%)', border: '1px solid hsl(48,60%,86%)' }}>
+        {/* Clean Achievements Header */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="font-bold text-amber-950 flex items-center font-['Fredoka'] text-lg">
+              <span className="bg-amber-100/90 border border-amber-200/80 w-9 h-9 rounded-xl flex items-center justify-center mr-2.5 text-yellow-600 text-lg shadow-2xs shrink-0">🎖️</span>
+              Achievements
+            </h3>
+            <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100/90 border border-amber-200/80 px-3 py-1 rounded-full uppercase tracking-wider shrink-0">
+              {myState.badges.length} / {BADGES_DB.length} Unlocked
+            </span>
+          </div>
+          <div className="h-1.5 w-full bg-amber-200/50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.round((myState.badges.length / Math.max(1, BADGES_DB.length)) * 100))}%` }}
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3.5">
           {BADGES_DB.map(badge => {
             const isUnlocked = myState.badges.includes(badge.id);
             return (
@@ -219,16 +232,16 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                 className="flex flex-col items-center text-center group cursor-pointer transition-all active:scale-95"
                 onClick={() => setSelectedBadge(badge)}
               >
-                <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center mb-3 transition-all transform duration-300 ${
+                <div className={`w-15 h-15 md:w-16 md:h-16 rounded-[20px] flex items-center justify-center mb-2 transition-all transform duration-300 ${
                   isUnlocked
-                    ? 'text-yellow-900 group-hover:rotate-6 group-hover:scale-110 bamboo-glow'
-                    : 'bg-slate-100 text-slate-300 grayscale opacity-60'
+                    ? 'text-yellow-900 group-hover:rotate-6 group-hover:scale-110 bamboo-glow border-2 border-amber-200 shadow-md'
+                    : 'bg-white/60 border border-slate-200/70 text-slate-300 grayscale opacity-65 hover:opacity-90'
                   }`}
                   style={isUnlocked ? { background: 'linear-gradient(135deg, hsl(48,95%,68%), hsl(38,90%,55%))' } : {}}
                 >
-                  {isUnlocked ? <BadgeIcon name={badge.icon} size={32} /> : <Lock size={24} />}
+                  {isUnlocked ? <BadgeIcon name={badge.icon} size={30} /> : <Lock size={22} />}
                 </div>
-                <span className={`text-[10px] font-bold leading-tight line-clamp-2 ${isUnlocked ? 'text-amber-900' : 'text-slate-300'}`}>{badge.title}</span>
+                <span className={`text-[10px] font-bold leading-tight line-clamp-2 ${isUnlocked ? 'text-amber-950' : 'text-slate-400'}`}>{badge.title}</span>
               </div>
             );
           })}
@@ -236,24 +249,24 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* Inventory / Gifting */}
-      <div className="glass-panel rounded-[32px] p-5" style={{ background: 'linear-gradient(160deg, hsl(350,70%,97%) 0%, hsl(330,60%,96%) 100%)', border: '1px solid hsl(350,60%,90%)' }}>
-        <div className="flex justify-between items-start mb-3">
+      <div className="glass-panel rounded-[32px] p-5 shadow-md" style={{ background: 'linear-gradient(160deg, hsl(350,70%,97%) 0%, hsl(330,60%,96%) 100%)', border: '1px solid hsl(350,60%,90%)' }}>
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="font-bold text-pink-900 mb-1 flex items-center font-['Fredoka'] text-xl">
-              <span className="bg-pink-100 p-2 rounded-xl mr-3 text-pink-500"><Gift size={20} /></span>
+            <h3 className="font-bold text-pink-950 mb-0.5 flex items-center font-['Fredoka'] text-xl">
+              <span className="bg-pink-100 border border-pink-200/70 p-2 rounded-xl mr-3 text-pink-500 shadow-sm"><Gift size={20} /></span>
               Goodie Bag
               <InfoTooltip text="Items you find can be gifted to tribe members to encourage them." color="text-pink-400" />
             </h3>
-            <p className="text-xs text-pink-400 font-bold ml-12">Treat your tribe!</p>
+            <p className="text-xs text-pink-500 font-bold ml-12">Treat your tribe!</p>
           </div>
-          <button className="text-pink-400 hover:text-pink-600 font-bold text-xs bg-pink-50 px-3 py-1 rounded-full transition-colors">History &rarr;</button>
+          <button className="text-pink-600 hover:text-pink-700 font-bold text-xs bg-white/80 border border-pink-200/60 px-3 py-1.5 rounded-full transition-colors shadow-sm">History &rarr;</button>
         </div>
 
         {myState.inventory.length === 0 ? (
-          <div className="text-center py-10 bg-pink-50/50 rounded-3xl border-2 border-dashed border-pink-200 flex flex-col items-center">
-            <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-pink-300 mb-3"><Gift size={32} /></div>
-            <p className="text-pink-800 font-bold">Your bag is empty!</p>
-            <p className="text-pink-400 text-xs mt-1 font-bold">Complete workouts to find treats.</p>
+          <div className="text-center py-9 bg-white/60 rounded-3xl border-2 border-dashed border-pink-200/80 flex flex-col items-center">
+            <div className="w-16 h-16 bg-pink-100/80 rounded-full flex items-center justify-center text-pink-400 mb-3 shadow-inner"><Gift size={32} /></div>
+            <p className="text-pink-900 font-bold font-['Fredoka'] text-base">Your bag is empty!</p>
+            <p className="text-pink-500 text-xs mt-1 font-bold">Complete workouts to find treats.</p>
           </div>
         ) : (
           <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
@@ -263,13 +276,13 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                 <button
                   key={item.id}
                   onClick={() => setGiftModalItem(item)}
-                  className="rarity-common spring-transition flex flex-col items-center p-2 rounded-2xl relative group"
+                  className="rarity-common spring-transition flex flex-col items-center p-2.5 rounded-2xl relative group bg-white/85 border border-pink-200/60 shadow-sm hover:border-pink-400 active:scale-95"
                 >
-                  <div className="w-12 h-12 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
                     {img ? <img src={img} className="max-w-full max-h-full drop-shadow-sm" /> : <span className="text-3xl">{item.emoji}</span>}
                   </div>
-                  <span className="text-[10px] font-bold text-pink-900 truncate w-full text-center">{item.name}</span>
-                  <span className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm px-1">{item.count}</span>
+                  <span className="text-[10px] font-bold text-pink-950 truncate w-full text-center">{item.name}</span>
+                  <span className="absolute -top-2 -right-2 min-w-[22px] h-5 bg-pink-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center border-2 border-white shadow-sm px-1">{item.count}</span>
                 </button>
               )
             })}
@@ -278,22 +291,22 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* Jungle Shop */}
-      <div className="bg-white border border-indigo-100 rounded-[32px] p-5 shadow-xl shadow-indigo-100/20">
-        <div className="flex justify-between items-start mb-3">
+      <div className="bg-white/95 border border-indigo-100/90 rounded-[32px] p-5 shadow-xl shadow-indigo-100/25">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="font-bold text-indigo-900 mb-1 flex items-center font-['Fredoka'] text-xl">
-              <span className="bg-indigo-100 p-2 rounded-xl mr-3 text-indigo-500"><Store size={20} /></span>
+            <h3 className="font-bold text-indigo-950 mb-0.5 flex items-center font-['Fredoka'] text-xl">
+              <span className="bg-indigo-100 border border-indigo-200/60 p-2 rounded-xl mr-3 text-indigo-600 shadow-sm"><Store size={20} /></span>
               Jungle Shop
               <InfoTooltip text="Spend points to unlock new themes and personalize your app!" color="text-indigo-400" />
             </h3>
-            <p className="text-xs text-indigo-400 font-bold ml-12">Customize your vibe!</p>
+            <p className="text-xs text-indigo-500 font-bold ml-12">Customize your vibe!</p>
           </div>
-          <div className="bg-indigo-50 px-3 py-1 rounded-full text-indigo-600 font-bold text-xs flex items-center">
-            <Star size={12} className="mr-1 fill-current" /> {myState.points} pts
+          <div className="bg-indigo-50 border border-indigo-200/60 px-3 py-1.5 rounded-full text-indigo-700 font-extrabold text-xs flex items-center shadow-sm">
+            <Star size={12} className="mr-1 fill-current text-indigo-500" /> {myState.points} pts
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {SHOP_THEMES.map(theme => {
             const isUnlocked = myState.unlockedThemes?.includes(theme.id);
             const isActive = myState.activeTheme === theme.id;
@@ -333,29 +346,29 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
 
             return (
-              <div key={theme.id} className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${isActive ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 hover:border-indigo-100'}`}>
-                <div className="flex items-center">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mr-4 border border-indigo-100 overflow-hidden relative shadow-sm">
+              <div key={theme.id} className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${isActive ? 'bg-indigo-50/90 border-indigo-300 shadow-sm' : 'bg-slate-50/50 border-slate-200/70 hover:bg-white hover:border-indigo-200'}`}>
+                <div className="flex items-center min-w-0 mr-3">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mr-3.5 border border-indigo-100 overflow-hidden relative shadow-sm shrink-0">
                     {theme.type === 'color' ? (
                       <div className={`w-full h-full ${theme.value.replace('bg-', 'bg-')}`}></div>
                     ) : (
                       <img src={theme.value} className="w-full h-full object-cover" />
                     )}
-                    {isActive && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><CheckCircle className="text-white drop-shadow-md" size={24} /></div>}
+                    {isActive && <div className="absolute inset-0 bg-black/25 flex items-center justify-center"><CheckCircle className="text-white drop-shadow-md" size={24} /></div>}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-lg">{theme.name}</h4>
-                    <p className="text-xs text-slate-400 font-bold">{theme.description}</p>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-800 text-base md:text-lg font-['Fredoka'] truncate">{theme.name}</h4>
+                    <p className="text-xs text-slate-500 font-bold line-clamp-2">{theme.description}</p>
                   </div>
                 </div>
                 <button
                   onClick={handlePurchaseOrEquip}
                   disabled={!isActive && !isUnlocked && !canAfford}
-                  className={`px-5 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-sm ${isActive
-                    ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                  className={`px-4 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-sm shrink-0 ${isActive
+                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                     : isUnlocked
-                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      : 'bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
+                      ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
                     }`}
                 >
                   {isActive ? 'Unequip' :
@@ -369,12 +382,18 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* Gift Modal */}
-      {giftModalItem && (
-        <div className="fixed inset-0 bg-emerald-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white rounded-[40px] p-8 w-full max-w-sm animate-scale-up shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-pink-50 to-transparent"></div>
+      {giftModalItem && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-emerald-950/75 backdrop-blur-md z-[200] flex items-center justify-center p-4 sm:p-6 animate-fade-in" onClick={() => setGiftModalItem(null)}>
+          <div className="bg-white rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 w-full max-w-sm animate-pop-in shadow-2xl relative overflow-hidden border border-white/80" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-pink-50 to-transparent pointer-events-none"></div>
 
-            <button onClick={() => setGiftModalItem(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-2"><LogOut size={20} className="rotate-180" /></button>
+            <button
+              onClick={() => setGiftModalItem(null)}
+              aria-label="Close modal"
+              className="absolute top-4 right-4 z-20 text-slate-400 hover:text-slate-600 p-2 rounded-full bg-white/80 hover:bg-slate-100 transition-colors shadow-2xs"
+            >
+              <X size={18} />
+            </button>
 
             <div className="relative z-10 text-center">
               <div className="w-24 h-24 mx-auto mb-4 relative">
@@ -385,65 +404,77 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                     <div className="text-4xl animate-bounce-slow">{giftModalItem.emoji}</div>
                   }
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white shadow-sm">
+                <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full border-2 border-white shadow-sm">
                   x{giftModalItem.count}
                 </div>
               </div>
 
-              <h3 className="text-2xl font-bold text-emerald-900 font-['Fredoka'] mb-1">Share the Love</h3>
-              <p className="text-emerald-500 text-xs font-bold mb-8">Send a {giftModalItem.name} to a friend!</p>
+              <h3 className="text-2xl font-bold text-emerald-950 font-['Fredoka'] mb-1">Share the Love</h3>
+              <p className="text-emerald-600 text-xs font-bold mb-5">Send a {giftModalItem.name} to a friend!</p>
 
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
                 {tribeMembers.filter(m => m.displayName !== currentUser).map(m => (
                   <button
                     key={m.displayName}
                     onClick={() => handleSendGift(m.displayName)}
-                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 flex items-center space-x-4 transition-all group relative overflow-hidden"
+                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/70 hover:border-emerald-300 flex items-center space-x-3.5 transition-all group relative overflow-hidden active:scale-[0.98]"
                   >
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 group-hover:border-emerald-300 transition-colors">
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 group-hover:border-emerald-300 transition-colors shrink-0">
                       <img src={getAvatarPath(m.avatarId)} onError={handleImgError} className="w-full h-full object-cover" />
                     </div>
-                    <span className="font-bold text-slate-700 text-lg group-hover:text-emerald-800 text-left flex-1">{m.displayName}</span>
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-300 group-hover:text-emerald-500 group-hover:bg-emerald-100 transition-all shadow-sm">
-                      <Send size={18} />
+                    <span className="font-bold text-slate-800 text-base group-hover:text-emerald-900 text-left flex-1 font-['Fredoka']">{m.displayName}</span>
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-emerald-600 group-hover:text-white group-hover:bg-emerald-500 transition-all shadow-sm border border-emerald-100">
+                      <Send size={16} />
                     </div>
                   </button>
                 ))}
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Badge Details Modal */}
-      {selectedBadge && (
-        <div className="fixed inset-0 bg-emerald-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-fade-in" onClick={() => setSelectedBadge(null)}>
-          <div className="bg-white rounded-[40px] p-8 w-full max-w-xs animate-scale-up shadow-2xl text-center relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50 to-transparent"></div>
+      {selectedBadge && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-emerald-950/75 backdrop-blur-md z-[200] flex items-center justify-center p-4 sm:p-6 animate-fade-in" onClick={() => setSelectedBadge(null)}>
+          <div className="bg-white rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 w-full max-w-xs animate-pop-in shadow-2xl text-center relative overflow-hidden border border-white/80" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-amber-50/80 to-transparent pointer-events-none"></div>
 
-            <div className="relative z-10">
-              <div className={`w-24 h-24 rounded-[30px] flex items-center justify-center mx-auto mb-6 shadow-xl ${myState.badges.includes(selectedBadge.id) ? 'bg-gradient-to-br from-yellow-300 to-amber-400 text-yellow-900 rotate-3' : 'bg-slate-100 text-slate-300'}`}>
-                <BadgeIcon name={selectedBadge.icon} size={48} />
+            <button
+              onClick={() => setSelectedBadge(null)}
+              aria-label="Close badge details"
+              className="absolute top-4 right-4 z-20 text-slate-400 hover:text-slate-600 p-2 rounded-full bg-white/80 hover:bg-slate-100 transition-colors shadow-2xs"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="relative z-10 pt-1">
+              <div className={`w-24 h-24 rounded-[28px] flex items-center justify-center mx-auto mb-4 shadow-xl border-4 border-white ${myState.badges.includes(selectedBadge.id) ? 'bg-gradient-to-br from-yellow-300 to-amber-400 text-yellow-900 rotate-3' : 'bg-slate-100 text-slate-300'}`}>
+                <BadgeIcon name={selectedBadge.icon} size={46} />
               </div>
 
               <h3 className="text-2xl font-bold text-slate-800 mb-2 font-['Fredoka']">{selectedBadge.title}</h3>
-              <div className="inline-block px-4 py-1.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-6 border border-slate-200">
-                {selectedBadge.rarity} Tier
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase tracking-widest mb-4 border border-amber-200/80">
+                <span>{selectedBadge.rarity} Tier</span>
+                <span>•</span>
+                <span>{myState.badges.includes(selectedBadge.id) ? 'Unlocked' : 'Locked'}</span>
               </div>
 
-              <p className="text-slate-500 mb-8 font-medium leading-relaxed text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p className="text-slate-600 mb-5 font-bold leading-relaxed text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 {selectedBadge.description}
               </p>
 
               <button
                 onClick={() => setSelectedBadge(null)}
-                className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-200 active:scale-95 transition-all hover:bg-emerald-600"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:from-emerald-600 hover:to-teal-700 font-['Fredoka'] text-base"
               >
                 Awesome!
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Points History Popup */}

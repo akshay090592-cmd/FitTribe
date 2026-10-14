@@ -54,7 +54,7 @@ describe('CoachView', () => {
         vi.clearAllMocks();
     });
 
-    it('renders correctly and defaults to check-in tab', async () => {
+    it('renders correctly and defaults to AI Coach tab', async () => {
         render(<CoachView userProfile={mockProfile} />);
 
         await waitFor(() => {
@@ -65,8 +65,8 @@ describe('CoachView', () => {
         expect(screen.getByRole('button', { name: /Nutrition/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /AI Coach/i })).toBeInTheDocument();
 
-        // Check-in start button available
-        expect(screen.getByRole('button', { name: /Start Check-in/i })).toBeInTheDocument();
+        // AI Coach input available by default
+        expect(screen.getByPlaceholderText(/Ask Sage for advice/i)).toBeInTheDocument();
     });
 
     it('renders existing weekly plan with adherence stats', async () => {
@@ -87,6 +87,7 @@ describe('CoachView', () => {
         (getUserPlans as any).mockResolvedValue(mockPlan);
 
         render(<CoachView userProfile={mockProfile} />);
+        fireEvent.click(screen.getByRole('button', { name: /Schedule/i }));
 
         await waitFor(() => {
             expect(screen.getByText(/Current Weekly Plan/i)).toBeInTheDocument();
@@ -112,6 +113,7 @@ describe('CoachView', () => {
         (getUserPlans as any).mockResolvedValue(mockPlan);
 
         render(<CoachView userProfile={mockProfile} />);
+        fireEvent.click(screen.getByRole('button', { name: /Schedule/i }));
 
         await waitFor(() => {
             expect(screen.getByText(/Task Toggle/i)).toBeInTheDocument();
@@ -140,6 +142,7 @@ describe('CoachView', () => {
         (getUserPlans as any).mockResolvedValue(mockPlan);
 
         render(<CoachView userProfile={mockProfile} />);
+        fireEvent.click(screen.getByRole('button', { name: /Schedule/i }));
 
         await waitFor(() => {
             // Should be auto-marked as not_done because it's in the past and status was null
@@ -155,10 +158,6 @@ describe('CoachView', () => {
 
     it('renders bold text and line breaks safely in chat messages', async () => {
         render(<CoachView userProfile={mockProfile} />);
-
-        // Switch to AI Coach tab
-        const chatTab = screen.getByRole('button', { name: /AI Coach/i });
-        fireEvent.click(chatTab);
 
         // Check for bold text in the initial message
         await waitFor(() => {

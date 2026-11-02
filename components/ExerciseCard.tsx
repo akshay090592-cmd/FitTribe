@@ -369,16 +369,90 @@ export const ExerciseCard: React.FC<Props> = memo(({
         <>
             <div className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
                 allCompleted
-                    ? 'border-emerald-300/90 bg-emerald-50/20'
+                    ? 'border-emerald-300/90 bg-emerald-50/20 mb-2.5'
                     : isExpanded
-                        ? 'border-emerald-300 shadow-md mb-3'
-                        : 'border-emerald-100/90 shadow-2xs mb-2 hover:border-emerald-200'
+                        ? 'border-emerald-300 shadow-md mb-3.5'
+                        : 'border-emerald-100/90 shadow-xs mb-2.5 hover:border-emerald-200'
             }`}>
 
-                {/* Streamlined Horizontal Header — No Giant Nested Image Card */}
+                {/* Friendly Horizontal Panda Banner Above Exercise Card */}
                 <div
                     onClick={onToggle}
-                    className="px-3 py-2.5 cursor-pointer hover:bg-emerald-50/30 transition-colors select-none relative"
+                    className={`relative w-full ${isExpanded ? 'h-40 sm:h-48' : 'h-32 sm:h-40'} overflow-hidden border-b border-emerald-100/70 cursor-pointer select-none group transition-all duration-200 flex items-center justify-center bg-white`}
+                >
+                    {/* Edge-to-edge color-matched background fill from the illustration's own border */}
+                    <img
+                        src={imageUrl}
+                        aria-hidden="true"
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/exercise_cardio.webp';
+                        }}
+                        className="absolute inset-0 w-full h-full object-cover object-center scale-125 blur-lg brightness-110 opacity-90 pointer-events-none"
+                    />
+
+                    {/* Main Concentric & Eccentric Panda Illustration — wide enough to fill the banner, feathered at the left/right edges so colored backgrounds blend seamlessly */}
+                    <img
+                        src={imageUrl}
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/exercise_cardio.webp';
+                        }}
+                        alt={name}
+                        loading="lazy"
+                        style={{
+                            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
+                            maskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
+                        }}
+                        className="relative z-10 w-[90%] sm:w-[82%] h-full object-cover object-[center_52%] transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
+
+                    {/* Single Friendly Floating Muscle Pill (Top-Left) */}
+                    <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 pointer-events-none">
+                        <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-white/90 shadow-xs text-[10px] font-extrabold uppercase tracking-wider text-emerald-950"
+                        >
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${visualMeta.muscleTheme.dot}`} aria-hidden="true" />
+                            <span>{visualMeta.primaryMuscle}</span>
+                        </span>
+                    </div>
+
+                    {/* Tier 2 SVG Equipment Overlay Badge (Bottom-Left on Image) */}
+                    <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1.5 pointer-events-none">
+                        <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 backdrop-blur-md border border-white/80 shadow-xs text-[10px] font-black uppercase tracking-wider text-white"
+                        >
+                            <EquipmentSvgIcon equipment={visualMeta.equipment} size={12} className="text-emerald-300 shrink-0" />
+                            <span>{visualMeta.equipmentLabel}</span>
+                        </span>
+                    </div>
+
+                    {/* Top-Right Form Guide Button & Completion Pill */}
+                    <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5">
+                        {allCompleted && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600/95 text-white text-[10px] font-extrabold uppercase tracking-wider shadow-xs">
+                                <img src="/assets/leaf_checkbox_filled.webp" className="w-3.5 h-3.5" alt="" />
+                                Done
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowInfo(true);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white backdrop-blur-md border border-white/80 text-emerald-900 text-[10px] font-extrabold shadow-xs transition-transform active:scale-95"
+                            aria-label="Exercise Info"
+                            title="Form Guide & Cues"
+                        >
+                            <Info size={12} className="text-emerald-600" />
+                            <span>Form</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Clean Full-Width Exercise Header (No Left Thumbnail or 3-Pill Clutter) */}
+                <div
+                    onClick={onToggle}
+                    className="px-3.5 py-2.5 cursor-pointer hover:bg-emerald-50/30 transition-colors select-none relative"
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -389,41 +463,8 @@ export const ExerciseCard: React.FC<Props> = memo(({
                     }}
                     aria-expanded={isExpanded}
                 >
-                    <div className="flex items-center gap-2.5">
-                        {/* Compact 44x44 Thumbnail (tapping opens Form Guide) */}
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowInfo(true);
-                            }}
-                            className={`relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border ${visualMeta.muscleTheme.border} ${visualMeta.muscleTheme.bg} group`}
-                            title="View Form Guide"
-                        >
-                            <img
-                                src={imageUrl}
-                                onError={(e) => {
-                                    e.currentTarget.src = '/assets/exercise_cardio.webp';
-                                }}
-                                alt={name}
-                                className="w-full h-full object-cover"
-                            />
-                            {!allCompleted && (
-                                <span
-                                    className="absolute bottom-0 right-0 inline-flex items-center gap-0.5 px-1 py-[1px] rounded-tl-md bg-slate-900/80 text-white text-[8px] font-black uppercase tracking-tight leading-none backdrop-blur-xs shadow-2xs pointer-events-none"
-                                    title={`${visualMeta.equipmentLabel} • ${visualMeta.archetypeLabel}`}
-                                >
-                                    <EquipmentSvgIcon equipment={visualMeta.equipment} size={9} />
-                                    <span>{visualMeta.equipmentShort}</span>
-                                </span>
-                            )}
-                            {allCompleted && (
-                                <div className="absolute inset-0 bg-emerald-600/75 flex items-center justify-center">
-                                    <img src="/assets/leaf_checkbox_filled.webp" className="w-6 h-6" alt="Done" />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Title & Inline Metadata */}
+                    <div className="flex items-center justify-between gap-2">
+                        {/* Title & Inline Target Metadata */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                                 <h3 className={`font-bold text-base sm:text-lg leading-snug truncate font-['Fredoka'] ${allCompleted ? 'text-emerald-800' : 'text-emerald-950'}`}>
@@ -435,7 +476,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                     </span>
                                 )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-bold text-slate-500 mt-0.5">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-bold text-slate-500 mt-0.5">
                                 <span className="text-emerald-700 font-extrabold">
                                     Target: {defaultSets} × {defaultRepsStr}
                                 </span>
@@ -449,13 +490,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                         <span className="text-emerald-700 font-extrabold">{totalVolume} kg</span>
                                     </>
                                 )}
-                                {primaryMuscle && primaryMuscle !== 'Other' && (
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
-                                        • {primaryMuscle}
-                                    </span>
-                                )}
                             </div>
-                            <ExerciseBadgeRow meta={visualMeta} compact className="mt-1" />
                         </div>
 
                         {/* Right Action Icons */}
@@ -467,26 +502,14 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                         e.stopPropagation();
                                         onSwap();
                                     }}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                    className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
                                     aria-label={`Swap ${name}`}
                                     title="Swap exercise"
                                 >
                                     <RefreshCw size={15} />
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowInfo(true);
-                                }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                                aria-label="Exercise Info"
-                                title="Form Guide & Cues"
-                            >
-                                <Info size={16} />
-                            </button>
-                            <div className={`p-1.5 rounded-lg transition-colors ${isExpanded ? 'text-emerald-700 bg-emerald-50' : 'text-slate-400'}`}>
+                            <div className={`p-1.5 rounded-xl transition-colors ${isExpanded ? 'text-emerald-700 bg-emerald-50' : 'text-slate-400'}`}>
                                 {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </div>
                         </div>
@@ -753,14 +776,25 @@ export const ExerciseCard: React.FC<Props> = memo(({
                             <X size={20} />
                         </button>
 
-                        <div className="text-center mb-5">
+                        <div className="text-center mb-4">
                             <h3 className="text-2xl font-bold text-emerald-950 font-['Fredoka'] mb-1">{name}</h3>
-                            <div className="text-emerald-600 font-extrabold text-xs uppercase tracking-widest">Panda Form Guide</div>
-                            <ExerciseBadgeRow meta={visualMeta} showSecondaryMuscles className="justify-center mt-2.5" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider mt-1">
+                                <span className={`w-2 h-2 rounded-full ${visualMeta.muscleTheme.dot}`} aria-hidden="true" />
+                                <span>{visualMeta.primaryMuscle}</span>
+                                <span className="text-emerald-300">•</span>
+                                <EquipmentSvgIcon equipment={visualMeta.equipment} size={12} className="text-emerald-600 shrink-0" />
+                                <span>{visualMeta.equipmentLabel}</span>
+                            </div>
                         </div>
 
-                        <div className="mb-5 rounded-2xl overflow-hidden border-2 border-emerald-100 shadow-sm">
-                            <img src={imageUrl} alt={name} className="w-full h-auto" />
+                        <div className="relative mb-5 rounded-2xl overflow-hidden border-2 border-emerald-100 shadow-sm">
+                            <img src={imageUrl} alt={name} className="w-full h-auto block" />
+                            <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 pointer-events-none">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 backdrop-blur-md border border-white/80 shadow-sm text-[10px] font-black uppercase tracking-wider text-white">
+                                    <EquipmentSvgIcon equipment={visualMeta.equipment} size={12} className="text-emerald-300 shrink-0" />
+                                    <span>{visualMeta.equipmentLabel}</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div className="space-y-3">

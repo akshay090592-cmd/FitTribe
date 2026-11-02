@@ -519,7 +519,7 @@ body {
 /* Mobile-first bottom padding that respects the home indicator,
    and collapses to 0 on desktop (md+) */
 .pb-safe {
-  padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
 }
 @media (min-width: 768px) {
   .pb-safe { padding-bottom: 0; }

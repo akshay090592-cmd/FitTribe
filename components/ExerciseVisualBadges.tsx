@@ -203,7 +203,7 @@ export const ExerciseBadgeRow: React.FC<ExerciseBadgeRowProps> = React.memo(({
   meta: providedMeta,
   compact = false,
   showSecondaryMuscles = false,
-  showArchetype = true,
+  showArchetype = false,
   className = '',
 }) => {
   const meta = providedMeta || resolveExerciseVisualMeta(name, { customImage, visualArchetype, equipment });

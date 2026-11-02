@@ -1,6 +1,7 @@
 import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan } from "../types";
 import { geminiClient } from "./geminiClient";
 import { monthLongFormatter, weekdayLongFormatter, shortDateFormatter } from "../utils/dateUtils";
+import { resolveExerciseVisualMeta } from "../utils/exerciseVisuals";
 
 const GEMINI_MODEL = 'gemini-flash-lite-latest'; // or 'gemini-1.5-flash' depending on access
 
@@ -73,8 +74,11 @@ export const AICoachService = {
       4. Suggest progression (Progressive Overload) for exercises they did well on.
       5. Maintain the same muscle coverage and split focus.
       6. For 'image' field: Keep existing URL if exercise is unchanged. If adding NEW exercise, set 'image' to null/empty.
-      7. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). You MUST add a 'trackingType' field with value 'reps' or 'duration'.
-      8. For 'duration' exercises, provide default time in 'defaultReps' (e.g. '60s', '45s').
+      7. For EVERY exercise (both existing and newly added), include:
+         - 'visualArchetype': MUST be one of 'horizontal_push' | 'vertical_push' | 'horizontal_pull' | 'vertical_pull' | 'knee_dominant' | 'lunge_unilateral' | 'hip_dominant' | 'glute_bridge' | 'isolation_arms' | 'isolation_shoulders' | 'core_floor' | 'cardio_conditioning' | 'mobility_stretch'
+         - 'equipment': MUST be one of 'dumbbell' | 'barbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'cardio' | 'mobility'
+      8. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). You MUST add a 'trackingType' field with value 'reps' or 'duration'.
+      9. For 'duration' exercises, provide default time in 'defaultReps' (e.g. '60s', '45s').
       
       OUTPUT:
       Return ONLY the valid JSON of the modified WorkoutPlan object. Do not explain.
@@ -85,7 +89,23 @@ export const AICoachService = {
                 model: GEMINI_MODEL,
                 contents: prompt
             });
-            return parseJSON(result.text) as WorkoutPlan;
+            const parsed = parseJSON(result.text) as WorkoutPlan | null;
+            if (parsed && Array.isArray(parsed.exercises)) {
+                parsed.exercises = parsed.exercises.map(ex => {
+                    const meta = resolveExerciseVisualMeta(ex.name, {
+                        customImage: ex.image,
+                        visualArchetype: ex.visualArchetype,
+                        equipment: ex.equipment,
+                    });
+                    return {
+                        ...ex,
+                        image: ex.image || meta.image,
+                        visualArchetype: ex.visualArchetype || meta.archetype,
+                        equipment: ex.equipment || meta.equipment,
+                    };
+                });
+            }
+            return parsed;
         } catch (error) {
             console.error("AI Plan Generation failed", error);
             return null;
@@ -199,8 +219,12 @@ ${lastLogs.map(l => {
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.
     - **Diet**: <ACTION_SAVE_DIET> { "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 300, "macros": "..." } ] } ] } </ACTION_SAVE_DIET>
     - **Schedule**: <ACTION_SAVE_SCHEDULE> { "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus..." } ] } </ACTION_SAVE_SCHEDULE>
-    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "defaultSets": 3, "defaultReps": "10", "trackingType": "reps" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration" } ] } </ACTION_SAVE_WORKOUT>
-    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above ("defaultSets", "defaultReps", "trackingType"). Always define trackingType as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
+    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "defaultSets": 3, "defaultReps": "10", "trackingType": "reps", "visualArchetype": "knee_dominant", "equipment": "barbell" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration", "visualArchetype": "core_floor", "equipment": "bodyweight" } ] } </ACTION_SAVE_WORKOUT>
+    - **EXERCISE VISUAL ARCHETYPE & EQUIPMENT RULES**:
+      Whenever creating or updating exercises in a workout, include:
+      * "visualArchetype": one of 'horizontal_push' | 'vertical_push' | 'horizontal_pull' | 'vertical_pull' | 'knee_dominant' | 'lunge_unilateral' | 'hip_dominant' | 'glute_bridge' | 'isolation_arms' | 'isolation_shoulders' | 'core_floor' | 'cardio_conditioning' | 'mobility_stretch'
+      * "equipment": one of 'dumbbell' | 'barbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'cardio' | 'mobility'
+    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above ("defaultSets", "defaultReps", "trackingType", "visualArchetype", "equipment"). Always define trackingType as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
 
     ${context ? `Context: ${context}` : ''}
     ${logsContext}`;

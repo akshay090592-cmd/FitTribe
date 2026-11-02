@@ -32,6 +32,18 @@ const SESSION_CACHE_TTL = 10000; // 10 seconds
  * Performance: Reduces localStorage synchronous reads and network checks from O(C) to O(1)
  * during hot transactional paths, avoiding JWT verification and parsing overhead.
  */
+const verifyOfflineCachedProfile = (userId: string): boolean => {
+  if (typeof navigator !== 'undefined' && navigator.onLine) return false;
+  try {
+    const raw = localStorage.getItem('current_user_profile');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return !!parsed?.id && parsed.id === userId;
+  } catch {
+    return false;
+  }
+};
+
 export const isSessionValid = async (userId: string): Promise<boolean> => {
   if (!isSupabaseConfigured()) return true;
 
@@ -57,7 +69,7 @@ export const isSessionValid = async (userId: string): Promise<boolean> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const sessionUserId = session?.user?.id;
-      const isValid = !!sessionUserId && sessionUserId === userId;
+      const isValid = (!!sessionUserId && sessionUserId === userId) || (!sessionUserId && verifyOfflineCachedProfile(userId));
 
       lastSessionChecks.set(userId, {
         timestamp: Date.now(),
@@ -66,6 +78,9 @@ export const isSessionValid = async (userId: string): Promise<boolean> => {
 
       return isValid;
     } catch (e) {
+      if (verifyOfflineCachedProfile(userId)) {
+        return true;
+      }
       console.error("Error in session validation:", e);
       return false;
     } finally {

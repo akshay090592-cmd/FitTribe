@@ -1199,7 +1199,7 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   if (hasLongHaul) keptBadges.push('long_haul');
   if (hasCalorieCrusher) keptBadges.push('calorie_crusher');
 
-  const currentStreak = await getStreaks(userProfile.displayName as User, sortedLogs);
+  const currentStreak = await getStreaks(userProfile.displayName as User, remainingLogs);
   if (currentStreak >= 5) keptBadges.push('streak_5');
   if (currentStreak >= 10) keptBadges.push('streak_10');
 

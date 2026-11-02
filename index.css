@@ -466,16 +466,47 @@ input, textarea, select {
 }
 
 /* ============================================================
-   Theme-aware body background
+   Theme-aware body background & Purchasable Theme Overrides
    ============================================================ */
+:root[data-theme="jungle_night"],
+[data-theme="jungle_night"] {
+  --hue-jungle:   215;
+  --hue-bamboo:   195;
+  --hue-canopy:   230;
+  --color-bg-page: hsl(222, 55%, 96%);
+  --glass-bg:     hsla(220, 65%, 99%, 0.72);
+  --glass-border: hsla(205, 85%, 80%, 0.55);
+}
+
+:root[data-theme="volcano"],
+[data-theme="volcano"] {
+  --hue-jungle:   14;
+  --hue-bamboo:   38;
+  --hue-canopy:   8;
+  --color-bg-page: hsl(24, 75%, 96%);
+  --glass-bg:     hsla(28, 80%, 99%, 0.74);
+  --glass-border: hsla(25, 90%, 80%, 0.55);
+}
+
+:root[data-theme="deep_forest"],
+[data-theme="deep_forest"] {
+  --hue-jungle:   172;
+  --hue-bamboo:   48;
+  --hue-canopy:   176;
+  --color-bg-page: hsl(170, 55%, 95%);
+  --glass-bg:     hsla(170, 60%, 99%, 0.72);
+  --glass-border: hsla(168, 75%, 78%, 0.55);
+}
+
 body {
   background-color: var(--color-bg-page);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, hsla(var(--hue-jungle), 60%, 88%, 0.55), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, hsla(var(--hue-bamboo), 70%, 90%, 0.28), transparent 70%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, hsla(var(--hue-jungle), 65%, 86%, 0.65), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsla(var(--hue-bamboo), 75%, 88%, 0.35), transparent 70%);
   background-attachment: fixed;
   font-family: 'Nunito', system-ui, sans-serif;
   color: var(--color-jungle-950);
+  transition: background-color 350ms ease, color 350ms ease;
 }
 
 /* ============================================================

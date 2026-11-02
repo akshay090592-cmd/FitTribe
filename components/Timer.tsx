@@ -8,7 +8,9 @@ interface TimerProps {
   toggle?: () => void;
   reset?: () => void;
   addTime?: () => void;
+  subtractTime?: () => void;
   onClose?: () => void;
+  nextUpLabel?: string;
   mode?: 'inline' | 'overlay';
   type?: 'countdown' | 'stopwatch';
   variant?: 'default' | 'minimal';
@@ -21,7 +23,9 @@ export const Timer: React.FC<TimerProps> = ({
   toggle,
   reset,
   addTime,
+  subtractTime,
   onClose,
+  nextUpLabel,
   mode = 'inline',
   type = 'countdown',
   variant = 'default',
@@ -42,9 +46,9 @@ export const Timer: React.FC<TimerProps> = ({
   if (mode === 'overlay') {
     const pct = totalSeconds > 0 ? Math.max(0, Math.min(100, (seconds / totalSeconds) * 100)) : 100;
     return (
-      <div className="fixed bottom-24 right-4 left-4 md:left-auto md:w-80 bg-emerald-950/95 backdrop-blur-xl text-white rounded-3xl shadow-2xl border border-emerald-700/50 p-4 flex items-center justify-between z-50 animate-fade-in-up">
-        <div className="flex items-center space-x-3.5">
-          <div className="relative w-12 h-12 flex items-center justify-center">
+      <div className="fixed bottom-4 inset-x-3 sm:left-auto sm:right-4 sm:w-96 bg-emerald-950/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-emerald-700/50 px-3.5 py-2.5 flex items-center justify-between z-50 animate-fade-in-up">
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="relative w-11 h-11 shrink-0 flex items-center justify-center">
             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
               <path className="text-emerald-900" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3.5" />
               <path
@@ -57,22 +61,30 @@ export const Timer: React.FC<TimerProps> = ({
                 strokeDasharray={type === 'countdown' ? `${pct}, 100` : '100, 100'}
               />
             </svg>
-            <span className="text-xs font-black font-mono text-lime-300">{Math.floor(seconds)}s</span>
+            <span className="text-[11px] font-black font-mono text-lime-300">{Math.floor(seconds)}s</span>
           </div>
-          <div>
-            <div className="text-[10px] text-emerald-300 uppercase font-black tracking-widest">Bamboo Breather</div>
-            <div className="font-mono text-lg font-extrabold tracking-tight">{formatTime(Math.floor(seconds))}</div>
+          <div className="min-w-0">
+            <div className="text-[9px] text-emerald-300 uppercase font-black tracking-widest truncate">
+              {nextUpLabel ? `Next: ${nextUpLabel}` : 'Rest Timer'}
+            </div>
+            <div className="font-mono text-base font-extrabold tracking-tight leading-tight">{formatTime(Math.floor(seconds))}</div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 shrink-0 ml-2">
+          {subtractTime && (
+            <button onClick={subtractTime} className="bg-emerald-900/80 hover:bg-emerald-800 active:scale-95 px-2.5 py-1.5 rounded-xl text-xs font-extrabold text-emerald-200 border border-emerald-700/40 transition-all" aria-label="Subtract 15 seconds">
+              -15s
+            </button>
+          )}
           {addTime && (
-            <button onClick={addTime} className="bg-emerald-800/80 hover:bg-emerald-700 active:scale-95 px-3 py-2 rounded-xl text-xs font-extrabold text-lime-300 border border-emerald-600/40 transition-all">
-              +10
+            <button onClick={addTime} className="bg-emerald-800/80 hover:bg-emerald-700 active:scale-95 px-2.5 py-1.5 rounded-xl text-xs font-extrabold text-lime-300 border border-emerald-600/40 transition-all" aria-label="Add 10 seconds">
+              +10s
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} className="bg-emerald-900/80 hover:bg-emerald-800 active:scale-95 p-2.5 rounded-xl text-emerald-300 transition-all">
-              <X size={16} />
+            <button onClick={onClose} className="bg-emerald-900/80 hover:bg-emerald-800 active:scale-95 px-2.5 py-1.5 rounded-xl text-xs font-bold text-emerald-300 transition-all flex items-center gap-1" aria-label="Skip rest timer">
+              <span>Skip</span>
+              <X size={14} />
             </button>
           )}
         </div>

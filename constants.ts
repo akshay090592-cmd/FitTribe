@@ -42,7 +42,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Lower the dumbbells slowly to chest level.",
         "Press up explosively, converging the weights at the top without touching."
       ],
-      image: "/assets/exercises/bench_press_composite.webp"
+      image: "/assets/exercises/bench_press_composite.webp",
+      visualArchetype: "horizontal_push",
+      equipment: "dumbbell"
     },
     {
       name: "Bench Pistol Squat",
@@ -56,7 +58,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Keep your chest up and back straight.",
         "Touch the bench lightly and drive back up through the heel."
       ],
-      image: "/assets/exercises/bench_pistol_squat_composite.webp"
+      image: "/assets/exercises/bench_pistol_squat_composite.webp",
+      visualArchetype: "lunge_unilateral",
+      equipment: "bodyweight"
     },
     {
       name: "Bent-Over Row (Dumbbell)",
@@ -70,7 +74,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Keep your elbows close to your body.",
         "Lower the weights with control."
       ],
-      image: "/assets/exercises/bent_over_row_composite.webp"
+      image: "/assets/exercises/bent_over_row_composite.webp",
+      visualArchetype: "horizontal_pull",
+      equipment: "dumbbell"
     },
     {
       name: "Triceps Dip (Assisted)",
@@ -86,7 +92,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Keep elbows tucked in, not flaring out.",
         "Push back up to the starting position."
       ],
-      image: "/assets/exercises/triceps_dip_composite.webp"
+      image: "/assets/exercises/triceps_dip_composite.webp",
+      visualArchetype: "horizontal_push",
+      equipment: "bodyweight"
     },
     {
       name: "Preacher Curl",
@@ -102,7 +110,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Curl the weight up, squeezing the biceps at the top.",
         "Avoid lifting your elbows off the pad."
       ],
-      image: "/assets/exercises/preacher_curl_composite.webp"
+      image: "/assets/exercises/preacher_curl_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Lateral Raise",
@@ -118,7 +128,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Lead with your elbows, keeping a slight bend.",
         "Lower slowly and avoid swinging."
       ],
-      image: "/assets/exercises/lateral_raise_composite.webp"
+      image: "/assets/exercises/lateral_raise_composite.webp",
+      visualArchetype: "isolation_shoulders",
+      equipment: "dumbbell"
     },
     {
       name: "Russian Twist",
@@ -134,7 +146,9 @@ export const PLAN_ADVANCED_A: WorkoutPlan = {
         "Twist your torso to the right, then to the left.",
         "Keep your core engaged throughout."
       ],
-      image: "/assets/exercises/russian_twist_composite.webp"
+      image: "/assets/exercises/russian_twist_composite.webp",
+      visualArchetype: "core_floor",
+      equipment: "dumbbell"
     },
   ],
   cooldown: SHARED_COOLDOWN_A
@@ -158,7 +172,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Squeeze your lats at the bottom of the movement.",
         "Lower yourself slowly to a full hang."
       ],
-      image: "/assets/exercises/pull_up_composite.webp"
+      image: "/assets/exercises/pull_up_composite.webp",
+      visualArchetype: "vertical_pull",
+      equipment: "bodyweight"
     },
     {
       name: "Romanian Deadlift (RDL)",
@@ -172,7 +188,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Keep a slight bend in the knees but do not squat.",
         "Lower until you feel a stretch in your hamstrings, then drive hips forward."
       ],
-      image: "/assets/exercises/rdl_composite.webp"
+      image: "/assets/exercises/rdl_composite.webp",
+      visualArchetype: "hip_dominant",
+      equipment: "barbell"
     },
     {
       name: "Overhead Press (Dumbbell)",
@@ -186,7 +204,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Avoid arching your lower back.",
         "Lower the weights with control to ear level."
       ],
-      image: "/assets/exercises/overhead_press_composite.webp"
+      image: "/assets/exercises/overhead_press_composite.webp",
+      visualArchetype: "vertical_push",
+      equipment: "dumbbell"
     },
     {
       name: "Leg Extension",
@@ -202,7 +222,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Squeeze your quads at the top.",
         "Lower the weight slowly."
       ],
-      image: "/assets/exercises/leg_extension_composite.webp"
+      image: "/assets/exercises/leg_extension_composite.webp",
+      visualArchetype: "knee_dominant",
+      equipment: "machine"
     },
     {
       name: "Lying Leg Curl",
@@ -218,7 +240,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Squeeze your hamstrings at the top.",
         "Lower the weight with control."
       ],
-      image: "/assets/exercises/lying_leg_curl_composite.webp"
+      image: "/assets/exercises/lying_leg_curl_composite.webp",
+      visualArchetype: "hip_dominant",
+      equipment: "machine"
     },
     {
       name: "Overhead Triceps Extension",
@@ -234,7 +258,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Keep elbows close to your head.",
         "Extend arms back to the starting position."
       ],
-      image: "/assets/exercises/overhead_triceps_extension_composite.webp"
+      image: "/assets/exercises/overhead_triceps_extension_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Crossbody Hammer Curl",
@@ -250,7 +276,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Keep your palm facing your body (neutral grip).",
         "Lower slowly and repeat on the other side."
       ],
-      image: "/assets/exercises/crossbody_hammer_curl_composite.webp"
+      image: "/assets/exercises/crossbody_hammer_curl_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Knee Raise",
@@ -264,7 +292,9 @@ export const PLAN_ADVANCED_B: WorkoutPlan = {
         "Engage your core and avoid swinging.",
         "Lower legs slowly."
       ],
-      image: "/assets/exercises/knee_raise_composite.webp"
+      image: "/assets/exercises/knee_raise_composite.webp",
+      visualArchetype: "core_floor",
+      equipment: "bodyweight"
     },
   ],
   cooldown: SHARED_COOLDOWN_B
@@ -290,7 +320,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Lower the dumbbells slowly to chest level.",
         "Press up explosively, converging the weights at the top without touching."
       ],
-      image: "/assets/exercises/bench_press_composite.webp"
+      image: "/assets/exercises/bench_press_composite.webp",
+      visualArchetype: "horizontal_push",
+      equipment: "dumbbell"
     },
     {
       name: "Goblet Squat",
@@ -304,7 +336,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Lower your hips back and down, keeping chest up.",
         "Drive through your heels to stand back up."
       ],
-      image: "/assets/exercises/goblet_squat_composite.webp"
+      image: "/assets/exercises/goblet_squat_composite.webp",
+      visualArchetype: "knee_dominant",
+      equipment: "dumbbell"
     },
     {
       name: "Bent-Over Row",
@@ -318,7 +352,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Squeeze your shoulder blades together.",
         "Lower the weight with control."
       ],
-      image: "/assets/exercises/bent_over_row_composite.webp"
+      image: "/assets/exercises/bent_over_row_composite.webp",
+      visualArchetype: "horizontal_pull",
+      equipment: "dumbbell"
     },
     {
       name: "Triceps Pushdown (Cable)",
@@ -334,7 +370,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Push the weight down until arms are fully extended.",
         "Return slowly to the starting position."
       ],
-      image: "/assets/exercises/triceps_pushdown_composite.webp"
+      image: "/assets/exercises/triceps_pushdown_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "cable"
     },
     {
       name: "Preacher Curl",
@@ -350,7 +388,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Curl the weight up, squeezing the biceps at the top.",
         "Avoid lifting your elbows off the pad."
       ],
-      image: "/assets/exercises/preacher_curl_composite.webp"
+      image: "/assets/exercises/preacher_curl_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Lateral Raise",
@@ -366,7 +406,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Lead with your elbows, keeping a slight bend.",
         "Lower slowly and avoid swinging."
       ],
-      image: "/assets/exercises/lateral_raise_composite.webp"
+      image: "/assets/exercises/lateral_raise_composite.webp",
+      visualArchetype: "isolation_shoulders",
+      equipment: "dumbbell"
     },
     {
       name: "Russian Twist",
@@ -382,7 +424,9 @@ export const PLAN_BEGINNER_A: WorkoutPlan = {
         "Twist your torso to the right, then to the left.",
         "Keep your core engaged throughout."
       ],
-      image: "/assets/exercises/russian_twist_composite.webp"
+      image: "/assets/exercises/russian_twist_composite.webp",
+      visualArchetype: "core_floor",
+      equipment: "dumbbell"
     },
   ],
   cooldown: SHARED_COOLDOWN_A
@@ -406,7 +450,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Pull the bar down to your upper chest.",
         "Squeeze your lats and control the return."
       ],
-      image: "/assets/exercises/lat_pulldown_composite.webp"
+      image: "/assets/exercises/lat_pulldown_composite.webp",
+      visualArchetype: "vertical_pull",
+      equipment: "cable"
     },
     {
       name: "Romanian Deadlift (RDL)",
@@ -420,7 +466,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Keep a slight bend in the knees.",
         "Lower until you feel a stretch in your hamstrings, then drive hips forward."
       ],
-      image: "/assets/exercises/rdl_composite.webp"
+      image: "/assets/exercises/rdl_composite.webp",
+      visualArchetype: "hip_dominant",
+      equipment: "dumbbell"
     },
     {
       name: "Overhead Press (Dumbbell)",
@@ -434,7 +482,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Avoid arching your lower back.",
         "Lower the weights with control to ear level."
       ],
-      image: "/assets/exercises/overhead_press_composite.webp"
+      image: "/assets/exercises/overhead_press_composite.webp",
+      visualArchetype: "vertical_push",
+      equipment: "dumbbell"
     },
     {
       name: "Leg Extension",
@@ -450,7 +500,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Squeeze your quads at the top.",
         "Lower the weight slowly."
       ],
-      image: "/assets/exercises/leg_extension_composite.webp"
+      image: "/assets/exercises/leg_extension_composite.webp",
+      visualArchetype: "knee_dominant",
+      equipment: "machine"
     },
     {
       name: "Lying Leg Curl",
@@ -466,7 +518,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Squeeze your hamstrings at the top.",
         "Lower the weight with control."
       ],
-      image: "/assets/exercises/lying_leg_curl_composite.webp"
+      image: "/assets/exercises/lying_leg_curl_composite.webp",
+      visualArchetype: "hip_dominant",
+      equipment: "machine"
     },
     {
       name: "Overhead Triceps Extension",
@@ -482,7 +536,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Keep elbows close to your head.",
         "Extend arms back to the starting position."
       ],
-      image: "/assets/exercises/overhead_triceps_extension_composite.webp"
+      image: "/assets/exercises/overhead_triceps_extension_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Crossbody Hammer Curl",
@@ -498,7 +554,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Keep your palm facing your body (neutral grip).",
         "Lower slowly and repeat on the other side."
       ],
-      image: "/assets/exercises/crossbody_hammer_curl_composite.webp"
+      image: "/assets/exercises/crossbody_hammer_curl_composite.webp",
+      visualArchetype: "isolation_arms",
+      equipment: "dumbbell"
     },
     {
       name: "Knee Raise",
@@ -512,7 +570,9 @@ export const PLAN_BEGINNER_B: WorkoutPlan = {
         "Engage your core and avoid swinging.",
         "Lower legs slowly."
       ],
-      image: "/assets/exercises/knee_raise_composite.webp"
+      image: "/assets/exercises/knee_raise_composite.webp",
+      visualArchetype: "core_floor",
+      equipment: "bodyweight"
     },
   ],
   cooldown: SHARED_COOLDOWN_B

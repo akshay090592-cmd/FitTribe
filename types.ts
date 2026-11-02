@@ -43,6 +43,9 @@ export interface WorkoutTemplate {
     sets: number;
     reps: string;
     trackingType?: 'reps' | 'duration';
+    image?: string;
+    visualArchetype?: ExerciseArchetype;
+    equipment?: ExerciseEquipment;
   }[];
 }
 
@@ -90,6 +93,32 @@ export interface ProgressionSuggestion {
   reason: string;
 }
 
+export type ExerciseArchetype =
+  | 'horizontal_push'
+  | 'vertical_push'
+  | 'horizontal_pull'
+  | 'vertical_pull'
+  | 'knee_dominant'
+  | 'lunge_unilateral'
+  | 'hip_dominant'
+  | 'glute_bridge'
+  | 'isolation_arms'
+  | 'isolation_shoulders'
+  | 'core_floor'
+  | 'cardio_conditioning'
+  | 'mobility_stretch';
+
+export type ExerciseEquipment =
+  | 'dumbbell'
+  | 'barbell'
+  | 'cable'
+  | 'machine'
+  | 'bodyweight'
+  | 'kettlebell'
+  | 'band'
+  | 'cardio'
+  | 'mobility';
+
 export interface ExerciseRecord {
   id: string;
   name: string;
@@ -99,6 +128,8 @@ export interface ExerciseRecord {
   supersetGroup?: number;
   suggestion?: ProgressionSuggestion;
   trackingType?: 'reps' | 'duration';
+  visualArchetype?: ExerciseArchetype;
+  equipment?: ExerciseEquipment;
 }
 
 export interface WorkoutPlan {
@@ -114,6 +145,8 @@ export interface WorkoutPlan {
     notes: string;
     cues?: string[];
     image?: string;
+    visualArchetype?: ExerciseArchetype;
+    equipment?: ExerciseEquipment;
     isSuperset?: boolean;
     supersetGroup?: number;
     restSeconds?: number;

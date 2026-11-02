@@ -176,4 +176,32 @@ describe('isSessionValid Cache and Performance Optimization', () => {
 
     consoleSpy.mockRestore();
   });
+
+  it('should fall back to cached current_user_profile when offline and getSession returns null (expired JWT)', async () => {
+    const originalOnLine = window.navigator.onLine;
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => false,
+    });
+
+    try {
+      localStorage.setItem('current_user_profile', JSON.stringify({ id: 'user-offline-1', displayName: 'OfflinePanda' }));
+      getSessionSpy.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as any);
+
+      const validForMatchingUser = await isSessionValid('user-offline-1');
+      expect(validForMatchingUser).toBe(true);
+
+      const validForMismatchedUser = await isSessionValid('different-user');
+      expect(validForMismatchedUser).toBe(false);
+    } finally {
+      localStorage.removeItem('current_user_profile');
+      Object.defineProperty(window.navigator, 'onLine', {
+        configurable: true,
+        get: () => originalOnLine,
+      });
+    }
+  });
 });

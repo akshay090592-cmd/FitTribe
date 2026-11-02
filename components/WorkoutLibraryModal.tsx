@@ -5,6 +5,7 @@ import { TemplateEditor } from './TemplateEditor';
 import { updateProfile } from '../utils/storage';
 import { X, Plus, Play, Edit, Trash2, Library } from 'lucide-react';
 import { ConfirmPopup } from './ConfirmPopup';
+import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 
 interface Props {
   isOpen: boolean;
@@ -108,11 +109,29 @@ export const WorkoutLibraryModal: React.FC<Props> = ({ isOpen, onClose, userProf
                   </div>
                 </div>
 
-                <div className="mb-4 space-y-1">
+                <div className="mb-4 space-y-2">
                   {template.exercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="text-xs text-slate-500 flex justify-between">
-                      <span>• {ex.name}</span>
-                      <span className="font-mono">{ex.sets} x {ex.reps}</span>
+                    <div key={idx} className="text-xs text-slate-600 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <ExerciseThumbnail
+                          name={ex.name}
+                          customImage={ex.image}
+                          visualArchetype={ex.visualArchetype}
+                          equipment={ex.equipment}
+                          size="xs"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-800 truncate">{ex.name}</div>
+                          <ExerciseBadgeRow
+                            name={ex.name}
+                            customImage={ex.image}
+                            visualArchetype={ex.visualArchetype}
+                            equipment={ex.equipment}
+                            compact
+                          />
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-slate-500 shrink-0">{ex.sets} × {ex.reps}</span>
                     </div>
                   ))}
                   {template.exercises.length > 3 && (

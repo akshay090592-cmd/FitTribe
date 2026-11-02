@@ -12,7 +12,7 @@ import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
 import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
-import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
+import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, getOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
 import { TribePulse } from './components/TribePulse';
@@ -25,6 +25,8 @@ import { formatTimeAgo, compareISODates } from './utils/dateUtils';
 import { WeeklyStatsWidget } from './components/WeeklyStatsWidget';
 import { Plus } from 'lucide-react';
 import { DesktopNavigation } from './components/DesktopNavigation';
+import { TribeVictoryPhoto } from './components/TribeVictoryPhoto';
+import { getThemePalette, AppThemePalette } from './utils/themeConfig';
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -129,22 +131,23 @@ const QUOTES = [
   "Motivation is what gets you started. Habit is what keeps you going."
 ];
 
-const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
+const NavButton = ({ active, onClick, icon: Icon, label, palette }: { active: boolean; onClick: () => void; icon: any; label: string; palette?: AppThemePalette }) => (
   <button
     onClick={onClick}
     aria-label={label}
+    style={active && palette ? { background: palette.navActiveGradient } : undefined}
     className={`relative flex flex-col items-center justify-center gap-1 flex-1 max-w-[64px] h-14 rounded-2xl transition-all duration-300 tactile-press group ${
       active
-        ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white -translate-y-1.5 shadow-lg shadow-emerald-950/50 scale-105 ring-2 ring-lime-300/40'
-        : 'text-emerald-100/60 hover:text-white hover:bg-white/10 active:scale-95'
+        ? 'text-white -translate-y-1.5 shadow-lg shadow-black/40 scale-105 ring-1 ring-white/25'
+        : 'text-white/60 hover:text-white hover:bg-white/10 active:scale-95'
     }`}
   >
-    <Icon size={active ? 22 : 20} strokeWidth={active ? 2.5 : 2} className="transition-transform duration-300 group-hover:scale-110" />
-    <span className={`text-[10px] font-bold tracking-wide whitespace-nowrap leading-none transition-all duration-300 ${active ? 'text-white opacity-100' : 'text-emerald-100/70 opacity-85'}`}>
+    <Icon size={active ? 22 : 20} strokeWidth={active ? 2.5 : 2} className={`transition-transform duration-300 group-hover:scale-110 ${active && palette ? palette.navActiveTextClass : ''}`} />
+    <span className={`text-[10px] font-bold tracking-wide whitespace-nowrap leading-none transition-all duration-300 ${active ? 'text-white opacity-100' : 'text-white/70 opacity-85'}`}>
       {label}
     </span>
     {active && (
-      <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300 shadow-[0_0_8px_#bef264]" />
+      <span className={`absolute -bottom-1 w-1.5 h-1.5 rounded-full ${palette ? palette.navActiveDotClass : 'bg-lime-300 shadow-[0_0_8px_#bef264]'}`} />
     )}
   </button>
 );
@@ -228,7 +231,7 @@ const App: React.FC = () => {
       if (activeTypes.length > 0) return activeTypes[0][0] as WorkoutType;
 
       // 2. Check saved preference (Next Plan)
-      const saved = localStorage.getItem('preferred_workout_type');
+      const saved = localStorage.getItem('preferred_workout_type') || localStorage.getItem('next_workout_type');
       if (saved === WorkoutType.A || saved === WorkoutType.B) {
         return saved as WorkoutType;
       }
@@ -241,7 +244,53 @@ const App: React.FC = () => {
   const [logsCount, setLogsCount] = useState(0);
   const [mood, setMood] = useState<'fire' | 'tired' | 'normal'>('normal');
   const [weeklyProgress, setWeeklyProgress] = useState(0);
-  const [activeTheme, setActiveTheme] = useState<string>('default');
+  const [activeTheme, setActiveTheme] = useState<string>(() => {
+    try {
+      return localStorage.getItem('fittribe_active_theme') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
+  const themePalette = React.useMemo(() => getThemePalette(activeTheme), [activeTheme]);
+
+  useEffect(() => {
+    const themeId = activeTheme || 'default';
+    try {
+      localStorage.setItem('fittribe_active_theme', themeId);
+    } catch {}
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', themeId);
+      let metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (!metaTheme) {
+        metaTheme = document.createElement('meta');
+        metaTheme.setAttribute('name', 'theme-color');
+        document.head.appendChild(metaTheme);
+      }
+      metaTheme.setAttribute('content', themePalette.statusBarColor);
+    }
+  }, [activeTheme, themePalette]);
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ themeId?: string }>;
+      const nextTheme = customEvent.detail?.themeId || 'default';
+      setActiveTheme(nextTheme);
+      if (currentUser) {
+        setAllGamificationState(prev => {
+          if (!prev || !prev[currentUser]) return prev;
+          return {
+            ...prev,
+            [currentUser]: {
+              ...prev[currentUser],
+              activeTheme: nextTheme,
+            },
+          };
+        });
+      }
+    };
+    window.addEventListener('fittribe-theme-change', handleThemeChange);
+    return () => window.removeEventListener('fittribe-theme-change', handleThemeChange);
+  }, [currentUser]);
   const [xpData, setXpData] = useState<any>(null);
   const [streak, setStreak] = useState(0);
   const [streakRisk, setStreakRisk] = useState(false);
@@ -389,33 +438,10 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Monitor Online/Offline Sync
+  const userProfileRef = React.useRef<UserProfile | null>(userProfile);
   useEffect(() => {
-    const handleOnline = () => {
-      showToast("Back online! Syncing data...", "success");
-      import('./utils/storage').then(({ processOfflineQueue }) => {
-        processOfflineQueue();
-      });
-    };
-    const handleOffline = () => {
-      showToast("You are offline. Changes will be saved locally.", "default");
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Initial check
-    if (navigator.onLine) {
-      import('./utils/storage').then(({ processOfflineQueue }) => {
-        processOfflineQueue();
-      });
-    }
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    userProfileRef.current = userProfile;
+  }, [userProfile]);
 
   // Background Preloading for Seamless Navigation
   const preloadedUserRef = React.useRef<string | null>(null);
@@ -675,6 +701,15 @@ const App: React.FC = () => {
           // Request permission only after profile is loaded and user ID is available
           requestNotificationPermission(session.user.id);
         });
+      } else if (!navigator.onLine && initialProfileData.profile) {
+        // Offline with a cached profile: keep user logged in and populate from local cache
+        loadProfile(true, initialProfileData.profile.id);
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!navigator.onLine && initialProfileData.profile) {
+        loadProfile(true, initialProfileData.profile.id);
       } else {
         setLoading(false);
       }
@@ -706,6 +741,12 @@ const App: React.FC = () => {
           requestNotificationPermission(session.user.id);
         });
       } else {
+        // If offline and user did not explicitly sign out, preserve cached profile so gym sessions aren't lost
+        const hasCachedProfile = !!localStorage.getItem('current_user_profile');
+        if (!navigator.onLine && event !== 'SIGNED_OUT' && hasCachedProfile) {
+          setLoading(false);
+          return;
+        }
         setSession(null);
         setLoading(false);
         setCurrentUser(null);
@@ -766,28 +807,52 @@ const App: React.FC = () => {
     };
   }, [view]);
 
-  // Offline Status
+  // Offline Status & Unified Sync Queue Listener
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [offlineQueueCount, setOfflineQueueCount] = useState<number>(() => getOfflineQueue().length);
 
   useEffect(() => {
-    initSyncListener(); // Initialize sync listener
+    initSyncListener(); // Initialize single idempotent sync listener
 
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      setIsOffline(false);
+      showToast("Back online! Syncing data...", "success");
+      processOfflineQueue();
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      showToast("You are offline. Changes will be saved locally.", "default");
+    };
     const handleSyncStart = () => setIsSyncing(true);
-    const handleSyncEnd = () => setIsSyncing(false);
+    const handleSyncEnd = () => {
+      setIsSyncing(false);
+      setOfflineQueueCount(getOfflineQueue().length);
+      if (userProfileRef.current) {
+        loadProfile(true, userProfileRef.current.id);
+      }
+    };
+    const handleQueueUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ count?: number }>;
+      if (typeof customEvent.detail?.count === 'number') {
+        setOfflineQueueCount(customEvent.detail.count);
+      } else {
+        setOfflineQueueCount(getOfflineQueue().length);
+      }
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('sync-start', handleSyncStart);
     window.addEventListener('sync-end', handleSyncEnd);
+    window.addEventListener('offline-queue-updated', handleQueueUpdated);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('sync-start', handleSyncStart);
       window.removeEventListener('sync-end', handleSyncEnd);
+      window.removeEventListener('offline-queue-updated', handleQueueUpdated);
     };
   }, []);
 
@@ -918,6 +983,7 @@ const App: React.FC = () => {
 
 
   const handleLogout = async () => {
+    localStorage.removeItem('current_user_profile');
     await supabase.auth.signOut();
     setView('dashboard');
   };
@@ -1322,10 +1388,12 @@ const App: React.FC = () => {
 
   const themeObj = SHOP_THEMES.find(t => t.id === activeTheme);
   const headerStyle = themeObj
-    ? (themeObj.type === 'image' ? { backgroundImage: `url('${themeObj.value}')` } : { backgroundColor: themeObj.value.replace('bg-', '#') })
-    : { backgroundImage: "url('/assets/forest_header_bg.webp')" };
+    ? (themeObj.type === 'image'
+      ? { backgroundImage: `url('${themeObj.value}')`, borderColor: themePalette.headerBorderColor }
+      : { background: themePalette.headerBaseGradient, borderColor: themePalette.headerBorderColor })
+    : { backgroundImage: "url('/assets/forest_header_bg.webp')", borderColor: themePalette.headerBorderColor };
 
-  const headerClass = `mx-3 sm:mx-4 mt-2.5 shadow-xl shadow-emerald-950/15 border border-white/25 rounded-[28px] sm:rounded-[32px] relative overflow-hidden bg-cover bg-center transition-all duration-500`;
+  const headerClass = `mx-0 mt-0 rounded-none rounded-b-[32px] md:mx-6 md:mt-4 md:rounded-[32px] shadow-2xl shadow-black/20 border-b md:border relative overflow-hidden bg-cover bg-center transition-all duration-500`;
 
   if (view === 'workout') {
     return (
@@ -1352,8 +1420,10 @@ const App: React.FC = () => {
               // Update Next Workout Type Logic
               if (currentPlan.id === WorkoutType.A) {
                 localStorage.setItem('next_workout_type', WorkoutType.B);
+                localStorage.setItem('preferred_workout_type', WorkoutType.B);
               } else if (currentPlan.id === WorkoutType.B) {
                 localStorage.setItem('next_workout_type', WorkoutType.A);
+                localStorage.setItem('preferred_workout_type', WorkoutType.A);
               }
             }
 
@@ -1378,42 +1448,61 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-safe antialiased font-sans selection:bg-emerald-200 selection:text-emerald-900" style={{ backgroundColor: 'var(--color-bg-page)' }}>
+    <div
+      data-theme={activeTheme || 'default'}
+      className="min-h-screen pb-safe antialiased font-sans selection:bg-emerald-200 selection:text-emerald-900"
+      style={{ backgroundColor: 'var(--color-bg-page)' }}
+    >
 
-      {/* Header */}
-      <div
+      {/* Modernized Edge-to-Edge Integrated Header (Mobile Safe-Area + Status Bar Bleed) */}
+      <header
         className={headerClass}
-        style={(!themeObj || themeObj.type === 'image') ? headerStyle : {}}
+        style={headerStyle}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-emerald-950/25 to-emerald-950/55 backdrop-blur-[2px]"></div>
-        <div className="p-4 sm:p-5 relative z-10 w-full">
-          <div className="flex justify-between items-center relative z-10">
+        {/* Theme-aware atmospheric overlay + top status-bar vignette */}
+        <div
+          className="absolute inset-0 backdrop-blur-[2px] transition-all duration-500"
+          style={{ background: themePalette.headerOverlayGradient }}
+        />
+        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
+        <div className={`absolute -top-12 -right-10 w-44 h-44 ${themePalette.headerGlowClass} rounded-full blur-3xl pointer-events-none`} />
+
+        <div className="pt-[calc(env(safe-area-inset-top,0px)+0.85rem)] pb-4 px-4 sm:px-5 md:p-6 relative z-10 w-full">
+          <div className="flex justify-between items-center relative z-10 gap-2">
             <div className="flex items-center min-w-0">
               <div
                 onClick={() => setView('profile')}
-                className="w-13 h-13 sm:w-14 sm:h-14 bg-white/20 rounded-2xl flex items-center justify-center mr-3.5 border-2 border-white/60 shadow-lg backdrop-blur-md overflow-hidden relative group cursor-pointer shrink-0 active:scale-95 transition-transform"
+                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/15 rounded-2xl flex items-center justify-center mr-3 sm:mr-3.5 border-2 border-white/60 shadow-lg backdrop-blur-md overflow-hidden relative group cursor-pointer shrink-0 active:scale-95 transition-transform"
               >
                 <img src={getAvatarPath(userProfile?.avatarId, mood)} onError={handleImgError} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                 {mood === 'fire' && <div className="absolute -top-1 -right-1 text-lg animate-bounce drop-shadow-md">🔥</div>}
                 {mood === 'tired' && <div className="absolute -top-1 -right-1 text-lg animate-pulse drop-shadow-md">💤</div>}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md font-['Fredoka'] tracking-wide truncate">Hi, {currentUser}!</h1>
                   {streak > 0 && (
-                    <span className="inline-flex items-center gap-0.5 bg-amber-400/25 border border-amber-300/40 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    <span className="inline-flex items-center gap-0.5 bg-amber-400/25 border border-amber-300/45 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm shadow-2xs">
                       🔥 {streak}d
                     </span>
                   )}
                 </div>
                 <div className="flex items-center space-x-2 mt-1">
                   {xpData && (
-                    <div className="flex items-center text-[11px] text-white/95 font-bold uppercase tracking-wider bg-black/30 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15">
-                      <span className="mr-2 text-lime-300">Lvl {xpData.level}</span>
-                      <div className="w-16 sm:w-20 h-2 bg-black/40 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-lime-400 to-emerald-300 shadow-[0_0_10px_rgba(163,230,53,0.6)] transition-all duration-500" style={{ width: `${xpData.progress}%` }}></div>
+                    <div className="flex items-center text-[11px] text-white/95 font-bold uppercase tracking-wider bg-black/35 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15 shadow-inner">
+                      <span className={`mr-2 ${themePalette.navActiveTextClass}`}>Lvl {xpData.level}</span>
+                      <div className="w-16 sm:w-20 h-2 bg-black/45 rounded-full overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-500 rounded-full"
+                          style={{ width: `${xpData.progress}%`, background: themePalette.xpBarGradient }}
+                        />
                       </div>
                     </div>
+                  )}
+                  {activeTheme && activeTheme !== 'default' && (
+                    <span className="hidden sm:inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/15">
+                      {themePalette.name}
+                    </span>
                   )}
                 </div>
               </div>
@@ -1423,7 +1512,7 @@ const App: React.FC = () => {
               <DesktopNavigation view={view} setView={setView} />
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {isFetching && (
                 <div className="bg-white/15 p-2 rounded-full backdrop-blur-md border border-white/15 shadow-sm animate-fade-in">
                   <Loader2 size={18} className="text-emerald-100 animate-spin" />
@@ -1440,12 +1529,18 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {
         isOffline && (
-          <div className="mx-4 mt-2 bg-amber-500/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold animate-pulse flex items-center justify-center shadow-lg">
-            <WifiOff size={14} className="mr-2 shrink-0" /> You are offline. Changes will be saved locally.
+          <div className="mx-4 mt-2 bg-amber-500/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold animate-pulse flex items-center justify-center gap-1.5 shadow-lg">
+            <WifiOff size={14} className="shrink-0" />
+            <span>You are offline. Changes will be saved locally.</span>
+            {offlineQueueCount > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-black/25 text-[10px] font-black tracking-wide">
+                {offlineQueueCount} queued
+              </span>
+            )}
           </div>
         )
       }
@@ -1453,7 +1548,25 @@ const App: React.FC = () => {
       {
         isSyncing && (
           <div className="mx-4 mt-2 bg-blue-500/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold flex items-center justify-center shadow-lg">
-            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 shrink-0"></div> Syncing data...
+            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 shrink-0"></div>
+            <span>Syncing data{offlineQueueCount > 0 ? ` (${offlineQueueCount} pending)` : ''}...</span>
+          </div>
+        )
+      }
+
+      {
+        !isOffline && !isSyncing && offlineQueueCount > 0 && (
+          <div className="mx-4 mt-2 bg-emerald-700/95 backdrop-blur-sm text-white text-center py-2 px-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-lg">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
+              {offlineQueueCount} unsynced {offlineQueueCount === 1 ? 'change' : 'changes'} saved locally
+            </span>
+            <button
+              onClick={() => processOfflineQueue()}
+              className="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 transition-all text-[11px] font-black uppercase tracking-wider"
+            >
+              Sync Now
+            </button>
           </div>
         )
       }
@@ -1497,6 +1610,44 @@ const App: React.FC = () => {
           <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
             <div className="p-3.5 sm:p-4 max-w-xl mx-auto md:max-w-none md:mx-0 space-y-4 sm:space-y-5 animate-fade-in md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
 
+              {(() => {
+                try {
+                  const pausedKey = ([WorkoutType.A, WorkoutType.B, currentPlan.id] as WorkoutType[]).find(
+                    t => Boolean(localStorage.getItem(`workout_session_${t}`))
+                  );
+                  if (!pausedKey) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (pausedKey === WorkoutType.A || pausedKey === WorkoutType.B) {
+                          setSelectedWorkoutType(pausedKey);
+                        }
+                        setView('workout');
+                      }}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3.5 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-900/15 border border-emerald-400/40 md:col-span-2 active:scale-[0.99] transition-all text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-lime-300 animate-ping shrink-0" />
+                        <div>
+                          <div className="font-bold font-['Fredoka'] text-sm sm:text-base leading-tight">
+                            Workout Paused (Plan {pausedKey})
+                          </div>
+                          <div className="text-[11px] font-semibold text-emerald-100">
+                            Your sets & timer are saved — tap to jump right back in
+                          </div>
+                        </div>
+                      </div>
+                      <span className="bg-white text-emerald-900 font-black text-xs px-3 py-1.5 rounded-xl shrink-0 flex items-center gap-1 shadow-xs">
+                        Resume <ArrowRight size={14} />
+                      </span>
+                    </button>
+                  );
+                } catch {
+                  return null;
+                }
+              })()}
+
               {streak > 0 && streakRisk && (
                 <div className="bg-gradient-to-r from-amber-100 to-orange-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-2xl flex items-center shadow-md md:col-span-2">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0">
@@ -1509,59 +1660,67 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Next Workout Hero Card - Prioritized on Mobile for Thumb Ergonomics */}
-              <div className="bg-gradient-to-br from-[#1E6B34] via-[#1B5E20] to-[#0F3D17] rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden border-2 border-emerald-300/20 group cursor-default md:col-span-2">
+              {/* Next Workout Hero Card - Theme-Aware & Prioritized on Mobile for Thumb Ergonomics */}
+              <div
+                className="rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 text-white shadow-xl shadow-black/20 relative overflow-hidden border-2 group cursor-default md:col-span-2 transition-all duration-500"
+                style={{
+                  background: themePalette.heroCardGradient,
+                  borderColor: themePalette.heroCardBorder,
+                }}
+              >
                 <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/jungle_bg_pattern.webp')] opacity-[0.07] group-hover:opacity-10 transition-opacity pointer-events-none"></div>
 
                 {/* Decorative circles */}
-                <div className="absolute -top-10 -right-10 w-36 h-36 bg-lime-400/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute -bottom-10 -left-10 w-36 h-36 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className={`absolute -top-10 -right-10 w-36 h-36 ${themePalette.heroOrbPrimary} rounded-full blur-3xl pointer-events-none`}></div>
+                <div className={`absolute -bottom-10 -left-10 w-36 h-36 ${themePalette.heroOrbSecondary} rounded-full blur-3xl pointer-events-none`}></div>
 
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="bg-black/25 px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border border-white/15 text-lime-300 uppercase tracking-widest flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-ping" />
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border uppercase tracking-widest flex items-center gap-1.5 ${themePalette.heroBadgeClass}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full animate-ping ${themePalette.navActiveDotClass}`} />
                       Next Mission
                     </span>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setIsLibraryOpen(true)}
-                        className="text-[11px] font-bold text-emerald-50 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
                       >
-                        Library <Sparkles size={12} className="ml-1.5 text-lime-300" />
+                        Library <Sparkles size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
                       </button>
                       <button
                         onClick={() => {
                           const next = selectedWorkoutType === WorkoutType.A ? WorkoutType.B : WorkoutType.A;
                           setSelectedWorkoutType(next);
                           localStorage.setItem('next_workout_type', next); // Manual override persists
+                          localStorage.setItem('preferred_workout_type', next);
                         }}
-                        className="text-[11px] font-bold text-emerald-50 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
                       >
-                        Switch <TrendingUp size={12} className="ml-1.5 text-lime-300" />
+                        Switch <TrendingUp size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
                       </button>
                     </div>
                   </div>
 
                   <div className="mb-5">
                     <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">Plan {selectedWorkoutType}</h2>
-                    <p className="text-emerald-100/90 text-xs sm:text-sm font-semibold">{currentPlan.title}</p>
+                    <p className="text-white/85 text-xs sm:text-sm font-semibold">{currentPlan.title}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
                     <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                      <div className="bg-lime-400/20 p-2 rounded-xl mr-2.5 text-lime-300 shrink-0"><TrendingUp size={16} /></div>
+                      <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><TrendingUp size={16} /></div>
                       <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">{currentPlan.focus}</span>
                     </div>
                     <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                      <div className="bg-lime-400/20 p-2 rounded-xl mr-2.5 text-lime-300 shrink-0"><Activity size={16} /></div>
+                      <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
                       <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setView('workout')}
-                    className="w-full bg-gradient-to-r from-lime-400 via-lime-400 to-emerald-400 text-emerald-950 py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn"
+                    style={{ background: themePalette.ctaGradient }}
+                    className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
                   >
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
                     <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
@@ -1570,11 +1729,22 @@ const App: React.FC = () => {
                   <button
                     onClick={handleCommit}
                     disabled={isCommitting || hasTomorrowCommitment}
-                    className="w-full mt-2.5 bg-black/25 text-emerald-100 py-3 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full mt-2.5 bg-black/25 text-white/90 py-3 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isCommitting ? 'Committing...' : hasTomorrowCommitment ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
                   </button>
                 </div>
+              </div>
+
+              {/* Tribe Victory Photo Spotlight — Featured on Dashboard */}
+              <div className="md:col-span-2">
+                <TribeVictoryPhoto
+                  tribeId={userProfile?.tribeId}
+                  userProfile={userProfile}
+                  themeId={activeTheme}
+                  showEmptyCta={true}
+                  variant="dashboard"
+                />
               </div>
 
               {/* Dashboard Action Bento Grid */}
@@ -1802,9 +1972,15 @@ const App: React.FC = () => {
             </React.Suspense>
 
             {/* Daily Wisdom Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-[24px] p-6 shadow-lg border border-emerald-100">
-              <h3 className="font-bold text-emerald-900 mb-2 font-['Fredoka'] flex items-center"><Sparkles size={16} className="mr-2 text-emerald-500" /> Daily Wisdom</h3>
-              <p className="text-emerald-700 text-sm font-medium italic leading-relaxed">"{randomQuote}"</p>
+            <div
+              className="backdrop-blur-sm rounded-[24px] p-6 shadow-lg border transition-all duration-500"
+              style={{
+                background: themePalette.wisdomGradient,
+                borderColor: themePalette.wisdomBorder,
+              }}
+            >
+              <h3 className="font-bold text-slate-900 mb-2 font-['Fredoka'] flex items-center"><Sparkles size={16} className="mr-2 text-emerald-500" /> Daily Wisdom</h3>
+              <p className="text-slate-700 text-sm font-medium italic leading-relaxed">"{randomQuote}"</p>
             </div>
 
             {/* Desktop Copyright/Footer */}
@@ -1817,12 +1993,20 @@ const App: React.FC = () => {
       </div> {/* End of Main Grid */}
 
       {/* Floating Dock Navigation */}
-      <div className="fixed safe-dock-bottom left-1/2 transform -translate-x-1/2 glass-panel border-white/15 shadow-2xl shadow-emerald-950/50 rounded-[28px] flex justify-around items-center px-3 py-2 z-50 w-[92%] max-w-md md:hidden" style={{ background: 'hsla(145, 65%, 8%, 0.78)', backdropFilter: 'blur(22px) saturate(1.8)', WebkitBackdropFilter: 'blur(22px) saturate(1.8)', borderColor: 'rgba(255,255,255,0.12)' }}>
-        <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" />
-        <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" />
-        <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" />
-        <NavButton active={view === 'analytics'} onClick={() => setView('analytics')} icon={BarChart3} label="Stats" />
-        <NavButton active={view === 'coach'} onClick={() => setView('coach')} icon={Sparkles} label="Coach" />
+      <div
+        className="fixed safe-dock-bottom left-1/2 transform -translate-x-1/2 glass-panel shadow-2xl shadow-black/50 rounded-[28px] flex justify-around items-center px-3 py-2 z-50 w-[92%] max-w-md md:hidden transition-all duration-500"
+        style={{
+          background: themePalette.dockBackground,
+          backdropFilter: 'blur(22px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(22px) saturate(1.8)',
+          borderColor: themePalette.dockBorder,
+        }}
+      >
+        <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Dumbbell} label="Home" palette={themePalette} />
+        <NavButton active={view === 'social'} onClick={() => setView('social')} icon={Users} label="Tribe" palette={themePalette} />
+        <NavButton active={view === 'rewards'} onClick={() => setView('rewards')} icon={Trophy} label="Loot" palette={themePalette} />
+        <NavButton active={view === 'analytics'} onClick={() => setView('analytics')} icon={BarChart3} label="Stats" palette={themePalette} />
+        <NavButton active={view === 'coach'} onClick={() => setView('coach')} icon={Sparkles} label="Coach" palette={themePalette} />
       </div>
       <ReloadPrompt />
 
@@ -1881,9 +2065,11 @@ const App: React.FC = () => {
             // Update Next Workout Type Logic
             if (log.type === WorkoutType.A) {
               localStorage.setItem('next_workout_type', WorkoutType.B);
+              localStorage.setItem('preferred_workout_type', WorkoutType.B);
               setSelectedWorkoutType(WorkoutType.B);
             } else if (log.type === WorkoutType.B) {
               localStorage.setItem('next_workout_type', WorkoutType.A);
+              localStorage.setItem('preferred_workout_type', WorkoutType.A);
               setSelectedWorkoutType(WorkoutType.A);
             } // Custom workouts do NOT change the cycle
 
@@ -1950,6 +2136,9 @@ const App: React.FC = () => {
                 defaultReps: ex.reps,
                 notes: '',
                 trackingType: ex.trackingType,
+                image: ex.image,
+                visualArchetype: ex.visualArchetype,
+                equipment: ex.equipment,
                 isSuperset: false
               }))
             };

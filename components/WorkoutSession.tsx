@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { User, WorkoutPlan, ExerciseRecord, WorkoutLog, ExerciseSet, Badge, UserProfile, WorkoutType } from '../types';
+import { User, WorkoutPlan, ExerciseRecord, WorkoutLog, ExerciseSet, Badge, UserProfile, WorkoutType, ExerciseArchetype, ExerciseEquipment } from '../types';
 import { ExerciseCard } from './ExerciseCard';
 import { Timer } from './Timer';
 import { Confetti } from './Confetti';
@@ -13,7 +13,10 @@ import { getLastLogForExercise, getLastLogForExerciseByType, parseDurationToSeco
 import { checkAchievements, getStreakRisk, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT } from '../utils/gamification';
 import { getProgressionSuggestion } from '../utils/progression';
 import { calculateCalories } from '../utils/calorieUtils';
-import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera } from 'lucide-react';
+import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera, Plus, RefreshCw, Search } from 'lucide-react';
+import { EXERCISE_MUSCLE_MAP, MUSCLE_GROUPS, getMuscleGroup } from '../utils/muscleMapping';
+import { resolveExerciseVisualMeta, KNOWN_EXERCISE_BLUEPRINTS } from '../utils/exerciseVisuals';
+import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 import { compressImage } from '../utils/imageUtils';
 import { saveTribePhoto } from '../utils/storage';
 import { geminiClient, Type } from '../services/geminiClient';
@@ -42,6 +45,102 @@ interface AnalysisResult {
   nudge: string;
 }
 
+// Build a unified lookup of all known exercises from STARTER_PLANS + KNOWN_EXERCISE_BLUEPRINTS + EXERCISE_MUSCLE_MAP
+const KNOWN_EXERCISE_CATALOG: Record<string, {
+  name: string;
+  defaultSets: number;
+  defaultReps: string;
+  notes: string;
+  restSeconds: number;
+  image?: string;
+  visualArchetype?: ExerciseArchetype;
+  equipment?: ExerciseEquipment;
+  cues?: string[];
+}> = {};
+
+if (STARTER_PLANS) {
+  Object.values(STARTER_PLANS).forEach(tier => {
+    Object.values(tier).forEach(p => {
+      p?.exercises?.forEach(ex => {
+        if (!KNOWN_EXERCISE_CATALOG[ex.name]) {
+          const v = resolveExerciseVisualMeta(ex.name, {
+            customImage: ex.image,
+            visualArchetype: ex.visualArchetype,
+            equipment: ex.equipment
+          });
+          KNOWN_EXERCISE_CATALOG[ex.name] = {
+            name: ex.name,
+            defaultSets: ex.defaultSets || 3,
+            defaultReps: ex.defaultReps || '8-12',
+            notes: ex.notes || getMuscleGroup(ex.name),
+            restSeconds: ex.restSeconds || 90,
+            image: v.image,
+            visualArchetype: v.archetype,
+            equipment: v.equipment,
+            cues: ex.cues
+          };
+        }
+      });
+    });
+  });
+}
+
+Object.entries(KNOWN_EXERCISE_BLUEPRINTS).forEach(([exName, bp]) => {
+  if (!KNOWN_EXERCISE_CATALOG[exName]) {
+    KNOWN_EXERCISE_CATALOG[exName] = {
+      name: exName,
+      defaultSets: 3,
+      defaultReps: '8-12',
+      notes: `${getMuscleGroup(exName)} Focus`,
+      restSeconds: 90,
+      image: bp.image,
+      visualArchetype: bp.archetype,
+      equipment: bp.equipment
+    };
+  }
+});
+
+Object.keys(EXERCISE_MUSCLE_MAP).forEach(exName => {
+  if (!KNOWN_EXERCISE_CATALOG[exName]) {
+    const v = resolveExerciseVisualMeta(exName);
+    KNOWN_EXERCISE_CATALOG[exName] = {
+      name: exName,
+      defaultSets: 3,
+      defaultReps: '8-12',
+      notes: `${getMuscleGroup(exName)} Focus`,
+      restSeconds: 90,
+      image: v.image,
+      visualArchetype: v.archetype,
+      equipment: v.equipment
+    };
+  }
+});
+
+const playRestCompleteAlert = () => {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([150, 80, 150]);
+    }
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.14); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch {
+    // Ignore audio/vibration errors in headless or restricted environments
+  }
+};
+
 // BOLT: Memoized wrapper for ExerciseCard to prevent re-renders of all exercises
 // when the parent component's timer state updates.
 const WorkoutExerciseItem = React.memo(({
@@ -51,7 +150,8 @@ const WorkoutExerciseItem = React.memo(({
   isExpanded,
   onToggle,
   onChange,
-  onSetComplete
+  onSetComplete,
+  onSwap
 }: {
   exercise: any;
   record: ExerciseRecord;
@@ -60,10 +160,12 @@ const WorkoutExerciseItem = React.memo(({
   onToggle: (name: string) => void;
   onChange: (index: number, sets: ExerciseSet[]) => void;
   onSetComplete: (index: number, setIndex: number) => void;
+  onSwap?: (index: number) => void;
 }) => {
   const handleToggle = useCallback(() => onToggle(record.name), [onToggle, record.name]);
   const handleChange = useCallback((sets: ExerciseSet[]) => onChange(index, sets), [onChange, index]);
   const handleSetCompleteLocal = useCallback((setIndex: number) => onSetComplete(index, setIndex), [onSetComplete, index]);
+  const handleSwapLocal = useCallback(() => onSwap?.(index), [onSwap, index]);
 
   return (
     <ExerciseCard
@@ -80,6 +182,9 @@ const WorkoutExerciseItem = React.memo(({
       image={exercise.image}
       cues={exercise.cues}
       trackingType={record.trackingType}
+      visualArchetype={exercise.visualArchetype || record.visualArchetype}
+      equipment={exercise.equipment || record.equipment}
+      onSwap={onSwap ? handleSwapLocal : undefined}
     />
   );
 });
@@ -148,7 +253,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     initialSeconds: initialRestSeconds,
     autoStart: shouldStartRestTimer,
     type: 'countdown',
-    onComplete: () => setShowRestTimer(false)
+    onComplete: () => {
+      setShowRestTimer(false);
+      playRestCompleteAlert();
+    }
   });
 
   // Ensure rest timer visibility is consistent with calculation
@@ -191,6 +299,48 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoUploaded, setPhotoUploaded] = useState(false);
   const [tribePhoto, setTribePhoto] = useState<string | null>(null);
+  const [exercisePickerModal, setExercisePickerModal] = useState<{ mode: 'swap' | 'add'; targetIndex?: number } | null>(null);
+  const [pickerMuscleFilter, setPickerMuscleFilter] = useState<string>('All');
+  const [pickerSearch, setPickerSearch] = useState<string>('');
+
+  const getExerciseMeta = useCallback((record: ExerciseRecord, index: number) => {
+    const planEx = plan.exercises[index];
+    if (planEx && planEx.name === record.name) {
+      return planEx;
+    }
+    const matchingPlanEx = plan.exercises.find(e => e.name === record.name);
+    if (matchingPlanEx) {
+      return matchingPlanEx;
+    }
+    const catalogEx = KNOWN_EXERCISE_CATALOG[record.name];
+    if (catalogEx) {
+      return {
+        ...catalogEx,
+        isSuperset: record.isSuperset,
+        supersetGroup: record.supersetGroup,
+        trackingType: record.trackingType,
+        visualArchetype: record.visualArchetype || catalogEx.visualArchetype,
+        equipment: record.equipment || catalogEx.equipment
+      };
+    }
+    const fallbackVisual = resolveExerciseVisualMeta(record.name, {
+      visualArchetype: record.visualArchetype,
+      equipment: record.equipment
+    });
+    return {
+      name: record.name,
+      defaultSets: record.sets?.length || 3,
+      defaultReps: '8-12',
+      notes: `${getMuscleGroup(record.name)} Focus`,
+      restSeconds: 90,
+      image: fallbackVisual.image,
+      visualArchetype: fallbackVisual.archetype,
+      equipment: fallbackVisual.equipment,
+      isSuperset: record.isSuperset,
+      supersetGroup: record.supersetGroup,
+      trackingType: record.trackingType
+    };
+  }, [plan.exercises]);
 
   // --- Effects ---
 
@@ -254,7 +404,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           isSuperset: ex.isSuperset,
           supersetGroup: ex.supersetGroup,
           suggestion: suggestion || undefined,
-          trackingType: ex.trackingType
+          trackingType: ex.trackingType,
+          visualArchetype: ex.visualArchetype,
+          equipment: ex.equipment
         };
       }));
       setRecords(initializedRecords);
@@ -370,16 +522,28 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
    * Performance Impact: Reduces re-renders of the exercise list by O(N).
    */
   const handleSetComplete = useCallback((exerciseIndex: number, setIndex: number) => {
-    const currentEx = plan.exercises[exerciseIndex];
-    let nextRest = currentEx.restSeconds || 60;
     const currentRecords = recordsRef.current;
+    const currentRecord = currentRecords[exerciseIndex];
+    const currentEx = currentRecord ? getExerciseMeta(currentRecord, exerciseIndex) : plan.exercises[exerciseIndex];
+    let nextRest = currentEx?.restSeconds || 60;
 
-    if (currentEx.isSuperset) {
+    const scrollToExercise = (exName: string) => {
+      setExpandedExerciseId(exName);
+      setTimeout(() => {
+        const el = document.getElementById(`exercise-${exName}`);
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    };
+
+    if (currentEx?.isSuperset) {
       // BOLT: Optimize superset index retrieval to a single-pass loop instead of chained map/filter calls
       const groupIndices: number[] = [];
-      for (let i = 0; i < plan.exercises.length; i++) {
-        const e = plan.exercises[i];
-        if (e.isSuperset && e.supersetGroup === currentEx.supersetGroup) {
+      for (let i = 0; i < currentRecords.length; i++) {
+        const r = currentRecords[i];
+        const meta = getExerciseMeta(r, i);
+        if (meta?.isSuperset && meta.supersetGroup === currentEx.supersetGroup) {
           groupIndices.push(i);
         }
       }
@@ -392,26 +556,42 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       if (!othersCompleted) {
         // Find the next incomplete exercise in the group to expand
         const nextExIdx = groupIndices.find(idx => idx !== exerciseIndex && !currentRecords[idx]?.sets[setIndex]?.completed);
-        if (nextExIdx !== undefined && plan.exercises[nextExIdx]) {
-          setExpandedExerciseId(plan.exercises[nextExIdx].name);
+        if (nextExIdx !== undefined && currentRecords[nextExIdx]) {
+          scrollToExercise(currentRecords[nextExIdx].name);
         } else {
           // Fallback if logic fails, just go to next in list
           const posInGroup = groupIndices.indexOf(exerciseIndex);
-          if (posInGroup < groupIndices.length - 1) {
-            setExpandedExerciseId(plan.exercises[groupIndices[posInGroup + 1]].name);
+          if (posInGroup < groupIndices.length - 1 && currentRecords[groupIndices[posInGroup + 1]]) {
+            scrollToExercise(currentRecords[groupIndices[posInGroup + 1]].name);
           }
         }
         return;
       } else {
         // All completed for this set index!
         nextRest = 90; // Standard superset rest
-        // Expand the first exercise for the NEXT set?
         const firstExIdx = groupIndices[0];
         if (currentRecords[firstExIdx]) {
           const firstRecord = currentRecords[firstExIdx];
           if (setIndex < firstRecord.sets.length - 1) {
-            setExpandedExerciseId(plan.exercises[firstExIdx].name);
+            scrollToExercise(firstRecord.name);
+          } else {
+            // Superset group finished all sets; advance to next incomplete exercise outside group
+            const nextIncomplete = currentRecords.find((r, idx) => !groupIndices.includes(idx) && r.sets.some(s => !s.completed));
+            if (nextIncomplete) {
+              scrollToExercise(nextIncomplete.name);
+            }
           }
+        }
+      }
+    } else if (currentRecord) {
+      // Standard exercise: check if all other sets of this exercise are already completed
+      const allSetsNowCompleted = currentRecord.sets.every((s, idx) => idx === setIndex || s.completed);
+      if (allSetsNowCompleted) {
+        const nextIncomplete =
+          currentRecords.slice(exerciseIndex + 1).find(r => r.sets.some(s => !s.completed)) ||
+          currentRecords.find((r, idx) => idx !== exerciseIndex && r.sets.some(s => !s.completed));
+        if (nextIncomplete) {
+          scrollToExercise(nextIncomplete.name);
         }
       }
     }
@@ -420,11 +600,91 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     // Explicitly reset and start the timer
     restTimerReset(nextRest, true);
     setShowRestTimer(true);
-  }, [plan.exercises, restTimerReset]);
+  }, [plan.exercises, restTimerReset, getExerciseMeta]);
 
   const toggleAccordion = useCallback((name: string) => {
     setExpandedExerciseId(prev => prev === name ? null : name);
   }, []);
+
+  const handleOpenSwap = useCallback((index: number) => {
+    const rec = recordsRef.current[index];
+    const currentMuscle = rec ? getMuscleGroup(rec.name) : 'All';
+    setPickerMuscleFilter(currentMuscle !== 'Other' ? currentMuscle : 'All');
+    setPickerSearch('');
+    setExercisePickerModal({ mode: 'swap', targetIndex: index });
+  }, []);
+
+  const handleSelectPickerExercise = useCallback(async (newExName: string) => {
+    const trimmed = newExName.trim();
+    if (!trimmed || !exercisePickerModal) return;
+
+    const catalogMeta = KNOWN_EXERCISE_CATALOG[trimmed] || (() => {
+      const v = resolveExerciseVisualMeta(trimmed);
+      return {
+        name: trimmed,
+        defaultSets: 3,
+        defaultReps: '8-12',
+        notes: `${getMuscleGroup(trimmed)} Focus`,
+        restSeconds: 90,
+        image: v.image,
+        visualArchetype: v.archetype,
+        equipment: v.equipment
+      };
+    })();
+
+    let lastSets: ExerciseSet[] | null = null;
+    try {
+      lastSets = await getLastLogForExerciseByType(user, trimmed, plan.id);
+    } catch {
+      lastSets = null;
+    }
+    const suggestion = getProgressionSuggestion(lastSets, catalogMeta.defaultReps);
+    const targetSetCount = (lastSets && lastSets.length > 0) ? lastSets.length : catalogMeta.defaultSets;
+
+    const initialSets: ExerciseSet[] = Array(targetSetCount).fill(null).map((_, idx) => {
+      const prevSet = lastSets && lastSets.length > 0 ? (lastSets[idx] || lastSets[lastSets.length - 1]) : null;
+      return {
+        reps: prevSet ? prevSet.reps : 0,
+        weight: prevSet ? prevSet.weight : 0,
+        completed: false
+      };
+    });
+
+    if (exercisePickerModal.mode === 'swap' && exercisePickerModal.targetIndex !== undefined) {
+      const targetIdx = exercisePickerModal.targetIndex;
+      setRecords(prev => {
+        const next = [...prev];
+        const existing = next[targetIdx];
+        if (!existing) return prev;
+        next[targetIdx] = {
+          ...existing,
+          id: trimmed,
+          name: trimmed,
+          sets: initialSets,
+          suggestion: suggestion || undefined,
+          visualArchetype: catalogMeta.visualArchetype,
+          equipment: catalogMeta.equipment
+        };
+        return next;
+      });
+    } else {
+      setRecords(prev => [
+        ...prev,
+        {
+          id: trimmed,
+          name: trimmed,
+          sets: initialSets,
+          isSuperset: false,
+          suggestion: suggestion || undefined,
+          visualArchetype: catalogMeta.visualArchetype,
+          equipment: catalogMeta.equipment
+        }
+      ]);
+    }
+
+    setExpandedExerciseId(trimmed);
+    setExercisePickerModal(null);
+  }, [exercisePickerModal, user, plan.id]);
 
   const clearAllWorkoutSessions = useCallback(() => {
     // BOLT: Robustly clear all workout-related storage to prevent stuck states
@@ -440,9 +700,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   const handleExit = async (action: 'end' | 'pause') => {
     if (action === 'end') {
-      // Check for any completed sets with non-zero values
+      // Check for any completed sets with non-zero values (including duration-tracked exercises)
       const hasCompletedSets = records.some(r =>
-        r.sets.some(s => s.completed && (s.reps > 0 || s.weight > 0))
+        r.sets.some(s => s.completed && (s.reps > 0 || s.weight > 0 || (s.time !== undefined && s.time > 0)))
       );
 
       if (hasCompletedSets) {
@@ -506,8 +766,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     // Update local preference for next workout to be the alternate one
     if (plan.id === WorkoutType.A) {
       localStorage.setItem('preferred_workout_type', WorkoutType.B);
+      localStorage.setItem('next_workout_type', WorkoutType.B);
     } else if (plan.id === WorkoutType.B) {
       localStorage.setItem('preferred_workout_type', WorkoutType.A);
+      localStorage.setItem('next_workout_type', WorkoutType.A);
     }
 
     try {
@@ -562,20 +824,26 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         // Save feedback linked to the log (using the log's ID)
         await saveWorkoutFeedback({ ...feedback, logId: String(finalLogId) }, userProfile);
 
-        // Trigger AI Plan Update (background)
-        AICoachService.generateModifiedPlan(plan, currentLog, feedback, userProfile).then(async newPlan => {
-          if (newPlan) {
-            console.log("AI Suggested New Plan:", newPlan);
-            try {
-              const currentPlans = await getUserPlans(userProfile.id) || (STARTER_PLANS[userProfile.fitnessLevel || 'beginner'] as any);
-              currentPlans[newPlan.id] = newPlan;
-              await saveUserPlan(userProfile.id, currentPlans);
-              console.log("Updated user plan in DB");
-            } catch (err) {
-              console.error("Failed to save AI updated plan", err);
-            }
-          }
-        });
+        // Trigger AI Plan Update (background, only when online)
+        if (typeof navigator === 'undefined' || navigator.onLine) {
+          AICoachService.generateModifiedPlan(plan, currentLog, feedback, userProfile)
+            .then(async newPlan => {
+              if (newPlan) {
+                console.log("AI Suggested New Plan:", newPlan);
+                try {
+                  const currentPlans = await getUserPlans(userProfile.id) || (STARTER_PLANS[userProfile.fitnessLevel || 'beginner'] as any);
+                  currentPlans[newPlan.id] = newPlan;
+                  await saveUserPlan(userProfile.id, currentPlans);
+                  console.log("Updated user plan in DB");
+                } catch (err) {
+                  console.error("Failed to save AI updated plan", err);
+                }
+              }
+            })
+            .catch(err => {
+              console.warn("Background AI plan update skipped due to network error:", err);
+            });
+        }
       }
 
       // Critical: Only clear session if save was successful
@@ -593,46 +861,60 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // ... AI analysis ...
       try {
         setStep('analysis');
-        // BOLT: Allocation-free best set summary extraction using manual index loops
-        const summarize = (l: WorkoutLog) => l.exercises.map(e => {
-          let bestSet = { weight: 0, reps: 0 };
-          if (e.sets) {
-            for (let i = 0; i < e.sets.length; i++) {
-              const s = e.sets[i];
-              if (s.completed && s.weight > bestSet.weight) {
-                bestSet = s;
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          setAnalysis({
+            celebration: "Training Complete! Saved Offline 🐼",
+            insight: "Your workout and XP are safely stored on your device and will sync automatically when you're back online.",
+            nudge: "Snap a Victory Selfie below — it saves offline too!"
+          });
+        } else {
+          // BOLT: Allocation-free best set summary extraction using manual index loops
+          const summarize = (l: WorkoutLog) => l.exercises.map(e => {
+            let bestSet = { weight: 0, reps: 0 };
+            if (e.sets) {
+              for (let i = 0; i < e.sets.length; i++) {
+                const s = e.sets[i];
+                if (s.completed && s.weight > bestSet.weight) {
+                  bestSet = s;
+                }
               }
             }
-          }
-          return { name: e.name, bestSet };
-        });
-        const prompt = `
-                  Compare the Current Workout vs Previous Workout (Type ${plan.id}).
-                  Current: ${JSON.stringify(summarize(currentLog))}
-                  Previous: ${previousLog ? JSON.stringify(summarize(previousLog)) : 'None (First workout)'}
-                  Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app:
-                  1. Celebration: Specific improvement.
-                  2. Insight: Pattern spotted.
-                  3. Nudge: What to focus on next.
-              `;
-        const response = await geminiClient.generateContent({
-          model: 'gemini-flash-lite-latest',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                celebration: { type: Type.STRING },
-                insight: { type: Type.STRING },
-                nudge: { type: Type.STRING },
+            return { name: e.name, bestSet };
+          });
+          const prompt = `
+                    Compare the Current Workout vs Previous Workout (Type ${plan.id}).
+                    Current: ${JSON.stringify(summarize(currentLog))}
+                    Previous: ${previousLog ? JSON.stringify(summarize(previousLog)) : 'None (First workout)'}
+                    Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app:
+                    1. Celebration: Specific improvement.
+                    2. Insight: Pattern spotted.
+                    3. Nudge: What to focus on next.
+                `;
+          const aiPromise = geminiClient.generateContent({
+            model: 'gemini-flash-lite-latest',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  celebration: { type: Type.STRING },
+                  insight: { type: Type.STRING },
+                  nudge: { type: Type.STRING },
+                }
               }
             }
+          });
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('AI analysis timed out on slow connection')), 5000)
+          );
+          const response = await Promise.race([aiPromise, timeoutPromise]);
+          if (response.text) {
+            const result = JSON.parse(response.text) as AnalysisResult;
+            setAnalysis(result);
+          } else {
+            setAnalysis({ celebration: "Training Complete!", insight: "You showed up and put in the work today.", nudge: "Keep the streak alive!" });
           }
-        });
-        if (response.text) {
-          const result = JSON.parse(response.text) as AnalysisResult;
-          setAnalysis(result);
         }
       } catch (error) {
         console.error("AI Analysis failed", error);
@@ -676,63 +958,89 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const warmupCompletedCount = warmupDone.filter(Boolean).length;
   const cooldownCompletedCount = cooldownDone.filter(Boolean).length;
 
+  // Compute Next Up label for docked Rest Timer bar
+  const nextUpExercise = (() => {
+    if (expandedExerciseId) {
+      const expRec = records.find(r => r.name === expandedExerciseId);
+      const nextSetIdx = expRec?.sets.findIndex(s => !s.completed);
+      if (expRec && nextSetIdx !== undefined && nextSetIdx !== -1) {
+        return `${expRec.name} • Set ${nextSetIdx + 1}`;
+      }
+    }
+    const firstInc = records.find(r => r.sets.some(s => !s.completed));
+    if (firstInc) {
+      const idx = firstInc.sets.findIndex(s => !s.completed);
+      return `${firstInc.name} • Set ${idx + 1}`;
+    }
+    return 'All Sets Complete!';
+  })();
+
   const renderExercises = () => {
     const elements: React.ReactNode[] = [];
     let i = 0;
     while (i < records.length) {
       const currentIndex = i;
-      const current = plan.exercises[currentIndex];
-      if (!current) break;
+      const currentRecord = records[currentIndex];
+      if (!currentRecord) break;
+      const currentMeta = getExerciseMeta(currentRecord, currentIndex);
 
-      if (current.isSuperset) {
+      if (currentMeta?.isSuperset) {
         const group = [currentIndex];
         let j = currentIndex + 1;
-        while (j < plan.exercises.length && plan.exercises[j].isSuperset && plan.exercises[j].supersetGroup === current.supersetGroup) {
-          group.push(j);
-          j++;
+        while (j < records.length) {
+          const nextMeta = getExerciseMeta(records[j], j);
+          if (nextMeta?.isSuperset && nextMeta.supersetGroup === currentMeta.supersetGroup) {
+            group.push(j);
+            j++;
+          } else {
+            break;
+          }
         }
         elements.push(
-          <div key={`group-${currentIndex}`} className="mb-5 relative bg-gradient-to-br from-emerald-50/90 to-teal-50/70 p-2.5 rounded-[32px] border-2 border-emerald-200/70 shadow-sm">
-            <div className="px-2 pt-1.5 pb-1">
-              <div className="text-xs font-bold text-emerald-800 mb-2.5 uppercase tracking-wider flex justify-between items-center px-1">
-                <span className="flex items-center gap-1.5 bg-white/80 px-3 py-1 rounded-full shadow-xs border border-emerald-100">
-                  <Zap size={13} className="text-amber-500 fill-amber-400" /> Super-Panda Superset
-                </span>
-                <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black tracking-widest shadow-xs">NO REST BETWEEN</span>
-              </div>
-              <div className="space-y-3">
-                {group.map(idx => {
-                  if (!records[idx]) return null;
-                  return (
-                    <div key={records[idx].name} id={`exercise-${records[idx].name}`}>
-                      <WorkoutExerciseItem
-                        exercise={plan.exercises[idx]}
-                        record={records[idx]}
-                        index={idx}
-                        isExpanded={expandedExerciseId === records[idx].name}
-                        onToggle={toggleAccordion}
-                        onChange={handleSetChange}
-                        onSetComplete={handleSetComplete}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+          <div key={`group-${currentIndex}`} className="mb-3 pl-2.5 sm:pl-3 border-l-4 border-emerald-500 rounded-l-sm">
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+              <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-emerald-800">
+                <Zap size={12} className="text-amber-500 fill-amber-400" /> Superset
+              </span>
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                Back-to-Back • No Rest Between
+              </span>
+            </div>
+            <div className="space-y-2">
+              {group.map(idx => {
+                const rec = records[idx];
+                if (!rec) return null;
+                return (
+                  <div key={`${rec.name}-${idx}`} id={`exercise-${rec.name}`}>
+                    <WorkoutExerciseItem
+                      exercise={getExerciseMeta(rec, idx)}
+                      record={rec}
+                      index={idx}
+                      isExpanded={expandedExerciseId === rec.name}
+                      onToggle={toggleAccordion}
+                      onChange={handleSetChange}
+                      onSetComplete={handleSetComplete}
+                      onSwap={handleOpenSwap}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
         i = j;
       } else {
         elements.push(
-          <div key={records[currentIndex].name} id={`exercise-${records[currentIndex].name}`}>
+          <div key={`${currentRecord.name}-${currentIndex}`} id={`exercise-${currentRecord.name}`}>
             <WorkoutExerciseItem
-              exercise={plan.exercises[currentIndex]}
-              record={records[currentIndex]}
+              exercise={currentMeta}
+              record={currentRecord}
               index={currentIndex}
-              isExpanded={expandedExerciseId === records[currentIndex].name}
+              isExpanded={expandedExerciseId === currentRecord.name}
               onToggle={toggleAccordion}
               onChange={handleSetChange}
               onSetComplete={handleSetComplete}
+              onSwap={handleOpenSwap}
             />
           </div>
         );
@@ -747,129 +1055,129 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     return (
       <div className="min-h-screen flex flex-col bg-[#F0FDF4]">
         {/* Sticky Top Header */}
-        <div className="sticky top-0 z-30 bg-[#F0FDF4]/90 backdrop-blur-xl border-b border-emerald-100/80 px-4 py-3">
-          <div className="max-w-lg mx-auto flex items-center justify-between">
+        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 px-3 sm:px-4 py-2.5">
+          <div className="max-w-xl mx-auto flex items-center justify-between">
             <div className="flex items-center">
               <button
                 onClick={handleWarmupCancel}
-                className="w-10 h-10 rounded-2xl bg-white shadow-xs border border-emerald-100 text-emerald-700 flex items-center justify-center mr-3 active:scale-90 transition-transform"
+                className="w-9 h-9 rounded-xl bg-white shadow-2xs border border-emerald-100 text-emerald-700 flex items-center justify-center mr-2.5 active:scale-90 transition-transform"
                 aria-label="Back"
               >
-                <ChevronLeft size={22} />
+                <ChevronLeft size={20} />
               </button>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Phase 1 of 3</span>
                 </div>
-                <h2 className="text-xl font-bold text-emerald-950 font-['Fredoka'] leading-tight mt-0.5">Warm Up Dojo</h2>
+                <h2 className="text-lg font-bold text-emerald-950 font-['Fredoka'] leading-tight">Warm Up Dojo</h2>
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-xs font-black text-emerald-700 bg-white px-3 py-1.5 rounded-2xl border border-emerald-100 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100">
                 {warmupCompletedCount}/{plan.warmup.length} Ready
               </span>
+              <button
+                type="button"
+                onClick={() => setStep('workout')}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-100/80 hover:bg-emerald-200/70 px-2.5 py-1 rounded-xl transition-colors"
+              >
+                Skip →
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 flex-grow max-w-lg mx-auto w-full pb-28">
+        <div className="px-2.5 sm:px-4 py-3 flex-grow max-w-xl mx-auto w-full pb-28 space-y-3">
           {isStreakAtRisk && (
-            <div className="mb-5 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-2xl flex items-start shadow-xs animate-fade-in">
-              <AlertTriangle className="text-orange-500 mr-3 flex-shrink-0 mt-0.5" size={20} />
+            <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-xl flex items-start shadow-2xs animate-fade-in">
+              <AlertTriangle className="text-orange-500 mr-2.5 flex-shrink-0 mt-0.5" size={18} />
               <div>
-                <h3 className="text-orange-900 font-bold text-sm mb-0.5">Streak at Risk! 🔥</h3>
+                <h3 className="text-orange-900 font-bold text-xs mb-0.5">Streak at Risk! 🔥</h3>
                 <p className="text-orange-700 text-xs leading-relaxed">You haven't trained in 2 days. Complete this workout to protect your bamboo streak!</p>
               </div>
             </div>
           )}
 
-          <div className="glass-panel p-5 mb-6 relative overflow-hidden border border-emerald-100/80 shadow-sm" style={{ background: 'linear-gradient(135deg, hsla(140,60%,98%,0.95), hsla(150,55%,94%,0.85))' }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-emerald-100 flex items-center justify-center text-2xl">
-                  🧘
-                </div>
+          {/* Single Cohesive Warmup Card (No Nested Cards) */}
+          <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-xs overflow-hidden">
+            <div className="px-3.5 py-3 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🧘</span>
                 <div>
-                  <h3 className="text-lg font-bold text-emerald-950 font-['Fredoka']">Stretch it out!</h3>
-                  <p className="text-emerald-700/80 text-xs font-medium">Wake up your joints before heavy bamboo lifting.</p>
+                  <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']">Dynamic Joint Prep</h3>
+                  <p className="text-emerald-700/80 text-[11px] font-medium">Wake up your joints before lifting</p>
                 </div>
               </div>
               {plan.warmup.length > 0 && warmupCompletedCount < plan.warmup.length && (
                 <button
                   type="button"
                   onClick={() => setWarmupDone(new Array(plan.warmup.length).fill(true))}
-                  className="text-[11px] font-bold text-emerald-700 bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-emerald-200/70 shadow-2xs active:scale-95 transition-all shrink-0"
+                  className="text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 active:scale-95 transition-all shrink-0"
                 >
                   Check All
                 </button>
               )}
             </div>
-            <div className="w-full h-2 bg-emerald-100/80 rounded-full overflow-hidden">
+            <div className="w-full h-1 bg-emerald-100/80">
               <div
-                className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-300"
                 style={{ width: `${warmupPct}%` }}
               />
             </div>
-          </div>
 
-          <div className="space-y-3">
-            {plan.warmup.map((item, idx) => {
-              const isDone = warmupDone[idx];
-              return (
-                <label
-                  key={idx}
-                  className={`flex items-center p-4 glass-panel border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] ${
-                    isDone
-                      ? 'bg-emerald-100/60 border-emerald-300/80 shadow-2xs'
-                      : 'bg-white/85 border-emerald-100/80 shadow-xs hover:border-emerald-200'
-                  }`}
-                  style={{ borderRadius: '22px' }}
-                >
-                  <div className="relative flex items-center justify-center w-9 h-9 mr-3.5 shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={isDone}
-                      onChange={() => {
-                        const n = [...warmupDone];
-                        n[idx] = !n[idx];
-                        setWarmupDone(n);
-                      }}
-                      className="hidden"
-                    />
-                    <img
-                      src={isDone ? "/assets/leaf_checkbox_filled.webp" : "/assets/leaf_checkbox_empty.webp"}
-                      alt="Check"
-                      className={`w-8 h-8 object-contain transition-transform duration-200 ${isDone ? 'scale-110' : 'scale-100 opacity-80'}`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-base font-bold block transition-all ${isDone ? 'text-emerald-800/70 line-through' : 'text-emerald-950'}`}>
-                      {item}
-                    </span>
-                    <span className="text-[11px] font-semibold text-emerald-600/70">
-                      {isDone ? 'Warmed up & ready!' : 'Tap when completed'}
-                    </span>
-                  </div>
-                  {isDone && (
-                    <span className="text-xs font-extrabold text-emerald-700 bg-emerald-200/70 px-2.5 py-1 rounded-full ml-2">
-                      Done
-                    </span>
-                  )}
-                </label>
-              );
-            })}
+            <div className="divide-y divide-slate-100">
+              {plan.warmup.map((item, idx) => {
+                const isDone = warmupDone[idx];
+                return (
+                  <label
+                    key={idx}
+                    className={`flex items-center px-3.5 py-3 transition-colors cursor-pointer select-none ${
+                      isDone ? 'bg-emerald-50/40' : 'bg-white hover:bg-slate-50/70'
+                    }`}
+                  >
+                    <div className="relative flex items-center justify-center w-8 h-8 mr-3 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={isDone}
+                        onChange={() => {
+                          const n = [...warmupDone];
+                          n[idx] = !n[idx];
+                          setWarmupDone(n);
+                        }}
+                        className="hidden"
+                      />
+                      <img
+                        src={isDone ? "/assets/leaf_checkbox_filled.webp" : "/assets/leaf_checkbox_empty.webp"}
+                        alt="Check"
+                        className={`w-7 h-7 object-contain transition-transform duration-200 ${isDone ? 'scale-110' : 'scale-100 opacity-80'}`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm font-bold block transition-all ${isDone ? 'text-emerald-800/70 line-through' : 'text-slate-900'}`}>
+                        {item}
+                      </span>
+                    </div>
+                    {isDone && (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md ml-2">
+                        Done
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Sticky Mobile Bottom CTA */}
-        <div className="fixed bottom-0 inset-x-0 z-30 p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
-          <div className="max-w-lg mx-auto">
+        <div className="fixed bottom-0 inset-x-0 z-30 p-3 sm:p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
+          <div className="max-w-xl mx-auto">
             <button
               onClick={() => setStep('workout')}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-4 rounded-3xl font-bold text-lg shadow-xl shadow-emerald-500/25 active:scale-95 transition-all border-b-4 border-emerald-700 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all border-b-4 border-emerald-700 flex items-center justify-center gap-2"
             >
               <span>Start Training</span>
-              <TrendingUp size={20} />
+              <TrendingUp size={18} />
             </button>
           </div>
         </div>
@@ -877,62 +1185,209 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     );
   }
 
+  const exitModal = showExitModal ? createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-md animate-fade-in">
+      <div className="glass-panel p-6 w-full max-w-sm animate-scale-up border border-emerald-100 shadow-2xl" style={{ background: 'hsla(140,50%,99%,0.97)', borderRadius: '32px' }}>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <span className="text-3xl">🐼</span>
+          </div>
+          <h3 className="text-xl font-bold text-emerald-950 mb-1.5 font-['Fredoka']">Leaving the Dojo?</h3>
+          <p className="text-emerald-700/80 text-sm">Do you want to end this workout completely or just pause for a bamboo snack?</p>
+        </div>
+
+        <div className="space-y-2.5">
+          {step === 'cooldown' && (
+            <button
+              onClick={() => {
+                setShowExitModal(false);
+                setStep('workout');
+              }}
+              className="w-full bg-teal-50 hover:bg-teal-100 text-teal-800 py-3.5 rounded-2xl font-bold border border-teal-200 active:scale-95 transition-all"
+            >
+              Return to Workout Sets
+            </button>
+          )}
+          <button
+            onClick={() => handleExit('pause')}
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-200 active:scale-95 transition-all border-b-4 border-emerald-700"
+          >
+            Pause & Save for Later
+          </button>
+          <button
+            onClick={() => handleExit('end')}
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-bold border border-red-200 active:scale-95 transition-all"
+          >
+            End Workout
+          </button>
+          <button
+            onClick={() => setShowExitModal(false)}
+            className="w-full text-slate-500 py-2.5 font-bold text-sm hover:text-slate-700"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  const pickerCategories = ['All', MUSCLE_GROUPS.CHEST, MUSCLE_GROUPS.BACK, MUSCLE_GROUPS.LEGS, MUSCLE_GROUPS.SHOULDERS, MUSCLE_GROUPS.ARMS, MUSCLE_GROUPS.CORE];
+  const filteredCatalogExercises = Object.values(KNOWN_EXERCISE_CATALOG).filter(ex => {
+    const matchesMuscle = pickerMuscleFilter === 'All' || (EXERCISE_MUSCLE_MAP[ex.name] || []).includes(pickerMuscleFilter);
+    const matchesQuery = !pickerSearch.trim() || ex.name.toLowerCase().includes(pickerSearch.trim().toLowerCase());
+    return matchesMuscle && matchesQuery;
+  });
+
+  const exercisePickerPortal = exercisePickerModal ? createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in" onClick={() => setExercisePickerModal(null)}>
+      <div
+        className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-4 sm:p-5 border border-emerald-100 shadow-2xl max-h-[82vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+              {exercisePickerModal.mode === 'swap' ? 'Equipment Taken?' : 'Extra Volume'}
+            </span>
+            <h3 className="text-lg font-bold text-slate-900 font-['Fredoka']">
+              {exercisePickerModal.mode === 'swap'
+                ? `Swap ${records[exercisePickerModal.targetIndex ?? 0]?.name || 'Exercise'}`
+                : 'Add Exercise to Session'}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExercisePickerModal(null)}
+            className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200"
+            aria-label="Close exercise picker"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Search or Custom Exercise Input */}
+        <div className="relative my-2.5">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={pickerSearch}
+            onChange={(e) => setPickerSearch(e.target.value)}
+            placeholder="Search or type a custom exercise..."
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-400"
+          />
+        </div>
+
+        {/* Muscle Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-2 border-b border-slate-100 shrink-0">
+          {pickerCategories.map(cat => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setPickerMuscleFilter(cat)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                pickerMuscleFilter === cat
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Exercise List */}
+        <div className="overflow-y-auto divide-y divide-slate-100 flex-1 min-h-0">
+          {filteredCatalogExercises.map(ex => {
+            return (
+              <button
+                key={ex.name}
+                type="button"
+                onClick={() => handleSelectPickerExercise(ex.name)}
+                className="w-full py-2.5 px-2 flex items-center justify-between gap-2.5 hover:bg-emerald-50/60 transition-colors text-left rounded-lg"
+              >
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <ExerciseThumbnail
+                    name={ex.name}
+                    customImage={ex.image}
+                    visualArchetype={ex.visualArchetype}
+                    equipment={ex.equipment}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm text-slate-900 truncate">{ex.name}</div>
+                    <ExerciseBadgeRow
+                      name={ex.name}
+                      customImage={ex.image}
+                      visualArchetype={ex.visualArchetype}
+                      equipment={ex.equipment}
+                      compact
+                      className="mt-0.5"
+                    />
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg shrink-0">
+                  {exercisePickerModal.mode === 'swap' ? 'Swap' : '+ Add'}
+                </span>
+              </button>
+            );
+          })}
+
+          {pickerSearch.trim().length > 1 && !KNOWN_EXERCISE_CATALOG[pickerSearch.trim()] && (
+            <button
+              type="button"
+              onClick={() => handleSelectPickerExercise(pickerSearch.trim())}
+              className="w-full py-3 px-2.5 flex items-center justify-between gap-2.5 bg-emerald-50/70 hover:bg-emerald-100/70 transition-colors text-left rounded-xl mt-2"
+            >
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <ExerciseThumbnail
+                  name={pickerSearch.trim()}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm text-emerald-950 truncate">Use "{pickerSearch.trim()}"</div>
+                  <ExerciseBadgeRow
+                    name={pickerSearch.trim()}
+                    compact
+                    className="mt-0.5"
+                  />
+                </div>
+              </div>
+              <span className="text-xs font-bold text-white bg-emerald-600 px-2.5 py-1 rounded-lg shrink-0">
+                Select
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   if (step === 'workout') {
     return (
       <div className="min-h-screen bg-[#F0FDF4] pb-28 relative">
-        {showExitModal && createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-md animate-fade-in">
-            <div className="glass-panel p-6 w-full max-w-sm animate-scale-up border border-emerald-100 shadow-2xl" style={{ background: 'hsla(140,50%,99%,0.97)', borderRadius: '32px' }}>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-                  <span className="text-3xl">🐼</span>
-                </div>
-                <h3 className="text-xl font-bold text-emerald-950 mb-1.5 font-['Fredoka']">Leaving the Dojo?</h3>
-                <p className="text-emerald-700/80 text-sm">Do you want to end this workout completely or just pause for a bamboo snack?</p>
-              </div>
-
-              <div className="space-y-2.5">
-                <button
-                  onClick={() => handleExit('pause')}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-200 active:scale-95 transition-all border-b-4 border-emerald-700"
-                >
-                  Pause & Save for Later
-                </button>
-                <button
-                  onClick={() => handleExit('end')}
-                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-bold border border-red-200 active:scale-95 transition-all"
-                >
-                  End Workout
-                </button>
-                <button
-                  onClick={() => setShowExitModal(false)}
-                  className="w-full text-slate-500 py-2.5 font-bold text-sm hover:text-slate-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+        {exitModal}
+        {exercisePickerPortal}
 
         {/* Sticky Workout Header with Live Progress Bar */}
-        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 shadow-xs">
-          <div className="max-w-lg mx-auto px-4 pt-2.5 pb-2">
-            <div className="flex justify-between items-center mb-2">
+        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 shadow-2xs">
+          <div className="max-w-xl mx-auto px-3 sm:px-4 pt-2 pb-1.5">
+            <div className="flex justify-between items-center mb-1.5">
               <div className="flex items-center flex-1 min-w-0 mr-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
                       {completedSetsCount}/{totalSetsCount} Sets • {workoutProgressPct}%
+                      {totalSessionVolume > 0 ? ` • ${totalSessionVolume.toLocaleString()}kg` : ''}
                     </span>
                   </div>
                   <h2 className="font-bold text-emerald-950 text-base leading-tight truncate font-['Fredoka']">{plan.title}</h2>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 shrink-0">
+              <div className="flex items-center space-x-1.5 shrink-0">
                 <Timer
                   seconds={workoutTimer.seconds}
                   isActive={workoutTimer.isActive}
@@ -944,7 +1399,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 <button
                   onClick={() => setShowExitModal(true)}
                   aria-label="Exit workout"
-                  className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-2xl border border-red-100 transition-colors active:scale-90"
+                  className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl border border-red-100 transition-colors active:scale-90"
                 >
                   <X size={18} />
                 </button>
@@ -952,7 +1407,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             </div>
 
             {/* Session Progress Bar */}
-            <div className="w-full h-1.5 bg-emerald-100/90 rounded-full overflow-hidden">
+            <div className="w-full h-1 bg-emerald-100/90 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-lime-500 rounded-full transition-all duration-300"
                 style={{ width: `${workoutProgressPct}%` }}
@@ -961,19 +1416,33 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-4 max-w-lg mx-auto space-y-5">
-          <div className="space-y-3.5">
+        {/* Wide, Low-Padding Workout List — No Nested Outer Cards */}
+        <div className="px-2 sm:px-4 py-2.5 max-w-xl mx-auto space-y-2.5">
+          <div className="space-y-2">
             {renderExercises()}
           </div>
 
-          <div className="pt-2 pb-6">
+          {/* Add Exercise Mid-Workout Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setPickerMuscleFilter('All');
+              setPickerSearch('');
+              setExercisePickerModal({ mode: 'add' });
+            }}
+            className="w-full py-2.5 rounded-xl border border-dashed border-emerald-300 bg-white/70 hover:bg-white text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors active:scale-[0.99]"
+          >
+            <Plus size={15} /> Add Exercise to Session
+          </button>
+
+          <div className="pt-1 pb-6">
             <button
               onClick={() => setShowCooldownConfirm(true)}
-              className="w-full bg-gradient-to-r from-emerald-800 to-emerald-900 text-emerald-50 py-4 rounded-3xl font-bold text-lg shadow-xl shadow-emerald-900/20 active:scale-95 transition-all border-b-4 border-emerald-950 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-emerald-800 to-emerald-900 text-emerald-50 py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-900/20 active:scale-95 transition-all border-b-4 border-emerald-950 cursor-pointer flex items-center justify-center gap-2"
               data-testid="finish-cooldown-btn"
             >
               <span>Finish & Cool Down</span>
-              <CheckCircle size={20} className="text-lime-300" />
+              <CheckCircle size={19} className="text-lime-300" />
             </button>
           </div>
         </div>
@@ -981,10 +1450,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         {showRestTimer && (
           <Timer
             seconds={restTimer.seconds}
-            totalSeconds={restDuration}
+            totalSeconds={restTimer.totalSeconds || restDuration}
             isActive={restTimer.isActive}
+            subtractTime={() => restTimer.addTime(-15)}
             addTime={() => restTimer.addTime(10)}
             onClose={() => setShowRestTimer(false)}
+            nextUpLabel={nextUpExercise}
             mode="overlay"
             type="countdown"
           />
@@ -1083,14 +1554,21 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               </div>
             </div>
 
-            {/* Tribe Photo Upload */}
-            <div className="mb-5 bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-3xl text-center">
-              <h3 className="text-emerald-100 font-bold text-xs uppercase tracking-widest mb-3 flex items-center justify-center">
-                <Camera size={15} className="mr-2 text-lime-300" /> Share Victory Selfie
+            {/* Tribe Victory Spotlight Photo Upload */}
+            <div className="mb-5 bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-emerald-950/95 backdrop-blur-md border-2 border-lime-400/45 p-5 rounded-3xl text-center shadow-xl relative overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-lime-400/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime-400/20 border border-lime-300/35 text-lime-200 text-[10px] font-black uppercase tracking-widest mb-2">
+                <Sparkles size={12} className="text-lime-300" /> Tribe Victory Spotlight
+              </div>
+              <h3 className="text-white font-bold text-base font-['Fredoka'] mb-1 flex items-center justify-center">
+                <Camera size={17} className="mr-2 text-lime-300" /> Share Victory Selfie
               </h3>
+              <p className="text-emerald-100/75 text-xs mb-4">
+                Your photo takes center stage on the Tribe Home &amp; Jungle News feed!
+              </p>
 
               {!photoUploaded ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 relative z-10">
                   <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input
                       type="file"
@@ -1105,6 +1583,15 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                             await saveTribePhoto(base64, userProfile);
                             setTribePhoto(base64);
                             setPhotoUploaded(true);
+                            window.dispatchEvent(new CustomEvent('fittribe-victory-photo-updated', {
+                              detail: {
+                                id: String(Date.now()),
+                                userId: userProfile.id,
+                                userName: userProfile.displayName,
+                                imageData: base64,
+                                createdAt: new Date().toISOString()
+                              }
+                            }));
                           } catch (err) {
                             console.error(err);
                             alert("Failed to upload photo");
@@ -1114,9 +1601,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         }
                       }}
                     />
-                    <div className="bg-emerald-500 hover:bg-emerald-400 text-white py-3 px-3 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-700 text-xs gap-1.5">
-                      <Camera size={14} />
-                      <span>{uploadingPhoto ? 'Uploading...' : 'Camera'}</span>
+                    <div className="bg-gradient-to-r from-lime-400 to-emerald-400 hover:brightness-105 text-emerald-950 py-3.5 px-3 rounded-2xl font-black shadow-lg flex items-center justify-center border-b-4 border-emerald-700 text-xs gap-1.5">
+                      <Camera size={15} />
+                      <span>{uploadingPhoto ? 'Uploading...' : 'Snap Camera'}</span>
                     </div>
                   </label>
 
@@ -1133,6 +1620,15 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                             await saveTribePhoto(base64, userProfile);
                             setTribePhoto(base64);
                             setPhotoUploaded(true);
+                            window.dispatchEvent(new CustomEvent('fittribe-victory-photo-updated', {
+                              detail: {
+                                id: String(Date.now()),
+                                userId: userProfile.id,
+                                userName: userProfile.displayName,
+                                imageData: base64,
+                                createdAt: new Date().toISOString()
+                              }
+                            }));
                           } catch (err) {
                             console.error(err);
                             alert("Failed to upload photo");
@@ -1142,19 +1638,22 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         }
                       }}
                     />
-                    <div className="bg-white/15 hover:bg-white/25 text-emerald-50 py-3 px-3 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-950/50 text-xs">
-                      {uploadingPhoto ? 'Uploading...' : 'Gallery'}
+                    <div className="bg-white/15 hover:bg-white/25 text-emerald-50 py-3.5 px-3 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-950/50 text-xs">
+                      {uploadingPhoto ? 'Uploading...' : 'From Gallery'}
                     </div>
                   </label>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3 relative z-10">
                   {tribePhoto && (
-                    <div className="w-28 h-28 mx-auto rounded-2xl overflow-hidden border-2 border-lime-300 shadow-lg rotate-1 bg-white p-1">
-                      <img src={tribePhoto} alt="Victory" className="w-full h-full object-cover rounded-xl" />
+                    <div className="w-44 h-44 mx-auto rounded-3xl overflow-hidden border-2 border-lime-300 shadow-2xl bg-slate-950 p-1.5 relative">
+                      <img src={tribePhoto} alt="Victory" className="w-full h-full object-cover rounded-2xl" />
+                      <span className="absolute bottom-3 inset-x-3 bg-black/65 backdrop-blur-md text-lime-300 text-[10px] font-black uppercase tracking-widest py-1 rounded-full border border-lime-400/30">
+                        🏆 Live on Tribe Feed
+                      </span>
                     </div>
                   )}
-                  <div className="bg-emerald-800/60 text-emerald-100 py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center border border-emerald-400/30">
+                  <div className="bg-emerald-800/70 text-emerald-100 py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center border border-emerald-400/30">
                     <CheckCircle size={16} className="mr-2 text-lime-400" /> Photo Shared with Tribe!
                   </div>
                 </div>
@@ -1201,17 +1700,28 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0FDF4] pb-28">
-      <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-xs">
-        <div className="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
-          <div>
-            <span className="text-[10px] font-black text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full uppercase tracking-widest">Phase 3 of 3 • Cool Down</span>
-            <h2 className="font-bold text-emerald-950 text-lg leading-tight font-['Fredoka'] mt-0.5">Zen Mode</h2>
+      {exitModal}
+      <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-2xs">
+        <div className="max-w-xl mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setStep('workout')}
+              className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1 hover:bg-emerald-50 active:scale-95 transition-all"
+              aria-label="Back to workout sets"
+            >
+              <ChevronLeft size={15} /> Sets
+            </button>
+            <div>
+              <span className="text-[10px] font-black text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full uppercase tracking-widest">Phase 3 of 3 • Cool Down</span>
+              <h2 className="font-bold text-emerald-950 text-lg leading-tight font-['Fredoka']">Zen Mode</h2>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-emerald-700 bg-white px-3 py-1.5 rounded-2xl border border-emerald-100">
+            <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100">
               {cooldownCompletedCount}/{plan.cooldown.length} Done
             </span>
-            <button onClick={() => setShowExitModal(true)} className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-2xl border border-red-100 transition-colors">
+            <button onClick={() => setShowExitModal(true)} aria-label="Exit workout" className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl border border-red-100 transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -1220,98 +1730,95 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
       <Confetti active={showCelebration} />
 
-      <div className="p-4 sm:p-6 max-w-lg mx-auto w-full flex-grow">
-        {/* Zen Breathing Banner */}
-        <div className="glass-panel p-5 mb-6 border border-teal-200/70 shadow-sm relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsla(165,55%,96%,0.9), hsla(145,50%,94%,0.85))' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3.5">
-              <div className="relative flex items-center justify-center w-12 h-12">
+      <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full flex-grow space-y-3">
+        {/* Single Cohesive Zen Cooldown Card (No Nested Cards) */}
+        <div className="bg-white rounded-2xl border border-teal-200/80 shadow-xs overflow-hidden">
+          <div className="px-3.5 py-3 bg-teal-50/60 border-b border-teal-100 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="relative flex items-center justify-center w-9 h-9">
                 <div className="absolute inset-0 rounded-full bg-teal-300/40 animate-ping" style={{ animationDuration: '4s' }} />
-                <div className="relative w-11 h-11 rounded-full bg-white shadow-xs border border-teal-200 flex items-center justify-center text-2xl">
+                <div className="relative w-8 h-8 rounded-full bg-white border border-teal-200 flex items-center justify-center text-lg">
                   🎋
                 </div>
               </div>
               <div>
-                <h3 className="text-base font-bold text-emerald-950 font-['Fredoka']">Cool down in the shade</h3>
-                <p className="text-teal-800/80 text-xs font-medium">Breathe slowly: 4s inhale • 4s hold • 4s exhale</p>
+                <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']">Cool down in the shade</h3>
+                <p className="text-teal-800/80 text-[11px] font-medium">Breathe slowly: 4s inhale • 4s hold • 4s exhale</p>
               </div>
             </div>
             {plan.cooldown.length > 0 && cooldownCompletedCount < plan.cooldown.length && (
               <button
                 type="button"
                 onClick={() => setCooldownDone(new Array(plan.cooldown.length).fill(true))}
-                className="text-[11px] font-bold text-teal-800 bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-teal-200 shadow-2xs active:scale-95 transition-all shrink-0"
+                className="text-[11px] font-bold text-teal-800 bg-white hover:bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 active:scale-95 transition-all shrink-0"
               >
                 Check All
               </button>
             )}
           </div>
-          <div className="w-full h-2 bg-teal-100/80 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-teal-100/80">
             <div
-              className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-300"
               style={{ width: `${cooldownPct}%` }}
             />
           </div>
-        </div>
 
-        <div className="space-y-3">
-          {plan.cooldown.map((item, idx) => {
-            const isDone = cooldownDone[idx];
-            return (
-              <label
-                key={idx}
-                className={`flex items-center p-4 glass-panel border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] ${
-                  isDone
-                    ? 'bg-teal-100/60 border-teal-300/80 shadow-2xs'
-                    : 'bg-white/85 border-emerald-100/80 shadow-xs hover:border-teal-200'
-                }`}
-                style={{ borderRadius: '22px' }}
-              >
-                <div className="relative flex items-center justify-center w-9 h-9 mr-3.5 shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={isDone}
-                    onChange={() => {
-                      const n = [...cooldownDone];
-                      n[idx] = !n[idx];
-                      setCooldownDone(n);
-                    }}
-                    className="hidden"
-                  />
-                  <img
-                    src={isDone ? "/assets/leaf_checkbox_filled.webp" : "/assets/leaf_checkbox_empty.webp"}
-                    alt="Check"
-                    className={`w-8 h-8 object-contain transition-transform duration-200 ${isDone ? 'scale-110' : 'scale-100 opacity-80'}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className={`text-base font-bold block transition-all ${isDone ? 'text-emerald-800/70 line-through' : 'text-emerald-950'}`}>
-                    {item}
-                  </span>
-                  <span className="text-[11px] font-semibold text-teal-700/70">
-                    {isDone ? 'Stretched & relaxed' : 'Hold stretch for 20-30s'}
-                  </span>
-                </div>
-                {isDone && (
-                  <span className="text-xs font-extrabold text-teal-800 bg-teal-200/70 px-2.5 py-1 rounded-full ml-2">
-                    Zen
-                  </span>
-                )}
-              </label>
-            );
-          })}
+          <div className="divide-y divide-slate-100">
+            {plan.cooldown.map((item, idx) => {
+              const isDone = cooldownDone[idx];
+              return (
+                <label
+                  key={idx}
+                  className={`flex items-center px-3.5 py-3 transition-colors cursor-pointer select-none ${
+                    isDone ? 'bg-teal-50/40' : 'bg-white hover:bg-slate-50/70'
+                  }`}
+                >
+                  <div className="relative flex items-center justify-center w-8 h-8 mr-3 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isDone}
+                      onChange={() => {
+                        const n = [...cooldownDone];
+                        n[idx] = !n[idx];
+                        setCooldownDone(n);
+                      }}
+                      className="hidden"
+                    />
+                    <img
+                      src={isDone ? "/assets/leaf_checkbox_filled.webp" : "/assets/leaf_checkbox_empty.webp"}
+                      alt="Check"
+                      className={`w-7 h-7 object-contain transition-transform duration-200 ${isDone ? 'scale-110' : 'scale-100 opacity-80'}`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-bold block transition-all ${isDone ? 'text-emerald-800/70 line-through' : 'text-slate-900'}`}>
+                      {item}
+                    </span>
+                    <span className="text-[11px] font-semibold text-teal-700/70">
+                      {isDone ? 'Stretched & relaxed' : 'Hold stretch for 20-30s'}
+                    </span>
+                  </div>
+                  {isDone && (
+                    <span className="text-[10px] font-extrabold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-md ml-2">
+                      Zen
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Sticky Bottom Complete Mission CTA */}
-      <div className="fixed bottom-0 inset-x-0 z-30 p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
-        <div className="max-w-lg mx-auto">
+      <div className="fixed bottom-0 inset-x-0 z-30 p-3 sm:p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
+        <div className="max-w-xl mx-auto">
           <button
             onClick={() => setShowFeedbackModal(true)}
             disabled={isFinishing}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-3xl font-bold text-lg shadow-xl shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center space-x-2 border-b-4 border-emerald-800"
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center space-x-2 border-b-4 border-emerald-800"
           >
-            {isFinishing ? 'Reviewing...' : <><span>Complete Mission</span><CheckCircle size={20} /></>}
+            {isFinishing ? 'Reviewing...' : <><span>Complete Mission</span><CheckCircle size={19} /></>}
           </button>
         </div>
       </div>
@@ -1323,7 +1830,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           setShowFeedbackModal(false);
           finishWorkout(feedback);
         }}
-        exercises={plan.exercises.map(e => e.name)}
+        exercises={records.length > 0 ? records.map(r => r.name) : plan.exercises.map(e => e.name)}
       />
     </div>
   );

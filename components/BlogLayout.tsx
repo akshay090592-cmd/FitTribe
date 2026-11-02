@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, BookOpen, Sparkles, ArrowRight, ChevronRight, FileText } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 import { AuthForm } from './AuthForm';
 import { Footer } from './Footer';
 import { BlogSection } from './BlogSection';
+import { BLOG_SEO_METADATA, BLOG_METADATA_LIST } from '../utils/seoMetadata';
 
 interface BlogLayoutProps {
   onNavigate: (view: string) => void;
@@ -16,6 +17,14 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
   const [isSignUp, setIsSignUp] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
+  const activeMeta = BLOG_SEO_METADATA[currentPath];
+  const relatedPosts = activeMeta
+    ? activeMeta.relatedIds
+        .map(id => BLOG_METADATA_LIST.find(b => b.viewId === id))
+        .filter((b): b is NonNullable<typeof b> => Boolean(b))
+    : [];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +57,12 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
     <div className="bg-slate-50">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <button
-            onClick={() => onNavigate('landing')}
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('landing');
+            }}
             className="flex items-center space-x-2 text-slate-900 group"
           >
             <img
@@ -58,7 +71,7 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
               className="w-10 h-10 rounded-full border-2 border-emerald-500 shadow-md group-hover:rotate-12 transition-transform duration-300"
             />
             <span className="text-xl font-bold font-['Fredoka']">FitTribe</span>
-          </button>
+          </a>
 
           <button
             onClick={handleJoinNow}
@@ -69,8 +82,122 @@ export const BlogLayout: React.FC<BlogLayoutProps> = ({ onNavigate, children }) 
         </div>
       </nav>
 
+      {activeMeta && (
+        <div className="bg-emerald-950/95 border-b border-emerald-800/40 text-emerald-100/90 text-xs">
+          <div className="container mx-auto px-6 py-2.5 max-w-4xl flex flex-wrap items-center justify-between gap-2">
+            <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+              <a
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('landing');
+                }}
+                className="hover:text-white font-semibold transition-colors whitespace-nowrap"
+              >
+                Home
+              </a>
+              <ChevronRight size={12} className="text-emerald-400 shrink-0" />
+              <span className="text-emerald-300 font-semibold whitespace-nowrap">{activeMeta.category}</span>
+              <ChevronRight size={12} className="text-emerald-400 shrink-0" />
+              <span className="text-white/90 font-bold truncate max-w-[220px] sm:max-w-md" aria-current="page">
+                {activeMeta.title}
+              </span>
+            </nav>
+            <span className="text-[11px] font-bold text-emerald-300/90 hidden sm:inline-flex items-center gap-1">
+              <Sparkles size={12} /> Peer-Reviewed Synthesis
+            </span>
+          </div>
+        </div>
+      )}
+
       <main>
+        {activeMeta && (
+          <aside
+            aria-label="Key Research Takeaways"
+            className="bg-gradient-to-b from-emerald-50/90 to-slate-50 border-b border-emerald-100/80 py-6"
+          >
+            <div className="container mx-auto px-6 max-w-4xl">
+              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-emerald-200/80">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+                    <BookOpen size={14} /> Key Research Takeaways (TL;DR)
+                  </div>
+                  <span className="text-xs text-slate-400 font-semibold">{activeMeta.readTime} read</span>
+                </div>
+                <p className="text-slate-800 font-semibold text-sm sm:text-base leading-relaxed mb-4 bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-100">
+                  {activeMeta.directAnswer}
+                </p>
+                <ul className="space-y-2 mb-4">
+                  {activeMeta.tldr.map((point, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                {activeMeta.citations.length > 0 && (
+                  <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
+                    <div className="font-bold text-slate-600 flex items-center gap-1">
+                      <FileText size={12} className="text-emerald-600" /> Primary Scientific References:
+                    </div>
+                    {activeMeta.citations.map((cite, idx) => (
+                      <div key={idx} className="pl-4">• {cite}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+        )}
+
         {children}
+
+        {relatedPosts.length > 0 && (
+          <section aria-label="Related Research Articles" className="py-12 bg-slate-100/70 border-t border-slate-200">
+            <div className="container mx-auto px-6 max-w-4xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-slate-900 font-['Fredoka']">
+                  Related Research Articles
+                </h2>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                  Continue Reading
+                </span>
+              </div>
+              <div className="grid md:grid-cols-3 gap-5">
+                {relatedPosts.map(post => (
+                  <a
+                    key={post.viewId}
+                    href={post.path}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onNavigate(post.viewId);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200/80 hover:border-emerald-300 transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full mb-2.5">
+                        {post.category}
+                      </span>
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors mb-2 line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">
+                        {post.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-bold text-emerald-600">
+                      <span>{post.readTime} read</span>
+                      <span className="inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        Read Article <ArrowRight size={13} />
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="border-t border-slate-200">
           <BlogSection onNavigate={onNavigate} />

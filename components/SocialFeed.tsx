@@ -362,7 +362,12 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                 <h2 className="text-2xl md:text-3xl font-bold text-[#3E2723] font-['Fredoka'] drop-shadow-sm">Jungle News</h2>
             </div>
 
-            <TribeVictoryPhoto tribeId={profile.tribeId} />
+            <TribeVictoryPhoto
+                tribeId={profile.tribeId}
+                userProfile={profile}
+                themeId={gamificationState?.[currentUser]?.activeTheme}
+                showEmptyCta={true}
+            />
 
 
             {/* Tribe Goals Tabs & Leaderboard */}

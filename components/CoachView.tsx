@@ -4,6 +4,8 @@ import { AICoachService } from '../services/aiCoach';
 import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
 import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info } from 'lucide-react';
 import { monthDayFormatter, weekdayShortFormatter, formatWithCache } from '../utils/dateUtils';
+import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
+import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 
 import { WorkoutLog } from '../types';
 
@@ -320,16 +322,28 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
 
             // Normalize exercise structure to match WorkoutPlan.exercises format
             if (exercises && Array.isArray(exercises)) {
-                const normalizedExercises = exercises.map((ex: any) => ({
-                    name: ex.name || ex.exercise || 'Exercise',
-                    defaultSets: ex.sets || ex.defaultSets || 3,
-                    defaultReps: ex.reps || ex.defaultReps || '10',
-                    notes: ex.notes || ex.description || '',
-                    cues: ex.cues || [],
-                    isSuperset: ex.isSuperset || false,
-                    supersetGroup: ex.supersetGroup,
-                    restSeconds: ex.restSeconds || ex.rest || 60
-                }));
+                const normalizedExercises = exercises.map((ex: any) => {
+                    const exName = ex.name || ex.exercise || 'Exercise';
+                    const visual = resolveExerciseVisualMeta(exName, {
+                        customImage: ex.image,
+                        visualArchetype: ex.visualArchetype,
+                        equipment: ex.equipment
+                    });
+                    return {
+                        name: exName,
+                        defaultSets: ex.sets || ex.defaultSets || 3,
+                        defaultReps: ex.reps || ex.defaultReps || '10',
+                        notes: ex.notes || ex.description || `${visual.primaryMuscle} Focus`,
+                        cues: ex.cues || [],
+                        image: visual.image,
+                        visualArchetype: visual.archetype,
+                        equipment: visual.equipment,
+                        trackingType: ex.trackingType,
+                        isSuperset: ex.isSuperset || false,
+                        supersetGroup: ex.supersetGroup,
+                        restSeconds: ex.restSeconds || ex.rest || 60
+                    };
+                });
 
                 normalizedAction.payload = {
                     id: action.payload.id || 'Custom',
@@ -908,11 +922,30 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                             )}
 
                                             {/* Exercises */}
-                                            <div className="space-y-1">
+                                            <div className="space-y-2">
                                                 {pendingAction.payload.exercises?.map((e: any, idx: number) => (
-                                                    <div key={idx} className="text-xs flex justify-between border-b border-slate-100 pb-1">
-                                                        <span>{e.name}</span>
-                                                        <span className="font-mono text-slate-400">
+                                                    <div key={idx} className="text-xs flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                            <ExerciseThumbnail
+                                                                name={e.name}
+                                                                customImage={e.image}
+                                                                visualArchetype={e.visualArchetype}
+                                                                equipment={e.equipment}
+                                                                size="xs"
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="font-bold text-slate-800 truncate">{e.name}</div>
+                                                                <ExerciseBadgeRow
+                                                                    name={e.name}
+                                                                    customImage={e.image}
+                                                                    visualArchetype={e.visualArchetype}
+                                                                    equipment={e.equipment}
+                                                                    compact
+                                                                    className="mt-0.5"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <span className="font-mono font-bold text-slate-500 shrink-0">
                                                             {e.defaultSets || e.sets?.length || 3} × {e.defaultReps || e.reps || '10'}
                                                         </span>
                                                     </div>

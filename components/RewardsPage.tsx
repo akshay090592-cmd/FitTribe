@@ -18,6 +18,7 @@ import { updateQuestProgress } from '../utils/questUtils';
 import { TribeStatusCard } from './TribeStatusCard';
 import { getAvatarPath } from '../utils/avatar';
 import { BadgeIcon } from './BadgeIcon';
+import { getThemePalette } from '../utils/themeConfig';
 
 
 interface Props {
@@ -311,26 +312,29 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
             const isUnlocked = myState.unlockedThemes?.includes(theme.id);
             const isActive = myState.activeTheme === theme.id;
             const canAfford = myState.points >= theme.price;
+            const palette = getThemePalette(theme.id);
 
             const handlePurchaseOrEquip = async () => {
               if (!gameState) return;
               const newState = { ...gameState };
-              const currentUserState = newState[currentUser];
+              const currentUserState = { ...newState[currentUser] };
+              newState[currentUser] = currentUserState;
 
               if (isActive) {
                 // Unequip
                 currentUserState.activeTheme = 'default';
-                showToast(`Theme removed. Default header restored!`, 'success');
+                showToast(`Restored classic Emerald Canopy theme!`, 'success');
               } else if (isUnlocked) {
                 // Equip
                 currentUserState.activeTheme = theme.id;
-                showToast(`Theme updated to ${theme.name}!`, 'success');
+                showToast(`${theme.name} theme equipped across the app!`, 'success');
               } else {
-                // Buy
+                // Buy & auto-equip
                 if (currentUserState.points >= theme.price) {
                   currentUserState.points -= theme.price;
                   currentUserState.unlockedThemes = [...(currentUserState.unlockedThemes || ['default']), theme.id];
-                  showToast(`Purchased ${theme.name}!`, 'success');
+                  currentUserState.activeTheme = theme.id;
+                  showToast(`Unlocked & equipped ${theme.name}!`, 'success');
 
                   // Log spending
                   await addPointLog(profile.id, -theme.price, 'spent', 'shop', theme.id);
@@ -340,41 +344,78 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                 }
               }
               setGameState(newState);
+              window.dispatchEvent(new CustomEvent('fittribe-theme-change', {
+                detail: { themeId: currentUserState.activeTheme }
+              }));
               await saveGamificationState(profile, currentUserState);
-              window.location.reload();
             };
 
 
             return (
-              <div key={theme.id} className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${isActive ? 'bg-indigo-50/90 border-indigo-300 shadow-sm' : 'bg-slate-50/50 border-slate-200/70 hover:bg-white hover:border-indigo-200'}`}>
-                <div className="flex items-center min-w-0 mr-3">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mr-3.5 border border-indigo-100 overflow-hidden relative shadow-sm shrink-0">
-                    {theme.type === 'color' ? (
-                      <div className={`w-full h-full ${theme.value.replace('bg-', 'bg-')}`}></div>
-                    ) : (
-                      <img src={theme.value} className="w-full h-full object-cover" />
-                    )}
-                    {isActive && <div className="absolute inset-0 bg-black/25 flex items-center justify-center"><CheckCircle className="text-white drop-shadow-md" size={24} /></div>}
+              <div
+                key={theme.id}
+                className={`flex flex-col justify-between p-4 rounded-3xl border transition-all ${
+                  isActive
+                    ? 'bg-indigo-50/90 border-indigo-400 shadow-md ring-2 ring-indigo-300/50'
+                    : 'bg-slate-50/70 border-slate-200/80 hover:bg-white hover:border-indigo-200'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center min-w-0">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mr-3.5 border border-indigo-100 overflow-hidden relative shadow-sm shrink-0">
+                      {theme.type === 'color' ? (
+                        <div className={`w-full h-full ${theme.value.replace('bg-', 'bg-')}`}></div>
+                      ) : (
+                        <img src={theme.value} alt={theme.name} className="w-full h-full object-cover" />
+                      )}
+                      {isActive && (
+                        <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                          <CheckCircle className="text-white drop-shadow-md" size={24} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800 text-base md:text-lg font-['Fredoka'] truncate">{theme.name}</h4>
+                        {isActive && (
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 font-bold line-clamp-1">{theme.description}</p>
+                      {/* Theme Color Swatches & Multi-Surface Tag */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <div className="flex -space-x-1">
+                          {palette.swatches.map((hex, i) => (
+                            <span
+                              key={i}
+                              className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs"
+                              style={{ backgroundColor: hex }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-600/80 truncate">
+                          Header • Cards • Dock • Vibe
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-slate-800 text-base md:text-lg font-['Fredoka'] truncate">{theme.name}</h4>
-                    <p className="text-xs text-slate-500 font-bold line-clamp-2">{theme.description}</p>
-                  </div>
+                  <button
+                    onClick={handlePurchaseOrEquip}
+                    disabled={!isActive && !isUnlocked && !canAfford}
+                    className={`px-4 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-sm shrink-0 ${isActive
+                      ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                      : isUnlocked
+                        ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
+                      }`}
+                  >
+                    {isActive ? 'Unequip' :
+                      isUnlocked ? 'Equip' :
+                        <span className="flex items-center">{theme.price} <Star size={12} className="ml-1 fill-current" /></span>}
+                  </button>
                 </div>
-                <button
-                  onClick={handlePurchaseOrEquip}
-                  disabled={!isActive && !isUnlocked && !canAfford}
-                  className={`px-4 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-sm shrink-0 ${isActive
-                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                    : isUnlocked
-                      ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
-                    }`}
-                >
-                  {isActive ? 'Unequip' :
-                    isUnlocked ? 'Equip' :
-                      <span className="flex items-center">{theme.price} <Star size={12} className="ml-1 fill-current" /></span>}
-                </button>
               </div>
             );
           })}

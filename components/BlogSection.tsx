@@ -342,7 +342,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ onNavigate }) => {
             </div>
 
             {/* Injected utility styles for hiding scrollbar */}
-            <style jsx>{`
+            <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
                     display: none;
                 }

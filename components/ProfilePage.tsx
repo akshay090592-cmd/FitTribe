@@ -221,7 +221,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     const themeObj = SHOP_THEMES.find(t => t.id === activeThemeId);
     const headerStyle = themeObj
         ? (themeObj.type === 'image' ? { backgroundImage: `url('${themeObj.value}')` } : { backgroundColor: themeObj.value.replace('bg-', '#') })
-        : { backgroundColor: '#10b981' };
+        : { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' };
 
     return (
         <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in">
@@ -259,7 +259,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                     </div>
 
                     {/* Identity Card */}
-                    <div className="glass-panel overflow-hidden mb-6 relative border-2 border-white/90 shadow-xl rounded-[32px]" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+                    <div className="glass-panel overflow-hidden mb-6 relative border-2 border-white/90 shadow-xl rounded-[32px]" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.90)' }}>
                         {/* Header Background */}
                         <div className="h-32 sm:h-36 relative bg-cover bg-center" style={headerStyle}>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/15 to-transparent"></div>
@@ -317,7 +317,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
 
                             {/* Key Stats Grid */}
                             <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">
-                                <div className="glass-panel p-3.5 spring-transition flex flex-col items-center justify-center cursor-default shadow-2xs" style={{ background: 'hsla(140,55%,96%,0.75)', border: '1px solid hsl(140,50%,88%)', borderRadius: '22px' }}>
+                                <div className="glass-panel p-3.5 spring-transition flex flex-col items-center justify-center cursor-default shadow-2xs" style={{ background: 'hsla(var(--hue-jungle),55%,96%,0.75)', border: '1px solid hsl(var(--hue-jungle),50%,88%)', borderRadius: '22px' }}>
                                     <div className="text-2xl font-bold text-emerald-950 font-['Fredoka'] leading-tight">{logs.length}</div>
                                     <div className="text-[9px] font-bold text-emerald-700/80 uppercase tracking-wider mt-0.5">Workouts</div>
                                 </div>
@@ -374,7 +374,7 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                             <div
                                                 onClick={() => setIsBadgeModalOpen(true)}
                                                 className="aspect-square glass-panel flex items-center justify-center text-emerald-700 text-xs font-bold spring-transition cursor-pointer hover:bg-emerald-50"
-                                                style={{ background: 'hsla(140,40%,96%,0.8)', border: '1px solid hsl(140,40%,86%)', borderRadius: '18px' }}
+                                                style={{ background: 'hsla(var(--hue-jungle),40%,96%,0.8)', border: '1px solid hsl(var(--hue-jungle),40%,86%)', borderRadius: '18px' }}
                                             >
                                                 +{gamificationState.badges.length - 4}
                                             </div>

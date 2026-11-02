@@ -397,7 +397,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
 
 
             {teamStats && (
-                <div className="mb-4 rounded-[32px] p-5 text-white shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(140,65%,12%) 0%, hsl(150,70%,8%) 100%)', border: '3px solid hsla(140,60%,35%,0.35)' }}>
+                <div className="mb-4 rounded-[32px] p-5 text-white shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),65%,12%) 0%, hsl(var(--hue-canopy),70%,8%) 100%)', border: '3px solid hsla(var(--hue-jungle),60%,35%,0.35)' }}>
                     <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(255,255,255,0.08) 6px, rgba(255,255,255,0.08) 7px)', borderRadius: 'inherit' }} />
                     <div className="absolute -top-12 -right-12 w-36 h-36 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
 
@@ -412,7 +412,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                         ? 'text-emerald-950 shadow-md scale-[1.02]'
                                         : 'text-emerald-300/70 hover:text-emerald-200'
                                 }`}
-                                style={activeTab === tab ? { background: 'linear-gradient(90deg, hsl(75,90%,58%), hsl(140,75%,48%))' } : {}}
+                                style={activeTab === tab ? { background: 'linear-gradient(90deg, hsl(var(--hue-bamboo),90%,58%), hsl(var(--hue-jungle),75%,48%))' } : {}}
                             >
                                 {tab}
                             </button>
@@ -424,7 +424,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                             <span className="mr-1.5">🎋</span> {activeTab} Goal
                         </span>
                         <div className="flex items-center px-3.5 py-1 rounded-full border border-white/15 backdrop-blur-sm" style={{ background: 'hsla(0,0%,0%,0.35)' }}>
-                            <span className="font-bold" style={{ color: 'hsl(75,90%,70%)' }}>
+                            <span className="font-bold" style={{ color: 'hsl(var(--hue-bamboo),90%,70%)' }}>
                                 {activeTab === 'weekly' ? teamStats.weeklyCount : activeTab === 'monthly' ? teamStats.monthlyCount : teamStats.yearlyCount}
                                 <span className="text-emerald-400/60 mx-1">/</span>
                                 {activeTab === 'weekly' ? teamStats.weeklyTarget : activeTab === 'monthly' ? teamStats.monthlyTarget : teamStats.yearlyTarget}
@@ -499,7 +499,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
             )}
 
             {/* Tribe Members Status */}
-            <div className="mb-4 p-5 glass-panel rounded-[32px]" style={{ background: 'hsla(140,50%,98%,0.88)' }}>
+            <div className="mb-4 p-5 glass-panel rounded-[32px]" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.88)' }}>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-emerald-950 font-bold text-lg font-['Fredoka'] flex items-center">
                         <span className="mr-2">🐼</span> Campfire Circle
@@ -523,7 +523,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                             const isActive = weeklyCount > 0;
 
                             return (
-                                <div key={u} className="p-3.5 rounded-2xl flex items-center justify-between spring-transition group border" style={{ background: isActive ? 'hsla(140,60%,96%,0.9)' : 'hsla(0,0%,99%,0.85)', borderColor: isActive ? 'hsl(140,55%,84%)' : 'hsl(0,0%,90%)' }}>
+                                <div key={u} className="p-3.5 rounded-2xl flex items-center justify-between spring-transition group border" style={{ background: isActive ? 'hsla(var(--hue-jungle),60%,96%,0.9)' : 'hsla(0,0%,99%,0.85)', borderColor: isActive ? 'hsl(var(--hue-jungle),55%,84%)' : 'hsl(0,0%,90%)' }}>
                                     <div className="flex items-center">
                                         <div className={`relative w-11 h-11 mr-3 ${isActive ? 'avatar-pulse-ring' : ''}`}>
                                             <div className="w-full h-full rounded-xl overflow-hidden border-2 border-white shadow-sm bg-white">
@@ -534,7 +534,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                         </div>
                                         <div>
                                             <div className="font-bold text-slate-800 text-sm font-['Fredoka']">{u}</div>
-                                            <div className="text-[10px] font-bold flex items-center mt-0.5" style={{ color: isActive ? 'hsl(140,60%,32%)' : 'hsl(0,0%,55%)' }}>
+                                            <div className="text-[10px] font-bold flex items-center mt-0.5" style={{ color: isActive ? 'hsl(var(--hue-jungle),60%,32%)' : 'hsl(0,0%,55%)' }}>
                                                 <Activity size={10} className="mr-1" /> {weeklyCount} workouts this week
                                             </div>
                                         </div>

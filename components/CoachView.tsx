@@ -487,7 +487,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
         <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in relative z-10 pb-4">
 
             {/* Segmented Tab Switcher */}
-            <div className="glass-panel flex p-1.5 rounded-[22px] mb-6 shadow-md border border-white/80" style={{ background: 'hsla(140,45%,96%,0.92)' }}>
+            <div className="glass-panel flex p-1.5 rounded-[22px] mb-6 shadow-md border border-white/80" style={{ background: 'hsla(var(--hue-jungle),45%,96%,0.92)' }}>
                 <button
                     onClick={() => setActiveTab('chat')}
                     className={`flex-1 py-3 rounded-[16px] font-bold flex items-center justify-center transition-all text-xs sm:text-sm tactile-press ${
@@ -495,7 +495,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                             ? 'text-white shadow-md shadow-emerald-600/25'
                             : 'text-emerald-800 hover:bg-white/60'
                     }`}
-                    style={activeTab === 'chat' ? { background: 'linear-gradient(135deg, hsl(145,65%,36%), hsl(160,70%,28%))' } : {}}
+                    style={activeTab === 'chat' ? { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),65%,36%), hsl(var(--hue-canopy),70%,28%))' } : {}}
                 >
                     <MessageSquare size={16} className="mr-1.5 shrink-0" /> AI Coach
                 </button>
@@ -517,7 +517,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                             ? 'text-white shadow-md shadow-teal-600/25'
                             : 'text-emerald-800 hover:bg-white/60'
                     }`}
-                    style={activeTab === 'diet' ? { background: 'linear-gradient(135deg, hsl(165,65%,38%), hsl(178,70%,30%))' } : {}}
+                    style={activeTab === 'diet' ? { background: 'linear-gradient(135deg, hsl(var(--hue-canopy),65%,38%), hsl(var(--hue-jungle),70%,30%))' } : {}}
                 >
                     <ChefHat size={16} className="mr-1.5 shrink-0" /> Nutrition
                 </button>
@@ -847,17 +847,17 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
             )}
 
             {activeTab === 'chat' && (
-                <div className="flex flex-col h-[66vh] glass-panel overflow-hidden animate-slide-up shadow-xl border border-emerald-100/80 rounded-[30px]" style={{ background: 'hsla(140,40%,98%,0.90)' }}>
+                <div className="flex flex-col h-[66vh] glass-panel overflow-hidden animate-slide-up shadow-xl border border-emerald-100/80 rounded-[30px]" style={{ background: 'hsla(var(--hue-jungle),40%,98%,0.90)' }}>
                     {/* Sage Panda Header */}
-                    <div className="p-4 flex items-center justify-between text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(145,63%,28%), hsl(160,68%,21%))' }}>
+                    <div className="p-4 flex items-center justify-between text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
                         <div className="flex items-center">
                             <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center mr-3 backdrop-blur-sm border border-white/30 shadow-sm">
                                 <span className="text-2xl">🐼</span>
                             </div>
                             <div>
                                 <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
-                                <div className="text-xs font-medium flex items-center" style={{ color: 'hsl(140,65%,78%)' }}>
-                                    <div className="w-2 h-2 rounded-full mr-1.5 animate-pulse" style={{ background: 'hsl(140,75%,58%)' }} />
+                                <div className="text-xs font-medium flex items-center" style={{ color: 'hsl(var(--hue-jungle),65%,78%)' }}>
+                                    <div className="w-2 h-2 rounded-full mr-1.5 animate-pulse" style={{ background: 'hsl(var(--hue-jungle),75%,58%)' }} />
                                     Always online
                                 </div>
                             </div>
@@ -867,7 +867,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ background: 'hsla(140,35%,97%,0.65)' }}>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ background: 'hsla(var(--hue-jungle),35%,97%,0.65)' }}>
                         {messages.map((m, idx) => (
                             <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[82%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-xs ${
@@ -876,8 +876,8 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                         : 'rounded-bl-xs border'
                                     }`}
                                     style={m.role === 'user'
-                                        ? { background: 'linear-gradient(135deg, hsl(145,62%,32%), hsl(160,65%,25%))' }
-                                        : { background: 'hsla(0,0%,100%,0.95)', borderColor: 'hsl(140,40%,88%)', color: 'hsl(140,50%,15%)' }
+                                        ? { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),62%,32%), hsl(var(--hue-canopy),65%,25%))' }
+                                        : { background: 'hsla(0,0%,100%,0.95)', borderColor: 'hsl(var(--hue-jungle),40%,88%)', color: 'hsl(var(--hue-jungle),50%,15%)' }
                                     }
                                 >
                                     <FormattedMessage text={m.text} />
@@ -886,7 +886,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                         ))}
                         {loadingChat && (
                             <div className="flex justify-start">
-                                <div className="p-3.5 rounded-2xl rounded-bl-xs text-xs font-bold animate-pulse border shadow-xs" style={{ background: 'hsla(0,0%,100%,0.92)', borderColor: 'hsl(140,40%,88%)', color: 'hsl(140,45%,40%)' }}>
+                                <div className="p-3.5 rounded-2xl rounded-bl-xs text-xs font-bold animate-pulse border shadow-xs" style={{ background: 'hsla(0,0%,100%,0.92)', borderColor: 'hsl(var(--hue-jungle),40%,88%)', color: 'hsl(var(--hue-jungle),45%,40%)' }}>
                                     Sage is thinking... 🎋
                                 </div>
                             </div>
@@ -1017,7 +1017,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     </div>
 
                     {/* Quick Prompt Chips & Floating Glass Message Bar */}
-                    <div className="p-3 border-t" style={{ background: 'hsla(140,40%,97%,0.95)', backdropFilter: 'blur(12px)', borderColor: 'hsla(140,40%,85%,0.6)' }}>
+                    <div className="p-3 border-t" style={{ background: 'hsla(var(--hue-jungle),40%,97%,0.95)', backdropFilter: 'blur(12px)', borderColor: 'hsla(var(--hue-jungle),40%,85%,0.6)' }}>
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-1">
                             {[
                                 '🎋 20-min Upper Body',
@@ -1035,20 +1035,20 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 </button>
                             ))}
                         </div>
-                        <div className="flex items-center rounded-2xl p-1 pr-1.5 border shadow-inner" style={{ background: 'hsla(140,45%,94%,0.85)', borderColor: 'hsl(140,40%,82%)' }}>
+                        <div className="flex items-center rounded-2xl p-1 pr-1.5 border shadow-inner" style={{ background: 'hsla(var(--hue-jungle),45%,94%,0.85)', borderColor: 'hsl(var(--hue-jungle),40%,82%)' }}>
                             <input
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && sendMessage()}
                                 placeholder="Ask Sage for advice..."
                                 className="flex-1 bg-transparent p-3 text-sm font-medium focus:outline-none"
-                                style={{ color: 'hsl(140,50%,15%)', caretColor: 'hsl(140,60%,40%)' }}
+                                style={{ color: 'hsl(var(--hue-jungle),50%,15%)', caretColor: 'hsl(var(--hue-jungle),60%,40%)' }}
                             />
                             <button
                                 onClick={sendMessage}
                                 disabled={!input.trim() || loadingChat}
                                 className="p-2.5 rounded-xl shadow-md disabled:opacity-40 active:scale-95 transition-all"
-                                style={{ background: 'linear-gradient(135deg, hsl(145,62%,38%), hsl(160,68%,30%))' }}
+                                style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),62%,38%), hsl(var(--hue-canopy),68%,30%))' }}
                             >
                                 <Send size={18} className="text-white" />
                             </button>

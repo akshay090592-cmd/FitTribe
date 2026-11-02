@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { WorkoutLog, WorkoutType } from '../types';
 import { X, Dumbbell, Search, Filter, Download } from 'lucide-react';
 import { convertToCSV, downloadCSV } from '../utils/exportUtils';
@@ -67,10 +68,10 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose
     setExpandedLogId(prev => prev === logId ? null : logId);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" data-testid="history-modal">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" data-testid="history-modal">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-scale-up">
@@ -153,6 +154,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({ isOpen, onClose
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

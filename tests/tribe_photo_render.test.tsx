@@ -63,6 +63,41 @@ describe('TribeVictoryPhoto Component', () => {
         expect(screen.getByText('1 Hype')).toBeDefined();
     });
 
+    it('portals the fullscreen lightbox modal to document.body above header and dock overlays', async () => {
+        const mockPhoto = {
+            id: '2',
+            userId: 'user-123',
+            userName: 'PandaKing',
+            imageData: 'data:image/png;base64,fake',
+            createdAt: new Date().toISOString()
+        };
+
+        (storage.getLatestTribePhoto as any).mockResolvedValue(mockPhoto);
+        const { container } = render(
+            <div className="animate-fade-in">
+                <TribeVictoryPhoto
+                    themeId="volcano"
+                    userProfile={{ id: 'u1', displayName: 'Akshay', email: 'a@test.com' }}
+                />
+            </div>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Expand victory photo')).toBeDefined();
+        });
+
+        fireEvent.click(screen.getByLabelText('Expand victory photo'));
+
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeDefined();
+        // Ensure the modal is portaled to document.body rather than trapped inside the .animate-fade-in container
+        expect(container.contains(dialog)).toBe(false);
+        expect(document.body.contains(dialog)).toBe(true);
+        expect(screen.getByLabelText('Close fullscreen photo')).toBeDefined();
+        expect(screen.getByText(/Send Hype/)).toBeDefined();
+        expect(screen.getByText('Post New Pic')).toBeDefined();
+    });
+
     it('provides distinct full-app theme palettes for all shop themes', () => {
         const def = getThemePalette('default');
         const night = getThemePalette('jungle_night');

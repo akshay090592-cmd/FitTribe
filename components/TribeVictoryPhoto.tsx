@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import * as storage from '../utils/storage';
 import { compressImage } from '../utils/imageUtils';
 import { TribePhoto, UserProfile } from '../types';
@@ -82,6 +83,22 @@ export const TribeVictoryPhoto: React.FC<Props> = ({
         window.addEventListener('fittribe-victory-photo-updated', handlePhotoUpdated);
         return () => window.removeEventListener('fittribe-victory-photo-updated', handlePhotoUpdated);
     }, [fetchPhoto]);
+
+    useEffect(() => {
+        if (!isFullscreen || typeof document === 'undefined') return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsFullscreen(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isFullscreen]);
 
     const handleHype = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -287,58 +304,89 @@ export const TribeVictoryPhoto: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* Fullscreen Lightbox Modal */}
-            {isFullscreen && (
+            {/* Fullscreen Lightbox Modal — Portaled to document.body to escape page stacking contexts */}
+            {isFullscreen && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 z-[100] bg-black/92 backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${photo.userName}'s Victory Pic`}
+                    className="fixed inset-0 z-[10000] bg-black/92 backdrop-blur-xl flex flex-col items-center justify-center px-3 sm:px-6 pt-[max(1rem,calc(env(safe-area-inset-top,0px)+0.75rem))] pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] animate-fade-in"
                     onClick={() => setIsFullscreen(false)}
                 >
                     <div
-                        className="relative max-w-2xl w-full bg-slate-900/90 border border-white/15 rounded-[32px] overflow-hidden shadow-2xl"
+                        className="relative max-w-xl w-full max-h-[calc(100dvh-2.5rem)] sm:max-h-[88dvh] flex flex-col bg-slate-900/95 border border-white/15 rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">🏆</span>
-                                <div>
-                                    <div className="text-white font-bold text-sm font-['Fredoka']">{photo.userName}&apos;s Victory Pic</div>
-                                    <div className="text-white/60 text-[11px]">{new Date(photo.createdAt).toLocaleString()}</div>
+                        {/* Modal Header — Always visible (shrink-0) */}
+                        <div className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 bg-slate-950/80 border-b border-white/10">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-300/30 flex items-center justify-center text-lg shrink-0">
+                                    🏆
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="text-white font-bold text-sm sm:text-base font-['Fredoka'] truncate">
+                                        {photo.userName}&apos;s Victory Pic
+                                    </div>
+                                    <div className="text-white/60 text-[11px] truncate">
+                                        {new Date(photo.createdAt).toLocaleString()}
+                                    </div>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsFullscreen(false)}
-                                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                className="shrink-0 p-2 rounded-full bg-white/12 hover:bg-white/25 active:scale-95 text-white border border-white/15 transition-all"
                                 aria-label="Close fullscreen photo"
                             >
                                 <X size={18} />
                             </button>
                         </div>
 
-                        <div className="bg-black flex items-center justify-center max-h-[72vh] overflow-hidden">
+                        {/* Image Viewport — Constrained so header and footer buttons are never pushed off-screen */}
+                        <div className="flex-1 min-h-0 bg-black flex items-center justify-center overflow-hidden p-1.5 sm:p-2">
                             <img
                                 src={photo.imageData}
                                 alt="Victory Fullscreen"
-                                className="max-w-full max-h-[72vh] object-contain"
+                                className="max-w-full max-h-[58dvh] sm:max-h-[66dvh] w-auto h-auto object-contain rounded-xl"
                             />
                         </div>
 
-                        <div className="px-5 py-3.5 flex items-center justify-between bg-slate-950/90 border-t border-white/10">
-                            <span className="text-xs text-white/75 font-medium flex items-center gap-1.5">
-                                <Sparkles size={14} className="text-amber-300" />
-                                Tribe Victory Spotlight
+                        {/* Modal Footer — Always visible (shrink-0) */}
+                        <div className="shrink-0 px-4 sm:px-5 py-3.5 flex items-center justify-between gap-2.5 bg-slate-950/95 border-t border-white/10 flex-wrap">
+                            <span className="text-xs text-white/80 font-semibold flex items-center gap-1.5">
+                                <Sparkles size={14} className="text-amber-300 shrink-0" />
+                                <span>Tribe Victory Spotlight</span>
                             </span>
-                            <button
-                                type="button"
-                                onClick={handleHype}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl font-bold text-xs bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md active:scale-95 transition-all"
-                            >
-                                <Flame size={15} className="fill-yellow-200 text-yellow-200" />
-                                <span>Send Hype ({hypeCount})</span>
-                            </button>
+
+                            <div className="flex items-center gap-2 ml-auto">
+                                {userProfile && (
+                                    <label
+                                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl font-bold text-xs bg-white/12 hover:bg-white/20 text-white border border-white/15 cursor-pointer active:scale-95 transition-all ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                                    >
+                                        <Upload size={14} className="text-amber-300" />
+                                        <span>{uploading ? 'Posting...' : 'Post New Pic'}</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                                        />
+                                    </label>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={handleHype}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-2xl font-bold text-xs bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md active:scale-95 transition-all border border-amber-300/40"
+                                >
+                                    <Flame size={15} className="fill-yellow-200 text-yellow-200" />
+                                    <span>Send Hype ({hypeCount})</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { ExerciseSet, ProgressionSuggestion, ExerciseArchetype, ExerciseEquipment } from '../types';
 import { ChevronDown, ChevronUp, Trash2, Lightbulb, Sparkles, ArrowUpCircle, Info, X, Play, Square, RefreshCw, Copy, Calculator, Flame } from 'lucide-react';
 import { getMuscleGroup } from '../utils/muscleMapping';
@@ -765,9 +766,9 @@ export const ExerciseCard: React.FC<Props> = memo(({
             </div>
 
             {/* Info Popup Modal */}
-            {showInfo && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-emerald-950/55 backdrop-blur-sm animate-fade-in" onClick={() => setShowInfo(false)}>
-                    <div className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-md p-6 shadow-2xl animate-fade-in-up relative max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {showInfo && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-emerald-950/55 backdrop-blur-sm animate-fade-in" onClick={() => setShowInfo(false)}>
+                    <div className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-md p-6 shadow-2xl animate-fade-in-up relative max-h-[85dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <button
                             onClick={() => setShowInfo(false)}
                             className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"
@@ -819,7 +820,8 @@ export const ExerciseCard: React.FC<Props> = memo(({
                             Got it!
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

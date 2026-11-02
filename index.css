@@ -332,13 +332,13 @@ input, textarea, select {
   border: 1px solid hsl(38, 80%, 85%);
 }
 
-/* Activity / Mint-Teal */
+/* Activity / Mint-Teal (Theme-aware) */
 .card-activity {
   background: linear-gradient(135deg,
-    hsl(160, 55%, 92%) 0%,
-    hsl(175, 55%, 86%) 100%
+    hsl(var(--hue-jungle), 55%, 92%) 0%,
+    hsl(var(--hue-canopy), 55%, 86%) 100%
   );
-  border: 1px solid hsl(160, 50%, 82%);
+  border: 1px solid hsl(var(--hue-jungle), 50%, 82%);
 }
 
 /* Fitness / Coral-Orange */
@@ -496,6 +496,67 @@ input, textarea, select {
   --color-bg-page: hsl(170, 55%, 95%);
   --glass-bg:     hsla(170, 60%, 99%, 0.72);
   --glass-border: hsla(168, 75%, 78%, 0.55);
+}
+
+:root[data-theme="celestial_sanctum"],
+[data-theme="celestial_sanctum"] {
+  --hue-jungle:   272;
+  --hue-bamboo:   43;
+  --hue-canopy:   288;
+  --color-bg-page: hsl(275, 60%, 97%);
+  --glass-bg:     hsla(275, 65%, 99%, 0.74);
+  --glass-border: hsla(272, 80%, 82%, 0.55);
+}
+
+/* Re-theme all Tailwind emerald, green, teal, and lime utilities when a non-default theme is active */
+:root[data-theme]:not([data-theme="default"]) {
+  --color-emerald-50:  hsl(var(--hue-jungle), 68%, 97%);
+  --color-emerald-100: hsl(var(--hue-jungle), 64%, 92%);
+  --color-emerald-200: hsl(var(--hue-jungle), 60%, 84%);
+  --color-emerald-300: hsl(var(--hue-jungle), 62%, 72%);
+  --color-emerald-400: hsl(var(--hue-jungle), 66%, 58%);
+  --color-emerald-500: hsl(var(--hue-jungle), 68%, 46%);
+  --color-emerald-600: hsl(var(--hue-jungle), 70%, 37%);
+  --color-emerald-700: hsl(var(--hue-jungle), 72%, 29%);
+  --color-emerald-800: hsl(var(--hue-jungle), 70%, 22%);
+  --color-emerald-900: hsl(var(--hue-jungle), 72%, 16%);
+  --color-emerald-950: hsl(var(--hue-jungle), 76%, 9%);
+
+  --color-green-50:    hsl(var(--hue-jungle), 66%, 97%);
+  --color-green-100:   hsl(var(--hue-jungle), 62%, 92%);
+  --color-green-200:   hsl(var(--hue-jungle), 58%, 84%);
+  --color-green-300:   hsl(var(--hue-jungle), 60%, 72%);
+  --color-green-400:   hsl(var(--hue-jungle), 64%, 58%);
+  --color-green-500:   hsl(var(--hue-jungle), 66%, 46%);
+  --color-green-600:   hsl(var(--hue-jungle), 68%, 37%);
+  --color-green-700:   hsl(var(--hue-jungle), 70%, 29%);
+  --color-green-800:   hsl(var(--hue-jungle), 68%, 22%);
+  --color-green-900:   hsl(var(--hue-jungle), 70%, 16%);
+  --color-green-950:   hsl(var(--hue-jungle), 74%, 9%);
+
+  --color-teal-50:     hsl(var(--hue-canopy), 68%, 97%);
+  --color-teal-100:    hsl(var(--hue-canopy), 64%, 92%);
+  --color-teal-200:    hsl(var(--hue-canopy), 60%, 84%);
+  --color-teal-300:    hsl(var(--hue-canopy), 62%, 72%);
+  --color-teal-400:    hsl(var(--hue-canopy), 66%, 58%);
+  --color-teal-500:    hsl(var(--hue-canopy), 68%, 46%);
+  --color-teal-600:    hsl(var(--hue-canopy), 70%, 37%);
+  --color-teal-700:    hsl(var(--hue-canopy), 72%, 29%);
+  --color-teal-800:    hsl(var(--hue-canopy), 70%, 22%);
+  --color-teal-900:    hsl(var(--hue-canopy), 72%, 16%);
+  --color-teal-950:    hsl(var(--hue-canopy), 76%, 9%);
+
+  --color-lime-50:     hsl(var(--hue-bamboo), 85%, 97%);
+  --color-lime-100:    hsl(var(--hue-bamboo), 82%, 91%);
+  --color-lime-200:    hsl(var(--hue-bamboo), 80%, 82%);
+  --color-lime-300:    hsl(var(--hue-bamboo), 82%, 70%);
+  --color-lime-400:    hsl(var(--hue-bamboo), 82%, 58%);
+  --color-lime-500:    hsl(var(--hue-bamboo), 78%, 46%);
+  --color-lime-600:    hsl(var(--hue-bamboo), 76%, 37%);
+  --color-lime-700:    hsl(var(--hue-bamboo), 74%, 29%);
+  --color-lime-800:    hsl(var(--hue-bamboo), 72%, 22%);
+  --color-lime-900:    hsl(var(--hue-bamboo), 70%, 16%);
+  --color-lime-950:    hsl(var(--hue-bamboo), 74%, 9%);
 }
 
 body {

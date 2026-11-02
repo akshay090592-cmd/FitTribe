@@ -96,8 +96,8 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
     }, [members, filteredStats]);
 
     return (
-        <div className="glass-panel overflow-hidden mb-6 font-sans" style={{ background: 'hsla(140,50%,98%,0.80)' }}>
-            <div className="p-5 text-white" style={{ background: 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
+        <div className="glass-panel overflow-hidden mb-6 font-sans" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.80)' }}>
+            <div className="p-5 text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-white font-bold text-xl flex items-center font-['Fredoka']">
                         <Crown size={24} className="mr-2 text-yellow-400 fill-yellow-400" /> Leaderboard

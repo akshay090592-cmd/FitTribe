@@ -176,8 +176,8 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass-panel w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'hsla(140,50%,98%,0.95)', borderRadius: '32px' }}>
-                <div className="p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0" style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
+            <div className="glass-panel w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.95)', borderRadius: '32px' }}>
+                <div className="p-6 flex justify-between items-center relative overflow-hidden flex-shrink-0" style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
                     <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-10"></div>
                     <h2 className="text-2xl font-bold text-white font-['Fredoka'] relative z-10 flex items-center">
                         {mode === 'wellbeing' ? <Heart className="mr-2" /> : <Activity className="mr-2" />} {mode === 'wellbeing' ? 'Log Wellbeing' : 'Track Activity'}
@@ -355,7 +355,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     </div>
 
                     {/* Victory Photo (Optional) */}
-                    <div className="glass-panel p-4 rounded-2xl text-center border border-emerald-100/60" style={{ background: 'hsla(140,50%,98%,0.75)' }}>
+                    <div className="glass-panel p-4 rounded-2xl text-center border border-emerald-100/60" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.75)' }}>
                         <h3 className="text-emerald-850 font-bold text-sm uppercase tracking-wider mb-2 flex items-center justify-center">
                             <Camera size={14} className="mr-2" /> Share Victory Selfie
                         </h3>
@@ -427,7 +427,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
                     <button
                         onClick={handleSubmit}
                         className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-xl flex items-center justify-center spring-transition hover:brightness-110`}
-                        style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(140,60%,32%), hsl(155,65%,26%))' }}
+                        style={{ background: mode === 'wellbeing' ? 'linear-gradient(135deg, hsl(350,70%,45%), hsl(330,65%,35%))' : 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,32%), hsl(var(--hue-canopy),65%,26%))' }}
                     >
                         <Save size={20} className="mr-2" /> {mode === 'wellbeing' ? 'Log Activity' : 'Log Workout'}
                     </button>

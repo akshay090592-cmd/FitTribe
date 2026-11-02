@@ -205,7 +205,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
       </div>
 
       {/* Badge Cabinet */}
-      <div className="glass-panel rounded-[32px] p-5 shadow-md" style={{ background: 'linear-gradient(160deg, hsl(48,80%,97%) 0%, hsl(140,50%,96%) 100%)', border: '1px solid hsl(48,60%,86%)' }}>
+      <div className="glass-panel rounded-[32px] p-5 shadow-md" style={{ background: 'linear-gradient(160deg, hsl(48,80%,97%) 0%, hsl(var(--hue-jungle),50%,96%) 100%)', border: '1px solid hsl(48,60%,86%)' }}>
         {/* Clean Achievements Header */}
         <div className="mb-5">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -351,18 +351,22 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
             };
 
 
+            const isMythic = theme.price >= 2000;
+
             return (
               <div
                 key={theme.id}
-                className={`flex flex-col justify-between p-4 rounded-3xl border transition-all ${
+                className={`flex flex-col justify-between p-4 rounded-3xl border transition-all relative overflow-hidden ${
                   isActive
-                    ? 'bg-indigo-50/90 border-indigo-400 shadow-md ring-2 ring-indigo-300/50'
-                    : 'bg-slate-50/70 border-slate-200/80 hover:bg-white hover:border-indigo-200'
+                    ? 'bg-emerald-50/90 border-emerald-400 shadow-md ring-2 ring-emerald-300/50'
+                    : isMythic
+                      ? 'bg-gradient-to-br from-purple-50/90 via-amber-50/60 to-fuchsia-50/80 border-amber-300/90 hover:border-amber-400 shadow-sm'
+                      : 'bg-slate-50/70 border-slate-200/80 hover:bg-white hover:border-emerald-200'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center min-w-0">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mr-3.5 border border-indigo-100 overflow-hidden relative shadow-sm shrink-0">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mr-3.5 border overflow-hidden relative shadow-sm shrink-0 ${isMythic ? 'border-amber-300 ring-2 ring-amber-200/60' : 'bg-emerald-50 border-emerald-100'}`}>
                       {theme.type === 'color' ? (
                         <div className={`w-full h-full ${theme.value.replace('bg-', 'bg-')}`}></div>
                       ) : (
@@ -375,10 +379,15 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h4 className="font-bold text-slate-800 text-base md:text-lg font-['Fredoka'] truncate">{theme.name}</h4>
+                        {isMythic && (
+                          <span className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-purple-950 px-2 py-0.5 rounded-full border border-amber-300 shadow-2xs">
+                            ✨ Mythic Tier
+                          </span>
+                        )}
                         {isActive && (
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full">
                             Active
                           </span>
                         )}
@@ -395,8 +404,8 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] font-bold text-indigo-600/80 truncate">
-                          Header • Cards • Dock • Vibe
+                        <span className="text-[10px] font-bold text-emerald-700/80 truncate">
+                          Full App Re-Theme
                         </span>
                       </div>
                     </div>
@@ -407,8 +416,10 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                     className={`px-4 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-sm shrink-0 ${isActive
                       ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                       : isUnlocked
-                        ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                        : isMythic
+                          ? 'bg-gradient-to-r from-purple-700 via-fuchsia-600 to-amber-500 text-white hover:brightness-110 disabled:opacity-50 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
                       }`}
                   >
                     {isActive ? 'Unequip' :

@@ -135,7 +135,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             </div>
 
             {/* Workout Summary Card */}
-            <div className="bg-gradient-to-br from-[#F0FDF4] to-emerald-50/60 rounded-[22px] p-4 mb-3.5 border border-emerald-100/80 relative overflow-hidden">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/60 rounded-[22px] p-4 mb-3.5 border border-emerald-100/80 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
                 <div className="flex flex-wrap justify-between items-center gap-2 text-[10px] font-bold text-emerald-700 mb-3 uppercase tracking-widest relative z-10">
@@ -225,7 +225,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                             ? 'text-emerald-800 shadow-sm border border-emerald-300'
                             : 'bg-slate-50/90 text-slate-500 hover:bg-emerald-50/60 hover:text-emerald-700 border border-slate-200/70'
                         }`}
-                    style={hasReacted ? { background: 'linear-gradient(135deg, hsl(140,65%,90%), hsl(155,60%,84%))' } : {}}
+                    style={hasReacted ? { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),65%,90%), hsl(var(--hue-canopy),60%,84%))' } : {}}
                 >
                     <Flame size={15} className={`mr-1.5 ${hasReacted ? 'fill-current text-orange-500' : ''}`} />
                     <span className="font-bold text-xs">{reactionCount > 0 ? reactionCount : 'Boost'}</span>

@@ -931,7 +931,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-emerald-50 flex flex-col items-center justify-center p-6">
       <div className="w-20 h-20 rounded-3xl bg-white shadow-xl border border-emerald-100 flex items-center justify-center mb-4 animate-bounce">
         <span className="text-4xl">🐼</span>
       </div>
@@ -1053,9 +1053,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   if (step === 'warmup') {
     const warmupPct = plan.warmup.length > 0 ? Math.round((warmupCompletedCount / plan.warmup.length) * 100) : 100;
     return (
-      <div className="min-h-screen bg-[#F0FDF4] pb-6">
+      <div className="min-h-screen bg-emerald-50 pb-6">
         {/* Sticky Top Header */}
-        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 px-3 sm:px-4 py-2.5">
+        <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100/80 px-3 sm:px-4 py-2.5">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div className="flex items-center">
               <button
@@ -1408,12 +1408,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   if (step === 'workout') {
     return (
-      <div className={`min-h-screen bg-[#F0FDF4] relative ${showRestTimer ? 'pb-28' : 'pb-6'}`}>
+      <div className={`min-h-screen bg-emerald-50 relative ${showRestTimer ? 'pb-28' : 'pb-6'}`}>
         {exitModal}
         {exercisePickerPortal}
 
         {/* Sticky Workout Header with Live Progress Bar */}
-        <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 shadow-2xs">
+        <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100/80 shadow-2xs">
           <div className="max-w-xl mx-auto px-3 sm:px-4 pt-2 pb-1.5">
             <div className="flex justify-between items-center mb-1.5">
               <div className="flex items-center flex-1 min-w-0 mr-2">
@@ -1741,9 +1741,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const cooldownPct = plan.cooldown.length > 0 ? Math.round((cooldownCompletedCount / plan.cooldown.length) * 100) : 100;
 
   return (
-    <div className="min-h-screen bg-[#F0FDF4] pb-6">
+    <div className="min-h-screen bg-emerald-50 pb-6">
       {exitModal}
-      <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-2xs">
+      <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100 shadow-2xs">
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
           <div className="flex items-center gap-2.5 min-w-0">
             <button

@@ -55,7 +55,7 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6 animate-fade-in">
-      <div ref={modalRef} className="glass-panel w-full max-w-sm overflow-hidden relative animate-scale-up max-h-[90vh] overflow-y-auto" style={{ background: 'hsla(140,50%,98%,0.95)' }}>
+      <div ref={modalRef} className="glass-panel w-full max-w-sm overflow-hidden relative animate-scale-up max-h-[90vh] overflow-y-auto" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.95)' }}>
 
         <button
           onClick={onClose}
@@ -65,7 +65,7 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
         </button>
 
         {/* Header / Avatar */}
-        <div className="h-32 relative" style={{ background: 'linear-gradient(135deg, hsl(140,60%,28%), hsl(155,65%,22%))' }}>
+        <div className="h-32 relative" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
             <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-white overflow-hidden">
               <img src={getAvatarPath(profile?.avatarId)} className="w-full h-full object-cover" />
@@ -87,7 +87,7 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(140,50%,96%,0.6)', borderRadius: '20px' }}>
+            <div className="glass-panel p-3 spring-transition flex flex-col items-center justify-center cursor-default" style={{ background: 'hsla(var(--hue-jungle),50%,96%,0.6)', borderRadius: '20px' }}>
               <div className="text-2xl font-bold text-emerald-750 font-['Fredoka']">{gamificationState.points}</div>
               <div className="text-[10px] uppercase font-bold text-emerald-600/70 tracking-wider">Points</div>
             </div>
@@ -151,7 +151,7 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
               </h3>
               <div className="space-y-2">
                 {profile.completedChallenges.map((c) => (
-                  <div key={c.id} className="glass-panel p-2 flex items-center spring-transition cursor-default" style={{ background: 'hsla(140,50%,96%,0.6)', border: '1px solid hsl(140,50%,90%)', borderRadius: '16px' }}>
+                  <div key={c.id} className="glass-panel p-2 flex items-center spring-transition cursor-default" style={{ background: 'hsla(var(--hue-jungle),50%,96%,0.6)', border: '1px solid hsl(var(--hue-jungle),50%,90%)', borderRadius: '16px' }}>
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-750 mr-3 flex-shrink-0">
                       <Trophy size={14} />
                     </div>

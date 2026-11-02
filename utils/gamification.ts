@@ -47,9 +47,10 @@ export const calculateWorkoutVolume = (exercises?: any[]): number => {
 };
 
 export const SHOP_THEMES: Theme[] = [
+  { id: 'deep_forest', name: 'Deep Forest', type: 'image' as const, value: '/assets/deep_jungle_bg.webp', price: 200, description: 'Enter the mystical jungle' },
   { id: 'jungle_night', name: 'Jungle Night', type: 'image' as const, value: '/assets/jungle_night_bg.webp', price: 500, description: 'Train under the moon' },
   { id: 'volcano', name: 'Volcano Core', type: 'image' as const, value: '/assets/volcano_bg.webp', price: 1000, description: 'Things are heating up!' },
-  { id: 'deep_forest', name: 'Deep Forest', type: 'image' as const, value: '/assets/deep_jungle_bg.webp', price: 200, description: 'Enter the mystical jungle' }
+  { id: 'celestial_sanctum', name: 'Celestial Sanctum', type: 'image' as const, value: '/assets/celestial_sanctum_bg.webp', price: 2000, description: 'Ascend to the royal astral bamboo dojo' }
 ];
 
 export const GIFT_ITEMS = [

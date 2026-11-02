@@ -348,13 +348,13 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Muscle Breakdown Chart */}
-      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
             <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Muscle Balance</h3>
             <p className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Sets per Muscle Group</p>
           </div>
-          <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
+          <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(var(--hue-jungle),40%,95%,0.8)' }}>
             <button
               onClick={() => setMuscleViewMode('week')}
               className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${muscleViewMode === 'week' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -377,10 +377,10 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-                <Radar name="Sets" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.45} />
+                <Radar name="Sets" dataKey="A" stroke="var(--color-emerald-500)" strokeWidth={2} fill="var(--color-emerald-500)" fillOpacity={0.45} />
                 <Tooltip
-                  contentStyle={{ borderRadius: '14px', border: '1px solid #d1fae5', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.08)', fontSize: '12px', fontWeight: 'bold' }}
-                  itemStyle={{ color: '#065f46' }}
+                  contentStyle={{ borderRadius: '14px', border: '1px solid var(--color-emerald-100)', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.08)', fontSize: '12px', fontWeight: 'bold' }}
+                  itemStyle={{ color: 'var(--color-emerald-800)' }}
                 />
               </RadarChart>
             </ResponsiveContainer>
@@ -393,7 +393,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Frequency Chart */}
-      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10 gap-2">
           <div>
             <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Frequency</h3>
@@ -415,7 +415,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-emerald-600 text-[10px]">▼</div>
             </div>
 
-            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
+            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(var(--hue-jungle),40%,95%,0.8)' }}>
               <button
                 onClick={() => setFreqViewMode('weekly')}
                 className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${freqViewMode === 'weekly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -456,14 +456,14 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Volume Chart */}
-      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4 relative z-10">
           <div>
             <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Volume</h3>
             <p className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Avg Load per Workout</p>
           </div>
           <div className="flex space-x-2">
-            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(140,40%,95%,0.8)' }}>
+            <div className="glass-panel p-1 rounded-xl flex text-[11px] font-bold border border-emerald-100/80" style={{ background: 'hsla(var(--hue-jungle),40%,95%,0.8)' }}>
               <button
                 onClick={() => setViewMode('weekly')}
                 className={`px-3 py-1.5 rounded-lg transition-all spring-transition ${viewMode === 'weekly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -490,7 +490,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
                 <Tooltip
                   contentStyle={{ borderRadius: '16px', border: '1px solid #d1fae5', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.08)', padding: '12px', fontSize: '12px', fontWeight: 'bold' }}
                 />
-                <Line type="monotone" dataKey="avgVolume" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} name="You" />
+                <Line type="monotone" dataKey="avgVolume" stroke="var(--color-emerald-500)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-emerald-500)', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} name="You" />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -500,7 +500,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       </div>
 
       {/* Exercise Trend Chart */}
-      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(140,50%,99%,0.90)' }}>
+      <div className="glass-panel p-5 mb-4 relative overflow-hidden rounded-[28px] border border-emerald-100/80 shadow-sm" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.90)' }}>
         <div className="flex justify-between items-center mb-4">
           <div>
             <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">Strength</h3>

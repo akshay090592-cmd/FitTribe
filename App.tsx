@@ -1201,7 +1201,7 @@ const App: React.FC = () => {
     const stepEmojis = ['🐼', '🎋', '🥋', '🌿'];
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#E8F8EE] via-[#F0FDF4] to-[#ECFDF5] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-emerald-100/60 via-emerald-50 to-teal-50/70 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
         {/* Ambient Jungle Blobs */}
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-300/25 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-lime-300/20 rounded-full blur-3xl pointer-events-none" />

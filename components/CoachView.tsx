@@ -484,7 +484,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
     };
 
     return (
-        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in relative z-10 pb-24">
+        <div className="p-4 md:p-6 max-w-xl mx-auto md:max-w-none md:mx-0 animate-fade-in relative z-10 pb-4">
 
             {/* Segmented Tab Switcher */}
             <div className="glass-panel flex p-1.5 rounded-[22px] mb-6 shadow-md border border-white/80" style={{ background: 'hsla(140,45%,96%,0.92)' }}>

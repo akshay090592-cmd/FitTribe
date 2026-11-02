@@ -1053,7 +1053,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   if (step === 'warmup') {
     const warmupPct = plan.warmup.length > 0 ? Math.round((warmupCompletedCount / plan.warmup.length) * 100) : 100;
     return (
-      <div className="min-h-screen flex flex-col bg-[#F0FDF4]">
+      <div className="min-h-screen bg-[#F0FDF4] pb-6">
         {/* Sticky Top Header */}
         <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100/80 px-3 sm:px-4 py-2.5">
           <div className="max-w-xl mx-auto flex items-center justify-between">
@@ -1087,7 +1087,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           </div>
         </div>
 
-        <div className="px-2.5 sm:px-4 py-3 flex-grow max-w-xl mx-auto w-full pb-28 space-y-3">
+        <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full space-y-3">
           {isStreakAtRisk && (
             <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-xl flex items-start shadow-2xs animate-fade-in">
               <AlertTriangle className="text-orange-500 mr-2.5 flex-shrink-0 mt-0.5" size={18} />
@@ -1167,11 +1167,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               })}
             </div>
           </div>
-        </div>
 
-        {/* Sticky Mobile Bottom CTA */}
-        <div className="fixed bottom-0 inset-x-0 z-30 p-3 sm:p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
-          <div className="max-w-xl mx-auto">
+          {/* Primary CTA directly below Warm Up Card (No awkward empty gap) */}
+          <div className="pt-1">
             <button
               onClick={() => setStep('workout')}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all border-b-4 border-emerald-700 flex items-center justify-center gap-2"
@@ -1180,6 +1178,50 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               <TrendingUp size={18} />
             </button>
           </div>
+
+          {/* Friendly Up-Next Session Preview Card */}
+          {plan.exercises.length > 0 && (
+            <div className="bg-white/80 rounded-2xl border border-emerald-100/90 p-3.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Up Next • {plan.exercises.length} Exercises</span>
+                  <h4 className="text-sm font-bold text-emerald-950 font-['Fredoka'] leading-snug truncate">{plan.title}</h4>
+                </div>
+                {plan.focus && (
+                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100 shrink-0">
+                    {plan.focus}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {plan.exercises.map((ex, i) => {
+                  const meta = resolveExerciseVisualMeta(ex.name, {
+                    customImage: ex.image,
+                    visualArchetype: ex.visualArchetype,
+                    equipment: ex.equipment,
+                  });
+                  return (
+                    <div key={i} className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-50/40 border border-emerald-100/60">
+                      <ExerciseThumbnail
+                        name={ex.name}
+                        customImage={ex.image}
+                        visualArchetype={ex.visualArchetype}
+                        equipment={ex.equipment}
+                        meta={meta}
+                        size="xs"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-emerald-950 truncate">{ex.name}</div>
+                        <div className="text-[10px] font-semibold text-emerald-700/80">
+                          {ex.defaultSets} × {ex.defaultReps} • {meta.primaryMuscle}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1366,7 +1408,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   if (step === 'workout') {
     return (
-      <div className="min-h-screen bg-[#F0FDF4] pb-28 relative">
+      <div className={`min-h-screen bg-[#F0FDF4] relative ${showRestTimer ? 'pb-28' : 'pb-6'}`}>
         {exitModal}
         {exercisePickerPortal}
 
@@ -1435,7 +1477,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             <Plus size={15} /> Add Exercise to Session
           </button>
 
-          <div className="pt-1 pb-6">
+          <div className="pt-1 pb-2">
             <button
               onClick={() => setShowCooldownConfirm(true)}
               className="w-full bg-gradient-to-r from-emerald-800 to-emerald-900 text-emerald-50 py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-900/20 active:scale-95 transition-all border-b-4 border-emerald-950 cursor-pointer flex items-center justify-center gap-2"
@@ -1699,26 +1741,26 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const cooldownPct = plan.cooldown.length > 0 ? Math.round((cooldownCompletedCount / plan.cooldown.length) * 100) : 100;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0FDF4] pb-28">
+    <div className="min-h-screen bg-[#F0FDF4] pb-6">
       {exitModal}
       <div className="sticky top-0 z-30 bg-[#F0FDF4]/95 backdrop-blur-xl border-b border-emerald-100 shadow-2xs">
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setStep('workout')}
-              className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1 hover:bg-emerald-50 active:scale-95 transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1 hover:bg-emerald-50 active:scale-95 transition-all shrink-0"
               aria-label="Back to workout sets"
             >
               <ChevronLeft size={15} /> Sets
             </button>
-            <div>
-              <span className="text-[10px] font-black text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full uppercase tracking-widest">Phase 3 of 3 • Cool Down</span>
-              <h2 className="font-bold text-emerald-950 text-lg leading-tight font-['Fredoka']">Zen Mode</h2>
+            <div className="min-w-0">
+              <span className="inline-block text-[10px] font-black text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">Phase 3 of 3</span>
+              <h2 className="font-bold text-emerald-950 text-lg leading-tight font-['Fredoka'] truncate">Zen Mode</h2>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100 whitespace-nowrap">
               {cooldownCompletedCount}/{plan.cooldown.length} Done
             </span>
             <button onClick={() => setShowExitModal(true)} aria-label="Exit workout" className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl border border-red-100 transition-colors">
@@ -1730,7 +1772,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
       <Confetti active={showCelebration} />
 
-      <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full flex-grow space-y-3">
+      <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full space-y-3">
         {/* Single Cohesive Zen Cooldown Card (No Nested Cards) */}
         <div className="bg-white rounded-2xl border border-teal-200/80 shadow-xs overflow-hidden">
           <div className="px-3.5 py-3 bg-teal-50/60 border-b border-teal-100 flex items-center justify-between">
@@ -1808,11 +1850,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             })}
           </div>
         </div>
-      </div>
 
-      {/* Sticky Bottom Complete Mission CTA */}
-      <div className="fixed bottom-0 inset-x-0 z-30 p-3 sm:p-4 bg-gradient-to-t from-[#F0FDF4] via-[#F0FDF4]/95 to-transparent pb-safe">
-        <div className="max-w-xl mx-auto">
+        {/* Complete Mission CTA in natural flow */}
+        <div className="pt-1">
           <button
             onClick={() => setShowFeedbackModal(true)}
             disabled={isFinishing}
@@ -1820,6 +1860,32 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           >
             {isFinishing ? 'Reviewing...' : <><span>Complete Mission</span><CheckCircle size={19} /></>}
           </button>
+        </div>
+
+        {/* Friendly Session Summary Card */}
+        <div className="bg-white/85 rounded-2xl border border-teal-100 p-3.5 shadow-2xs">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-teal-700">Today&apos;s Training Recap</span>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+              🐼 Bamboo Spirit +XP
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100/80">
+              <div className="text-base font-black text-emerald-950 font-['Fredoka']">{completedSetsCount}/{totalSetsCount}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80">Sets Logged</div>
+            </div>
+            <div className="bg-teal-50/60 rounded-xl p-2.5 border border-teal-100/80">
+              <div className="text-base font-black text-emerald-950 font-['Fredoka']">{records.length}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-teal-700/80">Exercises</div>
+            </div>
+            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100/80">
+              <div className="text-base font-black text-emerald-950 font-['Fredoka']">
+                {Math.floor(workoutTimer.seconds / 60)}:{String(workoutTimer.seconds % 60).padStart(2, '0')}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80">Session Time</div>
+            </div>
+          </div>
         </div>
       </div>
 

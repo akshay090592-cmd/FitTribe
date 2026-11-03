@@ -84,7 +84,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
     }
   };
 
-  const myState = gameState ? gameState[currentUser] : { badges: [], inventory: [], points: 0 };
+  const myState = gameState?.[currentUser] || { badges: [], inventory: [], points: 0 };
 
   const handleSendGift = async (toUser: User) => {
     if (!giftModalItem || !gameState) return;

@@ -11,7 +11,8 @@ import { useNotifications } from './hooks/useNotifications';
 import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
-import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks } from './utils/gamification';
+import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks, getRankDetails } from './utils/gamification';
+import { RankBadge } from './components/RankBadge';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, getOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
@@ -70,6 +71,8 @@ const StatsDetailPopup = React.lazy(() => import('./components/StatsDetailPopup'
 const CreateChallengeModal = React.lazy(() => import('./components/CreateChallengeModal').then(module => ({ default: module.CreateChallengeModal })));
 const WorkoutLibraryModal = React.lazy(() => import('./components/WorkoutLibraryModal').then(module => ({ default: module.WorkoutLibraryModal })));
 const TutorialPage = React.lazy(() => import('./components/TutorialPage').then(module => ({ default: module.TutorialPage })));
+const StreakModal = React.lazy(() => import('./components/StreakModal').then(module => ({ default: module.StreakModal })));
+const RankRoadmapModal = React.lazy(() => import('./components/RankRoadmapModal').then(module => ({ default: module.RankRoadmapModal })));
 
 const VIEW_PATHS: Record<string, string> = {
   dashboard: '/',
@@ -323,6 +326,8 @@ const App: React.FC = () => {
   const [onboardingQuests, setOnboardingQuests] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+  const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [tribeMembers, setTribeMembers] = useState<string[]>([]);
   const [teamStats, setTeamStats] = useState<any>(null);
   // Default to empty plans, populate on load
@@ -1479,28 +1484,58 @@ const App: React.FC = () => {
                 {mood === 'tired' && <div className="absolute -top-1 -right-1 text-lg animate-pulse drop-shadow-md">💤</div>}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md font-['Fredoka'] tracking-wide truncate">Hi, {currentUser}!</h1>
-                  {streak > 0 && (
-                    <span className="inline-flex items-center gap-0.5 bg-amber-400/25 border border-amber-300/45 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm shadow-2xs">
-                      🔥 {streak}d
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsStreakModalOpen(true)}
+                    className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-sm shadow-2xs transition-all active:scale-95 ${
+                      streakRisk
+                        ? 'bg-red-500/35 border border-red-300/60 text-amber-100 animate-pulse'
+                        : (allGamificationState?.[currentUser]?.streakFreezes || 0) > 0
+                        ? 'bg-cyan-400/25 border border-cyan-300/50 text-cyan-100'
+                        : 'bg-amber-400/25 border border-amber-300/45 text-amber-200'
+                    }`}
+                    title="Open Streak Hub & Shields"
+                  >
+                    <span>🔥 {streak}d</span>
+                    {(allGamificationState?.[currentUser]?.streakFreezes || 0) > 0 && (
+                      <span className="ml-0.5 text-cyan-200">🧊{allGamificationState?.[currentUser]?.streakFreezes}</span>
+                    )}
+                  </button>
+                  {allGamificationState?.[currentUser]?.activeXpBoost &&
+                    new Date(allGamificationState[currentUser].activeXpBoost!.expiresAt).getTime() > Date.now() && (
+                      <span className="inline-flex items-center gap-0.5 bg-purple-500/35 border border-purple-300/50 text-purple-100 text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-sm animate-pulse">
+                        ⚡ 2x XP
+                      </span>
+                    )}
                 </div>
                 <div className="flex items-center space-x-2 mt-1">
-                  {xpData && (
-                    <div className="flex items-center text-[11px] text-white/95 font-bold uppercase tracking-wider bg-black/35 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15 shadow-inner">
-                      <span className={`mr-2 ${themePalette.navActiveTextClass}`}>Lvl {xpData.level}</span>
-                      <div className="w-16 sm:w-20 h-2 bg-black/45 rounded-full overflow-hidden">
-                        <div
-                          className="h-full transition-all duration-500 rounded-full"
-                          style={{ width: `${xpData.progress}%`, background: themePalette.xpBarGradient }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {xpData && (() => {
+                    const rankDetails = getRankDetails(xpData.level);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setIsRankModalOpen(true)}
+                        className="flex items-center text-[11px] text-white/95 font-bold uppercase tracking-wider bg-black/35 hover:bg-black/45 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15 shadow-inner transition-all active:scale-95"
+                        title="View 12-Tier Jungle Rank Roadmap"
+                      >
+                        <span className="mr-1.5 text-xs leading-none">{rankDetails.icon}</span>
+                        <span className={`mr-1.5 ${themePalette.navActiveTextClass}`}>Lvl {xpData.level}</span>
+                        <span className="hidden sm:inline text-[10px] text-white/80 mr-2 font-extrabold tracking-normal capitalize">
+                          • {rankDetails.fullTitle}
+                        </span>
+                        <div className="w-14 sm:w-20 h-2 bg-black/45 rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-500 rounded-full"
+                            style={{ width: `${xpData.progress}%`, background: themePalette.xpBarGradient }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })()}
                   {activeTheme && activeTheme !== 'default' && (
-                    <span className="hidden sm:inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/15">
+                    <span className="hidden md:inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/15">
                       {themePalette.name}
                     </span>
                   )}
@@ -1587,6 +1622,7 @@ const App: React.FC = () => {
                     tribeId={userProfile?.tribeId}
                     members={tribeMembers}
                     avatarMap={avatarMap}
+                    gamificationState={allGamificationState || undefined}
                     refreshTrigger={pulseRefreshTrigger}
                     onUserClick={setSelectedPulseUser}
                   />
@@ -1649,15 +1685,24 @@ const App: React.FC = () => {
               })()}
 
               {streak > 0 && streakRisk && (
-                <div className="bg-gradient-to-r from-amber-100 to-orange-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-2xl flex items-center shadow-md md:col-span-2">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0">
-                    <Flame size={22} className="text-amber-600 animate-bounce" />
+                <button
+                  type="button"
+                  onClick={() => setIsStreakModalOpen(true)}
+                  className="w-full text-left bg-gradient-to-r from-amber-100 to-orange-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-2xl flex items-center justify-between shadow-md md:col-span-2 active:scale-[0.99] transition-all"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0">
+                      <Flame size={22} className="text-amber-600 animate-bounce" />
+                    </div>
+                    <div>
+                      <div className="font-bold font-['Fredoka'] text-sm sm:text-base">Streak at Risk!</div>
+                      <div className="text-xs font-bold text-amber-800/80">Tap to equip an Ice Shield or log a workout to save your {streak}-day streak!</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold font-['Fredoka'] text-sm sm:text-base">Streak at Risk!</div>
-                    <div className="text-xs font-bold text-amber-800/80">Workout soon to keep your {streak} day streak alive!</div>
-                  </div>
-                </div>
+                  <span className="text-[11px] font-black uppercase tracking-wider bg-amber-500 text-white px-3 py-1.5 rounded-xl shrink-0 ml-2">
+                    Protect
+                  </span>
+                </button>
               )}
 
               {/* Next Workout Hero Card - Theme-Aware & Prioritized on Mobile for Thumb Ergonomics */}
@@ -1702,8 +1747,30 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="mb-5">
-                    <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">Plan {selectedWorkoutType}</h2>
-                    <p className="text-white/85 text-xs sm:text-sm font-semibold">{currentPlan.title}</p>
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
+                      {activeCustomPlan ? activeCustomPlan.title : `Plan ${selectedWorkoutType}`}
+                    </h2>
+                    <p className="text-white/85 text-xs sm:text-sm font-semibold">
+                      {activeCustomPlan ? `Sensei Custom Focus • ${activeCustomPlan.focus}` : currentPlan.title}
+                    </p>
+                    {(() => {
+                      const scheduleList = (allUserPlans[currentUser] as any)?.schedule;
+                      if (!Array.isArray(scheduleList)) return null;
+                      const todayIso = new Date().toISOString().split('T')[0];
+                      const todayItem = scheduleList.find((item: any) => item?.date === todayIso);
+                      if (!todayItem) return null;
+                      return (
+                        <div className="mt-2.5 inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md border border-white/15 px-3 py-1 rounded-xl text-[11px] font-bold text-emerald-100">
+                          <span>🐼</span>
+                          <span>Today&apos;s Coach Schedule: <strong className="text-white">{todayItem.activity}</strong></span>
+                          {todayItem.status === 'done' && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded-md bg-emerald-500/30 text-lime-200 text-[9px] font-black uppercase">
+                              Done ✓
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
@@ -1751,7 +1818,7 @@ const App: React.FC = () => {
               <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
                 {/* Streak Card */}
                 <button
-                  onClick={() => handleOpenStats('streak')}
+                  onClick={() => setIsStreakModalOpen(true)}
                   className="card-streak spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
                 >
                   <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">
@@ -1862,6 +1929,9 @@ const App: React.FC = () => {
                     loading={loading}
                     hasLoggedWorkouts={allLogs.length > 0}
                     onManualComplete={handleManualQuestComplete}
+                    userProfile={userProfile}
+                    userState={currentUser ? allGamificationState?.[currentUser] : undefined}
+                    onStateUpdated={() => loadProfile(true)}
                   />
                 </div>
               </div>
@@ -1891,7 +1961,18 @@ const App: React.FC = () => {
 
           <div style={{ display: view === 'coach' ? 'block' : 'none' }}>
             <React.Suspense fallback={<LoadingSpinner />}>
-              {visitedViews.has('coach') && userProfile && <CoachView userProfile={userProfile} lastWorkout={lastWorkout} onFetching={handleChildFetching} />}
+              {visitedViews.has('coach') && userProfile && (
+                <CoachView
+                  userProfile={userProfile}
+                  lastWorkout={lastWorkout}
+                  onFetching={handleChildFetching}
+                  onUpdateProfile={(updated) => setUserProfile(updated)}
+                  onStartCustomWorkout={(customPlan) => {
+                    setActiveCustomPlan(customPlan);
+                    setView('workout');
+                  }}
+                />
+              )}
             </React.Suspense>
           </div>
 
@@ -1925,6 +2006,7 @@ const App: React.FC = () => {
                 tribeId={userProfile?.tribeId}
                 members={tribeMembers}
                 avatarMap={avatarMap}
+                gamificationState={allGamificationState || undefined}
                 refreshTrigger={pulseRefreshTrigger}
                 onUserClick={setSelectedPulseUser}
               />
@@ -1948,6 +2030,9 @@ const App: React.FC = () => {
               loading={loading}
               hasLoggedWorkouts={allLogs.length > 0}
               onManualComplete={handleManualQuestComplete}
+              userProfile={userProfile}
+              userState={currentUser ? allGamificationState?.[currentUser] : undefined}
+              onStateUpdated={() => loadProfile(true)}
             />
 
             {/* View Specific Widgets */}
@@ -2152,6 +2237,31 @@ const App: React.FC = () => {
           setIsTutorialOpen(false);
           localStorage.setItem('tutorial_seen', 'true');
         }} />}
+
+        {userProfile && (
+          <StreakModal
+            isOpen={isStreakModalOpen}
+            onClose={() => setIsStreakModalOpen(false)}
+            streak={streak}
+            streakRisk={streakRisk}
+            logs={allLogs}
+            userProfile={userProfile}
+            userState={currentUser ? allGamificationState?.[currentUser] : undefined}
+            onStateUpdated={() => loadProfile(true)}
+            onStartWorkout={() => setView('workout')}
+          />
+        )}
+
+        {xpData && currentUser && (
+          <RankRoadmapModal
+            isOpen={isRankModalOpen}
+            onClose={() => setIsRankModalOpen(false)}
+            currentUser={currentUser}
+            userXp={xpData.xp || 0}
+            allGamificationState={allGamificationState}
+            avatarMap={avatarMap}
+          />
+        )}
       </React.Suspense>
     </div >
   );

@@ -5,6 +5,7 @@ import { CommentSection } from './CommentSection';
 import { ImageModal } from './ImageModal';
 import { getAvatarPath } from '../utils/avatar';
 import { formatTimeAgo } from '../utils/dateUtils';
+import { RankBadge } from './RankBadge';
 
 interface Props {
     log: WorkoutLog;
@@ -19,6 +20,7 @@ interface Props {
     onToggleComments: (logId: string) => void;
     onDelete: (logId: string) => void;
     avatarId?: string;
+    authorLevel?: number;
 }
 
 const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -106,8 +108,11 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                         <img src={avatarImg} alt={log.user} onError={handleImgError} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                        <div className="font-bold text-emerald-950 text-base font-['Fredoka'] leading-tight">
-                            {log.user}
+                        <div className="font-bold text-emerald-950 text-base font-['Fredoka'] leading-tight flex items-center flex-wrap gap-1.5">
+                            <span>{log.user}</span>
+                            {props.authorLevel && props.authorLevel >= 1 && (
+                                <RankBadge level={props.authorLevel} size="2xs" />
+                            )}
                         </div>
                         <div className="text-[10px] text-emerald-600/80 flex flex-wrap items-center font-bold uppercase tracking-wider mt-0.5 gap-y-1">
                             {log.type === 'Custom'

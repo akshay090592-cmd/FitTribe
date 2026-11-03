@@ -1597,7 +1597,7 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
 
       if (data) {
         data.forEach((row: any) => {
-          // Extract commitment from badges
+          // Extract commitment and extended gamification metadata from badges
           const allBadges: string[] = row.badges || [];
           const commitmentBadge = allBadges.find(b => b.startsWith('committed_'));
           let commitment: string | null = null;
@@ -1606,15 +1606,30 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
             if (!isNaN(ts)) commitment = new Date(ts).toISOString();
           }
 
+          const metaBadge = allBadges.find(b => b.startsWith('__meta__:'));
+          let parsedMeta: Partial<UserGamificationState> = {};
+          if (metaBadge) {
+            try {
+              parsedMeta = JSON.parse(metaBadge.slice('__meta__:'.length));
+            } catch {
+              parsedMeta = {};
+            }
+          }
+
           state[row.display_name] = {
-            badges: allBadges.filter(b => !b.startsWith('committed_')),
+            badges: allBadges.filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:')),
             inventory: row.inventory || [],
             points: row.points || 0,
             streak: row.streak || 0,
             unlockedThemes: row.unlocked_themes || ['default'],
             activeTheme: row.active_theme || 'default',
             lifetimeXp: row.lifetime_xp,
-            ...(commitment ? { commitment } : {})
+            ...(commitment ? { commitment } : {}),
+            ...(parsedMeta.streakFreezes !== undefined ? { streakFreezes: parsedMeta.streakFreezes } : {}),
+            ...(parsedMeta.frozenDates ? { frozenDates: parsedMeta.frozenDates } : {}),
+            ...(parsedMeta.activeXpBoost ? { activeXpBoost: parsedMeta.activeXpBoost } : {}),
+            ...(parsedMeta.streakWager ? { streakWager: parsedMeta.streakWager } : {}),
+            ...(parsedMeta.claimedDailyChests ? { claimedDailyChests: parsedMeta.claimedDailyChests } : {}),
           };
 
           // MIGRATION: If lifetimeXp is missing, default to points.
@@ -1666,11 +1681,20 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
     return;
   }
 
-  // Re-inject commitment into badges
-  const badgesToSave = [...state.badges];
+  // Re-inject commitment and extended gamification metadata into badges
+  const badgesToSave = state.badges.filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:'));
   if (state.commitment) {
     const ts = new Date(state.commitment).getTime();
     badgesToSave.push(`committed_${ts}`);
+  }
+  const metaPayload: Record<string, any> = {};
+  if (state.streakFreezes !== undefined) metaPayload.streakFreezes = state.streakFreezes;
+  if (state.frozenDates && state.frozenDates.length > 0) metaPayload.frozenDates = state.frozenDates;
+  if (state.activeXpBoost) metaPayload.activeXpBoost = state.activeXpBoost;
+  if (state.streakWager) metaPayload.streakWager = state.streakWager;
+  if (state.claimedDailyChests) metaPayload.claimedDailyChests = state.claimedDailyChests;
+  if (Object.keys(metaPayload).length > 0) {
+    badgesToSave.push(`__meta__:${JSON.stringify(metaPayload)}`);
   }
 
   try {

@@ -152,6 +152,7 @@ export interface WorkoutPlan {
     restSeconds?: number;
   }[];
   cooldown: string[];
+  changesSummary?: string[];
 }
 
 export interface WorkoutLog {
@@ -216,6 +217,11 @@ export interface UserGamificationState {
   unlockedThemes: string[];
   activeTheme: string;
   commitment?: string | null; // ISO Date string for commitment
+  streakFreezes?: number; // 0-2 equipped Bamboo Ice Shields
+  frozenDates?: string[]; // ISO YYYY-MM-DD dates protected by a freeze
+  activeXpBoost?: { multiplier: number; expiresAt: string } | null;
+  streakWager?: { startDate: string; targetDays: number; stakePoints: number; status: 'active' | 'won' | 'lost' } | null;
+  claimedDailyChests?: { date: string; tiers: number[] };
 }
 
 export interface SocialComment {

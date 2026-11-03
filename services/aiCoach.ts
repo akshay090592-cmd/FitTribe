@@ -1,9 +1,70 @@
-import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan } from "../types";
+import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan, WorkoutFeedback, WorkoutType } from "../types";
 import { geminiClient } from "./geminiClient";
 import { monthLongFormatter, weekdayLongFormatter, shortDateFormatter } from "../utils/dateUtils";
 import { resolveExerciseVisualMeta } from "../utils/exerciseVisuals";
 
 const GEMINI_MODEL = 'gemini-flash-lite-latest'; // or 'gemini-1.5-flash' depending on access
+
+export interface CoachContextBundle {
+    userProfile?: UserProfile;
+    weeklyPlan?: WeeklyPlan | null;
+    workoutPlans?: Record<string, WorkoutPlan> | null;
+    dietPlan?: any | null;
+    recentFeedback?: WorkoutFeedback[];
+    extraInstruction?: string;
+}
+
+export interface CheckinTurnResult {
+    reply: string;
+    assessment: {
+        stress: string;
+        energy: string;
+        constraints: string;
+        physical: string;
+        sufficient: boolean;
+    };
+    quickReplies?: string[];
+}
+
+// Helper to compute a human-readable diff between two WorkoutPlans when AI omits changesSummary
+export const computePlanDiffSummary = (
+    oldPlan: WorkoutPlan,
+    newPlan: WorkoutPlan,
+    feedback?: WorkoutFeedback
+): string[] => {
+    const changes: string[] = [];
+    const oldMap = new Map(oldPlan.exercises.map(e => [e.name.toLowerCase(), e]));
+    const newMap = new Map(newPlan.exercises.map(e => [e.name.toLowerCase(), e]));
+
+    for (const newEx of newPlan.exercises) {
+        const oldEx = oldMap.get(newEx.name.toLowerCase());
+        if (!oldEx) {
+            changes.push(`Added ${newEx.name} (${newEx.defaultSets} × ${newEx.defaultReps})`);
+        } else {
+            if (newEx.defaultSets !== oldEx.defaultSets || newEx.defaultReps !== oldEx.defaultReps) {
+                changes.push(`Adjusted ${newEx.name}: ${oldEx.defaultSets}×${oldEx.defaultReps} → ${newEx.defaultSets}×${newEx.defaultReps}`);
+            }
+        }
+    }
+
+    for (const oldEx of oldPlan.exercises) {
+        if (!newMap.has(oldEx.name.toLowerCase())) {
+            changes.push(`Swapped out ${oldEx.name} for recovery/variety`);
+        }
+    }
+
+    if (changes.length === 0) {
+        if (feedback && feedback.difficultyRating >= 4) {
+            changes.push(`Kept ${newPlan.title} structure steady so you can consolidate recovery`);
+        } else if (feedback && feedback.difficultyRating <= 2) {
+            changes.push(`Updated coaching cues on ${newPlan.title} for progressive overload`);
+        } else {
+            changes.push(`Fine-tuned ${newPlan.title} targets based on today's session`);
+        }
+    }
+
+    return changes.slice(0, 4);
+};
 
 // Helper to parse JSON from Gemini response (handles code blocks)
 const parseJSON = (text: string) => {
@@ -43,32 +104,37 @@ export const AICoachService = {
     generateModifiedPlan: async (
         currentPlan: WorkoutPlan,
         lastLog: WorkoutLog,
-        feedback: import('../types').WorkoutFeedback,
+        feedback: WorkoutFeedback,
         userProfile: UserProfile
     ): Promise<WorkoutPlan | null> => {
         const prompt = `
-      You are an expert fitness coach. 
+      You are Sensei Panda, an expert fitness coach. 
       Analyze the user's last workout and feedback to modify their NEXT workout plan (${currentPlan.id} - ${currentPlan.title}).
 
       User Profile:
       - Name: ${userProfile.displayName}
-      - Level: ${userProfile.level || 'Intermediate'}
+      - Level: ${userProfile.fitnessLevel || userProfile.level || 'Intermediate'}
+      - Primary Goal: ${userProfile.goals?.primary_goal || 'Strength & Consistency'}
       
       Last Workout Performance:
       - Duration: ${lastLog.durationMinutes} mins
-      - Exercises Completed: ${lastLog.exercises.map(e => `${e.name} (${e.sets.filter(s => s.completed).length} sets)`).join(', ')}
+      - Exercises Completed: ${lastLog.exercises.map(e => {
+          const completed = e.sets.filter(s => s.completed);
+          const best = completed.reduce((acc, s) => s.weight > acc.weight ? s : acc, { weight: 0, reps: 0 });
+          return `${e.name} (${completed.length} sets, best: ${best.weight}kg x ${best.reps})`;
+      }).join(', ')}
       
       User Feedback:
       - Difficulty (1-5): ${feedback.difficultyRating}
-      - Skipped Exercises: ${feedback.skippedExercises.join(', ')}
-      - Pain/Issues: ${feedback.painPoints.join(', ')}
+      - Skipped Exercises: ${feedback.skippedExercises.join(', ') || 'None'}
+      - Pain/Issues: ${feedback.painPoints.join(', ') || 'None'}
       - Notes: ${feedback.notes || 'None'}
 
       Current Plan Structure (JSON):
       ${JSON.stringify(currentPlan, null, 2)}
 
       TASKS:
-      1. If difficulty was high (4-5) or pain reported, reduce volume or swap aggravating exercises.
+      1. If difficulty was high (4-5) or pain reported, reduce volume or swap aggravating exercises for joint-friendly alternatives.
       2. If difficulty was low (1-2), increase weight/reps or intensity.
       3. If exercises were skipped due to time, slightly reduce volume.
       4. Suggest progression (Progressive Overload) for exercises they did well on.
@@ -79,9 +145,10 @@ export const AICoachService = {
          - 'equipment': MUST be one of 'dumbbell' | 'barbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'cardio' | 'mobility'
       8. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). You MUST add a 'trackingType' field with value 'reps' or 'duration'.
       9. For 'duration' exercises, provide default time in 'defaultReps' (e.g. '60s', '45s').
+      10. Include a top-level "changesSummary" array of 1 to 3 short, friendly strings explaining the exact adjustments you made for their next session (e.g. ["Swapped Barbell Row for Chest-Supported Dumbbell Row to protect your lower back", "Trimmed Lateral Raise to 2 sets for faster session pacing"]).
       
       OUTPUT:
-      Return ONLY the valid JSON of the modified WorkoutPlan object. Do not explain.
+      Return ONLY the valid JSON of the modified WorkoutPlan object (including "changesSummary"). Do not explain outside JSON.
     `;
 
         try {
@@ -91,6 +158,11 @@ export const AICoachService = {
             });
             const parsed = parseJSON(result.text) as WorkoutPlan | null;
             if (parsed && Array.isArray(parsed.exercises)) {
+                parsed.id = parsed.id || currentPlan.id;
+                parsed.title = parsed.title || currentPlan.title;
+                parsed.focus = parsed.focus || currentPlan.focus;
+                parsed.warmup = Array.isArray(parsed.warmup) && parsed.warmup.length > 0 ? parsed.warmup : currentPlan.warmup;
+                parsed.cooldown = Array.isArray(parsed.cooldown) && parsed.cooldown.length > 0 ? parsed.cooldown : currentPlan.cooldown;
                 parsed.exercises = parsed.exercises.map(ex => {
                     const meta = resolveExerciseVisualMeta(ex.name, {
                         customImage: ex.image,
@@ -104,6 +176,9 @@ export const AICoachService = {
                         equipment: ex.equipment || meta.equipment,
                     };
                 });
+                if (!Array.isArray(parsed.changesSummary) || parsed.changesSummary.length === 0) {
+                    parsed.changesSummary = computePlanDiffSummary(currentPlan, parsed, feedback);
+                }
             }
             return parsed;
         } catch (error) {
@@ -113,7 +188,7 @@ export const AICoachService = {
     },
 
     /**
-     * Generates a weekly diet plan based on user goals and preferences.
+     * Generates a weekly diet plan based on user goals, body metrics, and preferences.
      */
     generateDietPlan: async (
         userProfile: UserProfile,
@@ -121,40 +196,57 @@ export const AICoachService = {
         allergies: string = "None",
         supplements: string = "None"
     ): Promise<any> => {
-        // Calculate BMR/TDEE rough estimate
+        // Calculate BMR/TDEE estimate from profile + weekly frequency
         const height = userProfile.height || 170;
         const weight = userProfile.weight || 70;
         const age = userProfile.dob ? (new Date().getFullYear() - new Date(userProfile.dob).getFullYear()) : 30;
         const gender = userProfile.gender || 'male';
+        const weeklyFreq = userProfile.weeklyGoal || userProfile.goals?.weekly_frequency || 3;
+        const primaryGoal = userProfile.goals?.primary_goal || 'Lean Muscle & Sustained Energy';
 
-        // Very basic Mifflin-St Jeor
-        let bmr = 10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161);
-        const tdee = Math.round(bmr * 1.375); // Moderate activity assumption
+        // Mifflin-St Jeor + dynamic activity multiplier
+        const bmr = 10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161);
+        const activityMultiplier = weeklyFreq >= 5 ? 1.55 : weeklyFreq >= 3 ? 1.375 : 1.25;
+        let targetCalories = Math.round(bmr * activityMultiplier);
+
+        const goalLower = primaryGoal.toLowerCase();
+        if (goalLower.includes('lose') || goalLower.includes('cut') || goalLower.includes('fat') || goalLower.includes('lean')) {
+            targetCalories = Math.max(1400, targetCalories - 350);
+        } else if (goalLower.includes('bulk') || goalLower.includes('gain') || goalLower.includes('muscle') || goalLower.includes('strength')) {
+            targetCalories += 200;
+        }
+
+        const targetProteinGrams = Math.round(weight * 1.8);
         const todayLong = getLongDate(new Date());
 
         const prompt = `
       Create a 7-day Meal Plan starting TODAY (${todayLong}) for:
-      - Calories: ~${tdee} kcal/day
-      - Goal: Maintenance/Muscle Gain
-      - Preferences: ${preferences}
+      - Daily Calorie Target: ~${targetCalories} kcal/day
+      - Daily Protein Target: ~${targetProteinGrams}g protein/day
+      - Primary Goal: ${primaryGoal}
+      - Weekly Training Frequency: ${weeklyFreq} workouts/week
+      - Preferences & Style: ${preferences}
       - Allergies/Avoid: ${allergies}
       - Supplements: ${supplements}
       
       Format: JSON with structure:
       {
-        "weekly_summary": "Brief explanation",
+        "weekly_summary": "Brief, encouraging explanation of the calorie (${targetCalories} kcal) and protein (${targetProteinGrams}g) strategy tailored to ${primaryGoal}",
+        "target_calories": ${targetCalories},
+        "target_protein_g": ${targetProteinGrams},
         "days": [
           {
-            "day": "Monday (or actual date)",
+            "day": "Monday",
             "meals": [
-              { "name": "Breakfast", "food": "...", "calories": 500, "macros": "30P/50C/20F" },
-              ...
+              { "name": "Breakfast", "food": "...", "calories": 500, "macros": "35g P • 50g C • 15g F" },
+              { "name": "Lunch", "food": "...", "calories": 650, "macros": "45g P • 60g C • 20g F" },
+              { "name": "Snack", "food": "...", "calories": 250, "macros": "20g P • 20g C • 8g F" },
+              { "name": "Dinner", "food": "...", "calories": 600, "macros": "40g P • 50g C • 20g F" }
             ]
-          },
-          ... 7 days
+          }
         ]
       }
-      Return ONLY JSON.
+      Include all 7 days (Monday through Sunday). Return ONLY valid JSON.
     `;
 
         try {
@@ -170,12 +262,12 @@ export const AICoachService = {
     },
 
     /**
-     * General chat with the coach.
+     * General chat with the coach (supports both string context and rich CoachContextBundle).
      */
     chatWithCoach: async (
         history: { role: 'user' | 'model', text: string }[],
         newMessage: string,
-        context?: string,
+        context?: string | CoachContextBundle,
         lastLogs?: WorkoutLog[]
     ): Promise<{ text: string, action?: { type: 'SAVE_DIET' | 'SAVE_SCHEDULE' | 'SAVE_WORKOUT', payload: any } }> => {
         let logsContext = "";
@@ -192,6 +284,44 @@ ${lastLogs.map(l => {
 `;
         }
 
+        // Format unified context bundle if provided
+        let formattedContext = "";
+        if (typeof context === 'string') {
+            formattedContext = context;
+        } else if (context && typeof context === 'object') {
+            const parts: string[] = [];
+            if (context.userProfile) {
+                const p = context.userProfile;
+                parts.push(`User Profile: Name=${p.displayName}, Level=${p.fitnessLevel || p.level || 'beginner'}, Weight=${p.weight || '?'}kg, Height=${p.height || '?'}cm, Goal=${p.goals?.primary_goal || 'General Fitness'}, WeeklyGoal=${p.weeklyGoal || 3} days/wk`);
+            }
+            if (context.workoutPlans) {
+                const planSummaries = Object.values(context.workoutPlans)
+                    .filter(Boolean)
+                    .map(pl => `  - Plan ${pl.id} (${pl.title}): ${(pl.exercises || []).map(e => `${e.name} [${e.defaultSets}x${e.defaultReps}]`).join(', ')}`)
+                    .join('\n');
+                if (planSummaries) parts.push(`Active Workout Plans:\n${planSummaries}`);
+            }
+            if (context.weeklyPlan?.schedule?.length) {
+                const schedSummary = context.weeklyPlan.schedule
+                    .map(s => `  - ${s.date?.split('T')[0] || s.day} (${s.day}): ${s.activity} [type=${s.type}, status=${s.status || 'pending'}]`)
+                    .join('\n');
+                parts.push(`Current Weekly Schedule (${context.weeklyPlan.summary || 'Active'}):\n${schedSummary}`);
+            }
+            if (context.dietPlan?.days?.length) {
+                parts.push(`Current Diet Plan Summary: ${context.dietPlan.weekly_summary || '7-day meal plan active'}`);
+            }
+            if (context.recentFeedback?.length) {
+                const fbStr = context.recentFeedback.slice(0, 3).map(f =>
+                    `  - Rating ${f.difficultyRating}/5, Pain: ${f.painPoints?.join(', ') || 'None'}, Skipped: ${f.skippedExercises?.join(', ') || 'None'}${f.notes ? `, Note: "${f.notes}"` : ''}`
+                ).join('\n');
+                parts.push(`Recent Post-Workout Feedback:\n${fbStr}`);
+            }
+            if (context.extraInstruction) {
+                parts.push(context.extraInstruction);
+            }
+            formattedContext = parts.join('\n\n');
+        }
+
         const now = new Date();
         const todayStr = getLongDate(now);
         const todayWeekday = weekdayLongFormatter.format(now);
@@ -200,33 +330,34 @@ ${lastLogs.map(l => {
         const tomorrowStr = getLongDate(tomorrow);
         const tomorrowWeekday = weekdayLongFormatter.format(tomorrow);
 
-        const systemPrompt = `You are Sage Panda, a wise, friendly, and motivating fitness coach. 
-    You help users with workouts, diet, and lifestyle.
+        const systemPrompt = `You are Sage Panda, a wise, friendly, and motivating fitness coach in the FitTribe Jungle Dojo. 
+    You help users with workouts, progressive overload, joint-friendly exercise swaps, diet, and weekly scheduling.
+    Keep your tone warm, encouraging, concise, and practical.
     
     Current Application State:
-    - Today is: ${todayWeekday}, ${todayStr}
-    - Tomorrow is: ${tomorrowWeekday}, ${tomorrowStr}
+    - Today is: ${todayWeekday}, ${todayStr} (${getISODate(now)})
+    - Tomorrow is: ${tomorrowWeekday}, ${tomorrowStr} (${getISODate(tomorrow)})
 
     CAPABILITIES (SKILLS):
-    1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "Full body"), generate it using references from Plan A/B effectively.
-    2. **Create Diet Plan**: If user asks for a diet plan.
-    3. **Create Schedule**: If user asks to plan their week.
+    1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "20-min hotel workout", "Full body"), generate it using references from Plan A/B effectively.
+    2. **Create Diet Plan**: If user asks for a diet plan or macro adjustment.
+    3. **Create Schedule**: If user asks to plan or adjust their week.
        - Generate a 7-day schedule starting from TODAY (${todayWeekday}, ${getISODate(now)}) or TOMORROW.
        - ALWAYS include a "date" field (YYYY-MM-DD) for every item in the "schedule" array.
     4. **Analyze Workout Progress**: When a user queries their history or progress, use the detailed logs (which include exercises, sets, weights, and reps) to praise their progress, identify strengths, and suggest progression (e.g. progressive overload).
 
     INSTRUCTIONS:
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.
-    - **Diet**: <ACTION_SAVE_DIET> { "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 300, "macros": "..." } ] } ] } </ACTION_SAVE_DIET>
-    - **Schedule**: <ACTION_SAVE_SCHEDULE> { "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus..." } ] } </ACTION_SAVE_SCHEDULE>
-    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Leg Day", "exercises": [ { "name": "Squat", "defaultSets": 3, "defaultReps": "10", "trackingType": "reps", "visualArchetype": "knee_dominant", "equipment": "barbell" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration", "visualArchetype": "core_floor", "equipment": "bodyweight" } ] } </ACTION_SAVE_WORKOUT>
+    - **Diet**: <ACTION_SAVE_DIET> { "weekly_summary": "High protein bamboo fuel", "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 400, "macros": "30g P • 45g C • 10g F" } ] } ] } </ACTION_SAVE_DIET>
+    - **Schedule**: <ACTION_SAVE_SCHEDULE> { "summary": "Balanced 4-day split", "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus on controlled tempo" } ] } </ACTION_SAVE_SCHEDULE>
+    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Express Jungle Pump", "focus": "Full Body", "exercises": [ { "name": "Goblet Squat", "defaultSets": 3, "defaultReps": "10-12", "trackingType": "reps", "visualArchetype": "knee_dominant", "equipment": "dumbbell", "notes": "Keep chest tall" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration", "visualArchetype": "core_floor", "equipment": "bodyweight", "notes": "Brace core" } ] } </ACTION_SAVE_WORKOUT>
     - **EXERCISE VISUAL ARCHETYPE & EQUIPMENT RULES**:
       Whenever creating or updating exercises in a workout, include:
       * "visualArchetype": one of 'horizontal_push' | 'vertical_push' | 'horizontal_pull' | 'vertical_pull' | 'knee_dominant' | 'lunge_unilateral' | 'hip_dominant' | 'glute_bridge' | 'isolation_arms' | 'isolation_shoulders' | 'core_floor' | 'cardio_conditioning' | 'mobility_stretch'
       * "equipment": one of 'dumbbell' | 'barbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'cardio' | 'mobility'
-    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above ("defaultSets", "defaultReps", "trackingType", "visualArchetype", "equipment"). Always define trackingType as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO format.
+    - **IMPORTANT**: return ONLY VALID JSON inside the tags. Do not invent new structures like "weeks" or "dailyPlans". Use the exact keys shown above ("defaultSets", "defaultReps", "trackingType", "visualArchetype", "equipment"). Always define trackingType as 'reps' or 'duration' for exercises. Always provide the 'date' field in ISO YYYY-MM-DD format.
 
-    ${context ? `Context: ${context}` : ''}
+    ${formattedContext ? `Context:\n${formattedContext}` : ''}
     ${logsContext}`;
 
         const contents = [
@@ -272,14 +403,10 @@ ${lastLogs.map(l => {
             if (workoutPayload) action = { type: 'SAVE_WORKOUT', payload: workoutPayload };
 
             // Remove tags from text for display
-            let cleanText = text
+            const cleanText = text
                 .replace(/<ACTION_SAVE_DIET>[\s\S]*?<\/ACTION_SAVE_DIET>/g, '*(Diet Plan Generated)*')
                 .replace(/<ACTION_SAVE_SCHEDULE>[\s\S]*?<\/ACTION_SAVE_SCHEDULE>/g, '*(Schedule Updated)*')
                 .replace(/<ACTION_SAVE_WORKOUT>[\s\S]*?<\/ACTION_SAVE_WORKOUT>/g, '*(Custom Workout Created)*');
-
-            // Debug Logs (Ensured safe by geminiClient results but we should be careful what we log)
-            // console.log("🤖 Raw AI Response:", text); // Already sanitized content if it came from geminiClient
-            // console.log("📦 Parsed Action:", action);
 
             return { text: cleanText, action: action as any };
 
@@ -331,7 +458,7 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         Extract the user's CURRENT state for this upcoming week:
         - Stress Level (Low/Med/High)
         - Energy Level (Low/Med/High)
-        - Time Constraints (e.g., "only 20 mins a day", "weekend only")
+        - Time Constraints (e.g., "only 20 mins a day", "weekend only", "4 days")
         - Physical State (e.g., "knee pain", "recovered")
         
         Return JSON ONLY:
@@ -344,7 +471,6 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
         `;
 
         try {
-            // Combine history into string
             const conversationText = history.map(m => `${m.role}: ${m.text}`).join('\n');
             const result = await geminiClient.generateContent({
                 model: GEMINI_MODEL,
@@ -357,8 +483,83 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
     },
 
     /**
+     * Single-turn Weekly Check-in processor that combines context extraction + coach response
+     * into a single Gemini call (cutting check-in latency in half!).
+     */
+    processCheckinTurn: async (
+        history: { role: 'user' | 'model', text: string }[],
+        userProfile: UserProfile,
+        previousPlan?: WeeklyPlan | null
+    ): Promise<CheckinTurnResult> => {
+        const conversationText = history.map(m => `${m.role}: ${m.text}`).join('\n');
+        const prompt = `
+        You are Sage Panda conducting a quick, friendly Weekly Check-in with ${userProfile.displayName} (Goal: ${userProfile.goals?.primary_goal || 'General Fitness'}).
+        ${previousPlan?.schedule ? `Previous week completion: ${previousPlan.schedule.filter(s => s.status === 'done' || s.status === 'alternate').length}/${previousPlan.schedule.length} sessions.` : ''}
+
+        Conversation so far:
+        ${conversationText}
+
+        TASKS:
+        1. Extract the user's current state from the conversation:
+           - stress: "Low" | "Med" | "High" | "Unknown"
+           - energy: "Low" | "Med" | "High" | "Unknown"
+           - constraints: e.g. "4 days/week", "30 mins max", "None", or "Unknown"
+           - physical: e.g. "Fresh & recovered", "Sore shoulders", or "Unknown"
+           - sufficient: true if we know at least their energy/feeling AND roughly how many days/time they have this week (or if they have sent >= 2 user messages); false if we still need to ask one brief follow-up question.
+        2. Write a short, warm, motivating reply ("reply"):
+           - If sufficient is false, ask ONE concise follow-up question (e.g. about their schedule availability or any soreness this week).
+           - If sufficient is true, summarize their week's vibe in 1-2 sentences and tell them their personalized Weekly Plan is ready to generate below!
+        3. Provide 2-3 short "quickReplies" chips the user can tap next.
+
+        Return ONLY valid JSON:
+        {
+          "reply": "...",
+          "assessment": {
+            "stress": "...",
+            "energy": "...",
+            "constraints": "...",
+            "physical": "...",
+            "sufficient": true
+          },
+          "quickReplies": ["...", "..."]
+        }
+        `;
+
+        try {
+            const result = await geminiClient.generateContent({
+                model: GEMINI_MODEL,
+                contents: prompt
+            });
+            const parsed = parseJSON(result.text);
+            if (parsed && parsed.reply && parsed.assessment) {
+                return parsed as CheckinTurnResult;
+            }
+        } catch (e) {
+            console.error("processCheckinTurn failed, falling back", e);
+        }
+
+        // Fallback if mocked or parsing failed
+        const userTurnCount = history.filter(m => m.role === 'user').length;
+        return {
+            reply: userTurnCount >= 2
+                ? "Got it! I have everything I need to craft your week's schedule. Tap **Generate My Weekly Plan** below! 🐼🎋"
+                : "Thanks for sharing! How many days do you want to train this week, and do you have any tight joints or time limits?",
+            assessment: {
+                stress: "Med",
+                energy: "Med",
+                constraints: userTurnCount >= 2 ? "Standard schedule" : "Unknown",
+                physical: "Good",
+                sufficient: userTurnCount >= 2
+            },
+            quickReplies: userTurnCount >= 2
+                ? ["Generate my plan!", "Make it 3 days", "Add mobility day"]
+                : ["4 days, feeling good!", "3 days (busy week)", "Need joint-friendly recovery"]
+        };
+    },
+
+    /**
      * Generates a concrete Weekly Plan based on the conversation context.
-     * This is called when the user says "Go ahead" or similar confirmation.
+     * This is called when the user says "Go ahead" or clicks Generate Plan.
      */
     generatePlanFromContext: async (
         userProfile: UserProfile,
@@ -443,6 +644,41 @@ First, tell me: **How are you feeling mentally and physically**? (e.g., Stressed
             });
             return parseJSON(result.text) as WeeklyPlan;
         } catch (e) {
+            return null;
+        }
+    },
+
+    /**
+     * Generates a concise, actionable coaching summary for the Stats / Analytics tab.
+     */
+    generateAnalyticsInsights: async (
+        userProfile: UserProfile | null,
+        muscleData: { subject: string; A: number }[],
+        recentWorkoutCount: number,
+        topPRs: { name: string; maxWeight: number; maxReps: number; estimated1RM: number }[]
+    ): Promise<{ headline: string; muscleTip: string; progressionTip: string } | null> => {
+        const prompt = `
+        You are Sensei Panda analyzing ${userProfile?.displayName || 'a warrior'}'s Jungle Training Stats.
+        Goal: ${userProfile?.goals?.primary_goal || 'Balanced Strength & Fitness'}
+        Workouts in last 30 days: ${recentWorkoutCount}
+        Muscle Sets Distribution (30d): ${muscleData.map(m => `${m.subject}: ${m.A} sets`).join(', ')}
+        Top Lifts: ${topPRs.slice(0, 5).map(p => `${p.name} (${p.maxWeight}kg x ${p.maxReps}, Est 1RM ${Math.round(p.estimated1RM)}kg)`).join(', ') || 'Building initial baseline'}
+
+        Return ONLY valid JSON with 3 concise, friendly, specific coaching insights:
+        {
+          "headline": "1 short celebratory sentence on their consistency or top lift",
+          "muscleTip": "1 specific sentence pointing out their most-trained muscle vs any under-trained muscle group to balance next week",
+          "progressionTip": "1 actionable tip on which lift to push or how to structure their next 2 sessions"
+        }
+        `;
+        try {
+            const result = await geminiClient.generateContent({
+                model: GEMINI_MODEL,
+                contents: prompt
+            });
+            return parseJSON(result.text);
+        } catch (e) {
+            console.error("Failed to generate analytics insights", e);
             return null;
         }
     }

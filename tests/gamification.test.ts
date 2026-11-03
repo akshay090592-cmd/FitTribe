@@ -186,34 +186,35 @@ describe('gamification', () => {
     });
 
     describe('getRank', () => {
-        it('should return Novice for level < 5', () => {
-            expect(getRank(1)).toBe('Novice');
-            expect(getRank(4)).toBe('Novice');
+        it('should return Bamboo Cub sub-tiers for level 1-4', () => {
+            expect(getRank(1)).toBe('Bamboo Cub I');
+            expect(getRank(4)).toBe('Bamboo Cub III');
         });
 
-        it('should return Scout for level 5-9', () => {
-            expect(getRank(5)).toBe('Scout');
-            expect(getRank(9)).toBe('Scout');
+        it('should return Jungle Scout sub-tiers for level 5-9', () => {
+            expect(getRank(5)).toBe('Jungle Scout I');
+            expect(getRank(9)).toBe('Jungle Scout III');
         });
 
-        it('should return Ranger for level 10-14', () => {
-            expect(getRank(10)).toBe('Ranger');
-            expect(getRank(14)).toBe('Ranger');
+        it('should return Canopy Ranger sub-tiers for level 10-14', () => {
+            expect(getRank(10)).toBe('Canopy Ranger I');
+            expect(getRank(14)).toBe('Canopy Ranger III');
         });
 
-        it('should return Warrior for level 15-19', () => {
-            expect(getRank(15)).toBe('Warrior');
-            expect(getRank(19)).toBe('Warrior');
+        it('should return Iron Warrior sub-tiers for level 15-19', () => {
+            expect(getRank(15)).toBe('Iron Warrior I');
+            expect(getRank(19)).toBe('Iron Warrior III');
         });
 
-        it('should return Guardian for level 20-29', () => {
-            expect(getRank(20)).toBe('Guardian');
-            expect(getRank(29)).toBe('Guardian');
+        it('should return Jade Guardian & Volcano Champion for level 20-34', () => {
+            expect(getRank(20)).toBe('Jade Guardian I');
+            expect(getRank(29)).toBe('Volcano Champion I');
         });
 
-        it('should return Legend for level 30+', () => {
-            expect(getRank(30)).toBe('Legend');
-            expect(getRank(50)).toBe('Legend');
+        it('should scale through high-prestige tiers up to Eternal Panda Legend (100+)', () => {
+            expect(getRank(35)).toBe('Apex Warlord I');
+            expect(getRank(50)).toBe('Jungle Sovereign II');
+            expect(getRank(100)).toBe('Eternal Panda Legend');
         });
     });
 

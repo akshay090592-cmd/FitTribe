@@ -1,10 +1,15 @@
-import { ExerciseSet } from '../types';
+import { ExerciseSet, ExerciseEquipment, ExerciseArchetype } from '../types';
 
 export interface ProgressionSuggestion {
   type: 'increase_weight' | 'increase_reps' | 'maintain';
   suggestedWeight: number;
   suggestedReps: number;
   reason: string;
+}
+
+export interface ProgressionOptions {
+  equipment?: ExerciseEquipment;
+  archetype?: ExerciseArchetype;
 }
 
 interface RepsRange {
@@ -54,7 +59,8 @@ const parseRepsRange = (defaultRepsStr: string): RepsRange => {
  */
 export const getProgressionSuggestion = (
   lastSets: ExerciseSet[] | null,
-  defaultRepsStr: string
+  defaultRepsStr: string,
+  options?: ProgressionOptions
 ): ProgressionSuggestion | null => {
   if (!lastSets || lastSets.length === 0) return null;
 
@@ -89,13 +95,35 @@ export const getProgressionSuggestion = (
   const allHitMax = (hitMaxCount === completedCount);
   const anyHitMax = (hitMaxCount > 0);
 
+  // Bodyweight / 0kg awareness: suggest rep progression instead of +2.5kg
+  if (maxWeightUsed === 0 || options?.equipment === 'bodyweight') {
+    if (allHitMax) {
+      const targetReps = maxReps + 2;
+      return {
+        type: 'increase_reps',
+        suggestedWeight: 0,
+        suggestedReps: targetReps,
+        reason: `Bodyweight mastered! Aim for ${targetReps} reps.`
+      };
+    }
+    return {
+      type: 'increase_reps',
+      suggestedWeight: 0,
+      suggestedReps: maxReps,
+      reason: anyHitMax
+        ? `Aim for ${maxReps} reps on all bodyweight sets.`
+        : `Keep pushing until you hit ${maxReps} reps.`
+    };
+  }
+
   if (allHitMax) {
-    // Progressive Overload: Increase Weight
+    // Progressive Overload: Increase Weight (smaller jump for isolation/dumbbell if specified)
+    const increment = (options && (options.archetype === 'isolation' || options.equipment === 'dumbbell' || options.equipment === 'cable')) ? 2 : 2.5;
     return {
       type: 'increase_weight',
-      suggestedWeight: maxWeightUsed + 2.5, // Standard incremental
+      suggestedWeight: maxWeightUsed + increment,
       suggestedReps: minReps,
-      reason: `You mastered ${maxWeightUsed}kg! Level up +2.5kg.`
+      reason: `You mastered ${maxWeightUsed}kg! Level up +${increment}kg.`
     };
   } else if (anyHitMax) {
     // You hit it once, try to do it for all sets

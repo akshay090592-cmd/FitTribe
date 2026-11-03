@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User, UserGamificationState, UserProfile } from '../types';
-import { X, Award, Gift, Star, Clock, Trophy, Target, Zap, Activity } from 'lucide-react';
+import { X, Award, Gift, Star, Clock, Trophy, Target, Zap, Activity, Flame } from 'lucide-react';
 import { getPublicProfile, getXPLogs } from '../utils/storage';
 import { getAvatarPath } from '../utils/avatar';
-import { calculateLevel, getRank } from '../utils/gamification';
+import { BADGES_DB, calculateLevel, getLevelProgress, getRankDetails } from '../utils/gamification';
 import { StatsDetailPopup } from './StatsDetailPopup';
+import { RankBadge } from './RankBadge';
+import { BadgeIcon } from './BadgeIcon';
 
 interface Props {
   isOpen: boolean;
@@ -52,6 +54,8 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
 
   const xpToUse = gamificationState.lifetimeXp !== undefined ? gamificationState.lifetimeXp : gamificationState.points;
   const level = calculateLevel(xpToUse);
+  const levelProgress = getLevelProgress(xpToUse);
+  const rankDetails = getRankDetails(level);
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6 animate-fade-in">
@@ -65,25 +69,51 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
         </button>
 
         {/* Header / Avatar */}
-        <div className="h-32 relative" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
+        <div className={`h-32 relative bg-gradient-to-br ${rankDetails.gradient}`}>
           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
-            <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-white overflow-hidden">
+            <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-white overflow-hidden relative">
               <img src={getAvatarPath(profile?.avatarId)} className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white shadow-md border border-emerald-100 flex items-center justify-center text-base">
+              {rankDetails.icon}
             </div>
           </div>
         </div>
 
         <div className="pt-14 pb-8 px-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mb-1">{user}</h2>
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <span className="bg-emerald-55 text-emerald-750 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200/60 shadow-sm">
-              Lvl {level} {getRank(level)}
-            </span>
+          <h2 className="text-2xl font-bold text-slate-800 font-['Fredoka'] mb-1.5">{user}</h2>
+          <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
+            <RankBadge level={level} size="sm" />
+            {(gamificationState.streak || 0) > 0 && (
+              <span className="bg-orange-50 text-orange-700 text-xs font-black px-2.5 py-1 rounded-full border border-orange-200 flex items-center gap-1 shadow-2xs">
+                <Flame size={12} className="fill-orange-500 text-orange-500" /> {gamificationState.streak}d Streak
+              </span>
+            )}
             {gamificationState.commitment && (
               <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 flex items-center">
                 <Clock size={12} className="mr-1" /> Committed
               </span>
             )}
+          </div>
+
+          {/* Animated XP Progress to Next Level */}
+          <div className="mb-5 bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3 text-left">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-emerald-800 mb-1.5">
+              <span>Level {levelProgress.level} → {levelProgress.nextLevel}</span>
+              <span>{Math.round(levelProgress.currentXp)} / {levelProgress.neededXp} XP</span>
+            </div>
+            <div className="w-full h-2 bg-emerald-200/60 rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${rankDetails.gradient} rounded-full transition-all duration-700`}
+                style={{ width: `${Math.min(100, Math.max(5, levelProgress.progress))}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center mt-1.5 text-[10px] font-bold text-emerald-700/80">
+              <span>Lifetime: {xpToUse.toLocaleString()} XP</span>
+              {rankDetails.nextRankTitle && (
+                <span>Next Tier: {rankDetails.nextRankTitle}</span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -106,18 +136,41 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
 
           {/* Badges */}
           <div className="text-left mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center">
-              <Award size={16} className="mr-2 text-emerald-500" /> Badges
+            <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
+              <span className="flex items-center">
+                <Award size={16} className="mr-2 text-emerald-500" /> Unlocked Badges
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                {gamificationState.badges.length} / {BADGES_DB.length}
+              </span>
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {gamificationState.badges.length === 0 && (
-                <div className="text-xs text-slate-400 italic">No badges earned yet.</div>
+                <div className="col-span-3 text-xs text-slate-400 italic">No badges earned yet.</div>
               )}
-              {gamificationState.badges.map(badgeId => (
-                <div key={badgeId} className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 border border-yellow-200" title={badgeId}>
-                  <Star size={14} fill="currentColor" />
-                </div>
-              ))}
+              {gamificationState.badges.map(badgeId => {
+                const badgeDef = BADGES_DB.find(b => b.id === badgeId);
+                return (
+                  <div
+                    key={badgeId}
+                    title={badgeDef ? `${badgeDef.title}: ${badgeDef.description}` : badgeId}
+                    className={`p-2 rounded-xl border flex flex-col items-center text-center gap-1 ${
+                      badgeDef?.rarity === 'legendary'
+                        ? 'bg-amber-50/90 border-amber-200 text-amber-800'
+                        : badgeDef?.rarity === 'rare'
+                        ? 'bg-sky-50/90 border-sky-200 text-sky-800'
+                        : 'bg-emerald-50/80 border-emerald-100 text-emerald-800'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-white/90 shadow-2xs flex items-center justify-center">
+                      <BadgeIcon iconName={badgeDef?.icon || 'Award'} size={15} />
+                    </div>
+                    <span className="text-[10px] font-black leading-tight line-clamp-1">
+                      {badgeDef?.title || badgeId}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

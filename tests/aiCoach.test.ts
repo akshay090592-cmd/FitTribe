@@ -134,4 +134,27 @@ describe('AICoachService', () => {
             ])
         }));
     });
+
+    it('should handle single-turn processCheckinTurn with assessment and quickReplies', async () => {
+        const mockTurn = {
+            reply: 'Got it! Taking it easy on the lower back.',
+            assessment: {
+                stress: 'Medium',
+                energy: 'Medium',
+                constraints: 'None',
+                physical: 'Lower back tightness'
+            },
+            quickReplies: ['Ready to generate plan', 'Only 3 days this week']
+        };
+        (geminiClient.generateContent as any).mockResolvedValue({ text: JSON.stringify(mockTurn) });
+
+        const res = await AICoachService.processCheckinTurn(
+            [{ role: 'user', text: 'My lower back is tight' }],
+            mockProfile
+        );
+
+        expect(res.reply).toBe(mockTurn.reply);
+        expect(res.assessment.physical).toBe('Lower back tightness');
+        expect(res.quickReplies).toHaveLength(2);
+    });
 });

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { User, UserGamificationState, WorkoutLog } from '../types';
-import { calculateXP } from '../utils/gamification';
+import { calculateXP, calculateLevel } from '../utils/gamification';
 import { Trophy, Activity, Zap, Calendar, Crown, Flame } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { getAvatarPath } from '../utils/avatar';
+import { RankBadge } from './RankBadge';
 
 interface Props {
     logs: WorkoutLog[];
@@ -121,33 +122,43 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
             <div className="p-2">
                 {sortedUsers.map((user, idx) => {
                     const { xp, count } = filteredStats[user] || { xp: 0, count: 0 };
+                    const userState = gamificationState[user];
+                    const lifetimeXp = userState?.lifetimeXp ?? userState?.points ?? 0;
+                    const memberLevel = calculateLevel(lifetimeXp);
+                    const memberStreak = userState?.streak || 0;
 
                     return (
                         <div key={user} onClick={() => onUserClick?.(user)} className="flex items-center justify-between p-3 border-b border-emerald-100/30 last:border-0 hover:bg-emerald-50/40 spring-transition rounded-xl group cursor-pointer">
-                            <div className="flex items-center flex-1">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 shadow-sm transition-transform group-hover:scale-110
+                            <div className="flex items-center flex-1 min-w-0">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 shrink-0 shadow-sm transition-transform group-hover:scale-110
                                     ${idx === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
                                         idx === 1 ? 'bg-slate-100 text-slate-600 ring-2 ring-slate-200' :
                                             idx === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' : 'bg-white text-slate-400 border border-slate-100'}`}>
                                     {idx + 1}
                                 </div>
 
-                                <div className="relative w-10 h-10 mr-3">
+                                <div className="relative w-10 h-10 mr-3 shrink-0">
                                     <div className="w-full h-full rounded-full overflow-hidden border border-slate-100">
                                         <img src={getAvatarPath(avatarMap[user])} alt={user} className="w-full h-full object-cover" onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40'} />
                                     </div>
                                     {idx === 0 && <div className="absolute -top-2 -right-1 text-base animate-bounce">👑</div>}
                                 </div>
 
-                                <div>
-                                    <div className="font-bold text-slate-800 text-sm flex items-center">
-                                        {user}
-                                        {idx === 0 && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded-full border border-yellow-200">Lead</span>}
+                                <div className="min-w-0 flex-1 pr-2">
+                                    <div className="font-bold text-slate-800 text-sm flex items-center flex-wrap gap-1.5">
+                                        <span className="truncate">{user}</span>
+                                        <RankBadge level={memberLevel} size="2xs" />
+                                        {idx === 0 && <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full border border-yellow-200 font-black uppercase">Lead</span>}
                                     </div>
-                                    <div className="flex items-center space-x-3 mt-0.5">
+                                    <div className="flex items-center space-x-2 mt-1">
                                         <div className="text-xs text-amber-800 font-bold flex items-center bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded">
                                             <Zap size={10} className="mr-1 fill-current" /> {xp.toLocaleString()} XP
                                         </div>
+                                        {memberStreak > 0 && (
+                                            <div className="text-[10px] text-orange-700 font-black flex items-center bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded">
+                                                🔥 {memberStreak}d
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

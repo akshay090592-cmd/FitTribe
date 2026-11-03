@@ -72,6 +72,7 @@ vi.mock('../utils/storage', () => ({
     updateProfile: vi.fn(),
     deleteLog: vi.fn(),
     getTribeMembers: vi.fn().mockResolvedValue([]),
+    getLatestTribePhoto: vi.fn().mockResolvedValue(null),
     createTribe: vi.fn(),
     joinTribe: vi.fn(),
     saveGamificationState: vi.fn(),

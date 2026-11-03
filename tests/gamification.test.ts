@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, calculateWorkoutVolume } from '../utils/gamification';
+import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, getRankDetails, RANK_TIERS, SHOP_POWERUPS, MASTERY_BADGES, calculateMasteryProgress, calculateWorkoutVolume } from '../utils/gamification';
 import { User, WorkoutLog, UserProfile, UserGamificationState, WorkoutType } from '../types';
 
 // Mock supabaseClient first to override isSupabaseConfigured
@@ -463,6 +463,62 @@ describe('gamification', () => {
             expect(breakdown.get('3')).toEqual({ base: 60, bonus: 20, total: 80, streak: 3 });
             expect(breakdown.get('4')).toEqual({ base: 15, bonus: 0, total: 15, streak: 3 });
             expect(breakdown.get('5')).toEqual({ base: 100, bonus: 30, total: 130, streak: 4 });
+        });
+    });
+
+    describe('Duolingo Gamification Expansion (Extended Ranks, Mastery & Chests)', () => {
+        it('should return detailed rank metadata and sub-tiers via getRankDetails', () => {
+            expect(RANK_TIERS).toHaveLength(12);
+
+            const lvl1 = getRankDetails(1);
+            expect(lvl1.title).toBe('Bamboo Cub');
+            expect(lvl1.subTier).toBe('I');
+            expect(lvl1.nextRankTitle).toBe('Jungle Scout');
+            expect(lvl1.levelsToNextRank).toBe(4);
+
+            const lvl31 = getRankDetails(31);
+            expect(lvl31.title).toBe('Volcano Champion');
+            expect(lvl31.subTier).toBe('II');
+            expect(lvl31.nextRankTitle).toBe('Apex Warlord');
+
+            const lvl115 = getRankDetails(115);
+            expect(lvl115.title).toBe('Eternal Panda Legend');
+            expect(lvl115.subTier).toBe('');
+            expect(lvl115.fullTitle).toBe('Eternal Panda Legend');
+        });
+
+        it('should define 5 mastery badge categories (7 tiers each) and 4 Jungle Shop power-ups', () => {
+            expect(MASTERY_BADGES).toHaveLength(5);
+            expect(MASTERY_BADGES.every(b => b.tiers.length === 7)).toBe(true);
+            expect(SHOP_POWERUPS).toHaveLength(4);
+            expect(SHOP_POWERUPS.map(p => p.id)).toContain('mystery_crate');
+        });
+
+        it('should compute 7-tier mastery badge progression across all 5 categories', () => {
+            const sampleLogs: WorkoutLog[] = [
+                {
+                    id: 'm1',
+                    user: 'TestUser',
+                    date: '2026-01-03T07:00:00',
+                    type: WorkoutType.A,
+                    durationMinutes: 45,
+                    calories: 400,
+                    exercises: [{ name: 'Bench Press', sets: [{ weight: 80, reps: 10, completed: true }] }],
+                },
+            ];
+            const progress = calculateMasteryProgress(sampleLogs, 7, 3);
+            expect(progress).toHaveLength(5);
+            const workoutsCat = progress.find(c => c.id === 'iron_titan');
+            expect(workoutsCat).toBeDefined();
+            expect(workoutsCat?.currentValue).toBe(1);
+            const streakCat = progress.find(c => c.id === 'wildfire');
+            expect(streakCat?.currentValue).toBe(7);
+            expect(streakCat?.currentTier).toBe(2);
+            expect(streakCat?.romanTier).toBe('II');
+            const volumeCat = progress.find(c => c.id === 'mountain_mover');
+            expect(volumeCat?.currentValue).toBe(800);
+            const giftsCat = progress.find(c => c.id === 'tribe_spirit');
+            expect(giftsCat?.currentValue).toBe(3);
         });
     });
 });

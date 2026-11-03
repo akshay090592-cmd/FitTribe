@@ -417,9 +417,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                       ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                       : isUnlocked
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                        : isMythic
-                          ? 'bg-gradient-to-r from-purple-700 via-fuchsia-600 to-amber-500 text-white hover:brightness-110 disabled:opacity-50 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400'
                       }`}
                   >
                     {isActive ? 'Unequip' :

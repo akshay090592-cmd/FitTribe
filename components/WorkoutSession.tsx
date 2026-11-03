@@ -998,12 +998,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         }
         elements.push(
           <div key={`group-${currentIndex}`} className="mb-3 pl-2.5 sm:pl-3 border-l-4 border-emerald-500 rounded-l-sm">
-            <div className="flex items-center justify-between mb-1.5 px-0.5">
+            <div className="flex items-center gap-2 mb-1.5 px-0.5">
               <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-emerald-800">
                 <Zap size={12} className="text-amber-500 fill-amber-400" /> Superset
               </span>
-              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                Back-to-Back • No Rest Between
+              <span className="text-[11px] font-semibold text-emerald-700/80">
+                • Back-to-back sets
               </span>
             </div>
             <div className="space-y-2">
@@ -1052,73 +1052,78 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   if (step === 'warmup') {
     const warmupPct = plan.warmup.length > 0 ? Math.round((warmupCompletedCount / plan.warmup.length) * 100) : 100;
+    const allWarmupDone = plan.warmup.length > 0 && warmupCompletedCount === plan.warmup.length;
     return (
       <div className="min-h-screen bg-emerald-50 pb-6">
-        {/* Sticky Top Header */}
+        {/* Clean, Uncluttered Top Header */}
         <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100/80 px-3 sm:px-4 py-2.5">
           <div className="max-w-xl mx-auto flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center gap-2.5">
               <button
                 onClick={handleWarmupCancel}
-                className="w-9 h-9 rounded-xl bg-white shadow-2xs border border-emerald-100 text-emerald-700 flex items-center justify-center mr-2.5 active:scale-90 transition-transform"
+                className="w-9 h-9 rounded-xl bg-white shadow-2xs border border-emerald-100 text-emerald-700 flex items-center justify-center active:scale-90 transition-transform"
                 aria-label="Back"
               >
                 <ChevronLeft size={20} />
               </button>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Phase 1 of 3</span>
-                </div>
                 <h2 className="text-lg font-bold text-emerald-950 font-['Fredoka'] leading-tight">Warm Up Dojo</h2>
+                <p className="text-[11px] font-semibold text-emerald-700/80">{plan.title}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100">
-                {warmupCompletedCount}/{plan.warmup.length} Ready
-              </span>
-              <button
-                type="button"
-                onClick={() => setStep('workout')}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-100/80 hover:bg-emerald-200/70 px-2.5 py-1 rounded-xl transition-colors"
-              >
-                Skip →
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setStep('workout')}
+              className="text-xs font-extrabold text-emerald-700 hover:text-emerald-900 bg-white hover:bg-emerald-100/70 px-3 py-1.5 rounded-xl border border-emerald-200/80 transition-colors shadow-2xs"
+            >
+              Skip →
+            </button>
           </div>
         </div>
 
-        <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full space-y-3">
+        <div className="px-3 sm:px-4 py-3.5 max-w-xl mx-auto w-full space-y-3.5">
           {isStreakAtRisk && (
-            <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-xl flex items-start shadow-2xs animate-fade-in">
+            <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-2xl flex items-start shadow-2xs animate-fade-in">
               <AlertTriangle className="text-orange-500 mr-2.5 flex-shrink-0 mt-0.5" size={18} />
               <div>
                 <h3 className="text-orange-900 font-bold text-xs mb-0.5">Streak at Risk! 🔥</h3>
-                <p className="text-orange-700 text-xs leading-relaxed">You haven't trained in 2 days. Complete this workout to protect your bamboo streak!</p>
+                <p className="text-orange-700 text-xs leading-relaxed">You haven&apos;t trained in 2 days. Complete this workout to protect your bamboo streak!</p>
               </div>
             </div>
           )}
 
-          {/* Single Cohesive Warmup Card (No Nested Cards) */}
-          <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-xs overflow-hidden">
-            <div className="px-3.5 py-3 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🧘</span>
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']">Dynamic Joint Prep</h3>
-                  <p className="text-emerald-700/80 text-[11px] font-medium">Wake up your joints before lifting</p>
+          {/* Friendly Sensei Warmup Card */}
+          <div className="bg-white rounded-3xl border border-emerald-200/80 shadow-xs overflow-hidden">
+            <div className="px-4 py-3.5 bg-gradient-to-r from-emerald-50/90 via-teal-50/50 to-emerald-50/80 border-b border-emerald-100 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-white border border-emerald-200/80 shadow-2xs flex items-center justify-center shrink-0 p-1">
+                  <img src={getAvatarPath(userProfile.avatarId)} alt={user} className="w-full h-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-emerald-950 font-['Fredoka'] leading-tight">
+                    {allWarmupDone ? 'All Warmed Up! 🔥' : `Dynamic Joint Prep`}
+                  </h3>
+                  <p className="text-emerald-700/85 text-xs font-medium leading-snug">
+                    {allWarmupDone ? 'Joints prepped and ready for heavy sets!' : 'Wake up your joints before lifting'}
+                  </p>
                 </div>
               </div>
-              {plan.warmup.length > 0 && warmupCompletedCount < plan.warmup.length && (
+              {plan.warmup.length > 0 && !allWarmupDone ? (
                 <button
                   type="button"
                   onClick={() => setWarmupDone(new Array(plan.warmup.length).fill(true))}
-                  className="text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 active:scale-95 transition-all shrink-0"
+                  className="text-xs font-extrabold text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 active:scale-95 transition-all shrink-0 shadow-2xs"
                 >
                   Check All
                 </button>
+              ) : (
+                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-xl shrink-0">
+                  {warmupCompletedCount}/{plan.warmup.length}
+                </span>
               )}
             </div>
-            <div className="w-full h-1 bg-emerald-100/80">
+
+            <div className="w-full h-1 bg-emerald-100/70">
               <div
                 className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-300"
                 style={{ width: `${warmupPct}%` }}
@@ -1131,8 +1136,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 return (
                   <label
                     key={idx}
-                    className={`flex items-center px-3.5 py-3 transition-colors cursor-pointer select-none ${
-                      isDone ? 'bg-emerald-50/40' : 'bg-white hover:bg-slate-50/70'
+                    className={`flex items-center px-4 py-3.5 transition-colors cursor-pointer select-none ${
+                      isDone ? 'bg-emerald-50/45' : 'bg-white hover:bg-slate-50/70'
                     }`}
                   >
                     <div className="relative flex items-center justify-center w-8 h-8 mr-3 shrink-0">
@@ -1158,8 +1163,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                       </span>
                     </div>
                     {isDone && (
-                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md ml-2">
-                        Done
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full ml-2">
+                        Ready
                       </span>
                     )}
                   </label>
@@ -1168,32 +1173,20 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             </div>
           </div>
 
-          {/* Primary CTA directly below Warm Up Card (No awkward empty gap) */}
-          <div className="pt-1">
-            <button
-              onClick={() => setStep('workout')}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all border-b-4 border-emerald-700 flex items-center justify-center gap-2"
-            >
-              <span>Start Training</span>
-              <TrendingUp size={18} />
-            </button>
-          </div>
-
-          {/* Friendly Up-Next Session Preview Card */}
+          {/* Compact Horizontal Session Preview Strip (Instead of a Cluttered Multi-Card Grid) */}
           {plan.exercises.length > 0 && (
-            <div className="bg-white/80 rounded-2xl border border-emerald-100/90 p-3.5 shadow-2xs">
-              <div className="flex items-center justify-between gap-2 mb-2.5">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Up Next • {plan.exercises.length} Exercises</span>
-                  <h4 className="text-sm font-bold text-emerald-950 font-['Fredoka'] leading-snug truncate">{plan.title}</h4>
-                </div>
+            <div className="bg-white/85 rounded-2xl border border-emerald-100/90 px-3.5 py-3 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">
+                  Up Next • {plan.exercises.length} Exercises
+                </span>
                 {plan.focus && (
-                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100 shrink-0">
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 truncate max-w-[180px]">
                     {plan.focus}
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
                 {plan.exercises.map((ex, i) => {
                   const meta = resolveExerciseVisualMeta(ex.name, {
                     customImage: ex.image,
@@ -1201,7 +1194,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                     equipment: ex.equipment,
                   });
                   return (
-                    <div key={i} className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-50/40 border border-emerald-100/60">
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl bg-emerald-50/60 border border-emerald-100/80 shrink-0"
+                    >
                       <ExerciseThumbnail
                         name={ex.name}
                         customImage={ex.image}
@@ -1210,10 +1206,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         meta={meta}
                         size="xs"
                       />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-emerald-950 truncate">{ex.name}</div>
-                        <div className="text-[10px] font-semibold text-emerald-700/80">
-                          {ex.defaultSets} × {ex.defaultReps} • {meta.primaryMuscle}
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-emerald-950 whitespace-nowrap">{ex.name}</div>
+                        <div className="text-[10px] font-semibold text-emerald-700/80 whitespace-nowrap">
+                          {ex.defaultSets} × {ex.defaultReps}
                         </div>
                       </div>
                     </div>
@@ -1222,6 +1218,17 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               </div>
             </div>
           )}
+
+          {/* Primary Start Training CTA */}
+          <div className="pt-0.5">
+            <button
+              onClick={() => setStep('workout')}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all border-b-4 border-emerald-700 flex items-center justify-center gap-2"
+            >
+              <span>Start Training</span>
+              <TrendingUp size={18} />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1523,94 +1530,152 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   if (step === 'analysis') {
     const durationMinutes = Math.max(1, Math.round(workoutTimer.seconds / 60));
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-900 via-emerald-950 to-slate-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[url('/assets/jungle_bg_pattern.webp')] pointer-events-none"></div>
-        <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-lime-400/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="min-h-screen bg-emerald-50 flex flex-col items-center justify-start p-3.5 sm:p-6 relative overflow-x-hidden pb-10">
         <Confetti active={true} />
 
         {!analysis ? (
-          <div className="text-center relative z-20 p-6">
-            <div className="w-24 h-24 bg-emerald-800/90 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-bounce border-2 border-emerald-500/40 shadow-2xl">
-              <img src={getAvatarPath(userProfile.avatarId)} className="w-16 h-16 object-contain" alt={user} />
+          <div className="my-auto text-center relative z-20 p-6 bg-white rounded-3xl border border-emerald-100 shadow-lg max-w-sm w-full">
+            <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-bounce border border-emerald-200 shadow-xs">
+              <img src={getAvatarPath(userProfile.avatarId)} className="w-15 h-15 object-contain" alt={user} />
             </div>
-            <h2 className="text-3xl font-bold text-emerald-50 mb-2 font-['Fredoka']">Great Work!</h2>
-            <p className="text-emerald-200/80 animate-pulse text-sm font-medium">Calculating bamboo earnings & Coach insights...</p>
+            <h2 className="text-2xl font-bold text-emerald-950 mb-1.5 font-['Fredoka']">Great Work, {user}!</h2>
+            <p className="text-emerald-700/80 animate-pulse text-xs font-bold">Sensei Panda is preparing your dojo report...</p>
           </div>
         ) : (
-          <div className="relative z-20 w-full max-w-md animate-slide-up py-4">
-            {/* Hero Victory Header */}
-            <div className="text-center mb-6">
-              <div className="inline-block p-1.5 rounded-3xl mb-3 shadow-xl shadow-emerald-500/30 ring-4 ring-lime-400/60 bg-gradient-to-b from-emerald-700 to-emerald-900">
-                <img src={getAvatarPath(userProfile.avatarId, 'fire')} className="w-20 h-20 object-contain" alt={user} />
-              </div>
-              <div className="inline-flex items-center gap-1 bg-lime-400/20 border border-lime-400/40 text-lime-300 text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full mb-1">
-                <Sparkles size={11} /> Workout Complete
-              </div>
-              <h2 className="text-3xl font-bold text-white font-['Fredoka']">Panda Power!</h2>
-              <p className="text-emerald-200/90 text-sm font-medium">You crushed it, {user}!</p>
-            </div>
+          <div className="relative z-20 w-full max-w-xl animate-slide-up space-y-4">
+            {/* 1. Unified Hero Victory & Stats Card (matches Home 'Next Mission' hero card) */}
+            <div className="bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-950 rounded-[28px] p-5 text-white shadow-xl relative overflow-hidden border border-emerald-700/60">
+              <div className="absolute inset-0 opacity-[0.07] bg-[url('/assets/jungle_bg_pattern.webp')] pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-48 h-48 bg-lime-400/20 rounded-full blur-3xl pointer-events-none" />
 
-            {/* 4-Metric Bento Summary */}
-            <div className="grid grid-cols-3 gap-2.5 mb-5">
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-center">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-0.5">Duration</div>
-                <div className="text-xl font-black text-white font-['Fredoka']">{durationMinutes}<span className="text-xs font-bold text-emerald-200 ml-0.5">m</span></div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-center">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-0.5">Sets Done</div>
-                <div className="text-xl font-black text-white font-['Fredoka']">{completedSetsCount}<span className="text-xs font-bold text-emerald-200">/{totalSetsCount}</span></div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-center">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-0.5">Volume</div>
-                <div className="text-xl font-black text-white font-['Fredoka']">{totalSessionVolume.toLocaleString()}<span className="text-xs font-bold text-emerald-200 ml-0.5">kg</span></div>
-              </div>
-            </div>
-
-            {earnedBadges.length > 0 && (
-              <div className="mb-5 bg-gradient-to-r from-amber-500/25 to-yellow-500/20 border-2 border-yellow-400/50 p-4 rounded-3xl text-center animate-bounce-subtle">
-                <h3 className="text-yellow-300 font-bold text-xs uppercase tracking-widest mb-3 flex items-center justify-center">
-                  <Sparkles size={14} className="mr-1.5" /> New Badges Unlocked!
-                </h3>
-                <div className="flex justify-center gap-3 flex-wrap">
-                  {earnedBadges.map(b => (
-                    <div key={b.id} className="flex flex-col items-center bg-yellow-400/15 border border-yellow-300/30 px-3 py-2 rounded-2xl">
-                      <span className="text-2xl mb-1">🏆</span>
-                      <span className="text-xs font-bold text-yellow-100">{b.title}</span>
+              <div className="relative z-10 flex items-center justify-between gap-2.5 mb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md p-1.5 border-2 border-lime-400/60 shadow-lg shrink-0 flex items-center justify-center">
+                    <img src={getAvatarPath(userProfile.avatarId, 'fire')} className="w-11 h-11 object-contain" alt={user} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="inline-flex items-center gap-1 bg-lime-400/20 border border-lime-300/40 text-lime-300 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 whitespace-nowrap">
+                      <Sparkles size={10} /> Mission Complete
                     </div>
-                  ))}
+                    <h2 className="text-xl sm:text-2xl font-bold text-white font-['Fredoka'] leading-tight whitespace-nowrap">Panda Power!</h2>
+                    <p className="text-emerald-100/85 text-xs font-semibold truncate">{plan.title}</p>
+                  </div>
+                </div>
+
+                {/* Integrated XP Pill */}
+                <div className="bg-lime-400/20 border border-lime-300/40 px-2.5 py-2 rounded-2xl text-right shrink-0 backdrop-blur-xs">
+                  <div className="text-[9px] font-black uppercase tracking-wider text-lime-300 flex items-center justify-end gap-0.5 whitespace-nowrap">
+                    <Zap size={10} className="fill-lime-300" /> XP Earned
+                  </div>
+                  <div className="text-xl font-black text-white font-['Fredoka'] leading-none mt-0.5">
+                    +{earnedXp}
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* XP Banner */}
-            <div className="mb-5 bg-gradient-to-r from-lime-400/25 via-emerald-400/20 to-lime-400/25 border-2 border-lime-400/50 p-4 rounded-3xl flex items-center justify-between px-6 shadow-lg">
-              <div className="text-left">
-                <h3 className="text-lime-300 font-black text-xs uppercase tracking-widest flex items-center">
-                  <Zap size={14} className="mr-1 fill-lime-300" /> XP Gained
-                </h3>
-                <p className="text-emerald-100/80 text-xs">Added to your Panda rank</p>
+              {/* 3-Stat Strip inside Hero Card */}
+              <div className="relative z-10 grid grid-cols-3 gap-2.5">
+                <div className="bg-black/25 backdrop-blur-xs border border-white/10 rounded-2xl p-2.5 text-center">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/80 mb-0.5">Duration</div>
+                  <div className="text-lg font-black text-white font-['Fredoka'] leading-none">{durationMinutes}<span className="text-xs font-bold text-emerald-200 ml-0.5">m</span></div>
+                </div>
+                <div className="bg-black/25 backdrop-blur-xs border border-white/10 rounded-2xl p-2.5 text-center">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/80 mb-0.5">Sets Done</div>
+                  <div className="text-lg font-black text-white font-['Fredoka'] leading-none">{completedSetsCount}<span className="text-xs font-bold text-emerald-200">/{totalSetsCount}</span></div>
+                </div>
+                <div className="bg-black/25 backdrop-blur-xs border border-white/10 rounded-2xl p-2.5 text-center">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/80 mb-0.5">Volume</div>
+                  <div className="text-lg font-black text-white font-['Fredoka'] leading-none">{totalSessionVolume.toLocaleString()}<span className="text-xs font-bold text-emerald-200 ml-0.5">kg</span></div>
+                </div>
               </div>
-              <div className="text-3xl font-black text-lime-100 flex items-baseline font-['Fredoka'] drop-shadow-xs">
-                +{earnedXp} <span className="text-sm ml-1 text-lime-300 font-bold">XP</span>
+
+              {earnedBadges.length > 0 && (
+                <div className="relative z-10 mt-3.5 pt-3 border-t border-white/15 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 flex items-center gap-1">
+                    <Trophy size={12} /> Unlocked Badges
+                  </span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {earnedBadges.map(b => (
+                      <span key={b.id} className="inline-flex items-center gap-1 bg-amber-400/20 border border-amber-300/40 text-amber-100 text-xs font-bold px-2.5 py-1 rounded-xl">
+                        🏆 {b.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Unified Sensei Panda's Report Card (Matches Home & Loot white card aesthetic) */}
+            <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-emerald-950 font-['Fredoka'] text-base flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-base shadow-2xs">🐼</span>
+                  Sensei Panda&apos;s Report
+                </h3>
+                <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  Coach Insights
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {/* Celebration */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Trophy size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-amber-800 mb-0.5">Celebration</div>
+                    <p className="text-slate-900 font-bold text-sm leading-snug font-['Fredoka']">{analysis.celebration}</p>
+                  </div>
+                </div>
+
+                {/* Coach's Note */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100/80">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <TrendingUp size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-0.5">Coach&apos;s Note</div>
+                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.insight}</p>
+                  </div>
+                </div>
+
+                {/* Next Mission */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-teal-50/60 border border-teal-100/80">
+                  <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Lightbulb size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-teal-800 mb-0.5">Next Mission</div>
+                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.nudge}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Tribe Victory Spotlight Photo Upload */}
-            <div className="mb-5 bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-emerald-950/95 backdrop-blur-md border-2 border-lime-400/45 p-5 rounded-3xl text-center shadow-xl relative overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-lime-400/15 rounded-full blur-2xl pointer-events-none" />
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime-400/20 border border-lime-300/35 text-lime-200 text-[10px] font-black uppercase tracking-widest mb-2">
-                <Sparkles size={12} className="text-lime-300" /> Tribe Victory Spotlight
+            {/* 3. Tribe Victory Spotlight Card */}
+            <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-700 shrink-0">
+                    <Camera size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-emerald-950 font-bold text-base font-['Fredoka'] leading-tight">
+                      Share Victory Selfie
+                    </h3>
+                    <p className="text-slate-500 text-[11px] font-semibold">
+                      Featured on Tribe Home &amp; Jungle Feed
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  Optional
+                </span>
               </div>
-              <h3 className="text-white font-bold text-base font-['Fredoka'] mb-1 flex items-center justify-center">
-                <Camera size={17} className="mr-2 text-lime-300" /> Share Victory Selfie
-              </h3>
-              <p className="text-emerald-100/75 text-xs mb-4">
-                Your photo takes center stage on the Tribe Home &amp; Jungle News feed!
-              </p>
 
               {!photoUploaded ? (
-                <div className="grid grid-cols-2 gap-3 relative z-10">
+                <div className="grid grid-cols-2 gap-2.5">
                   <label className={`block cursor-pointer transition-all active:scale-95 ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input
                       type="file"
@@ -1643,7 +1708,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         }
                       }}
                     />
-                    <div className="bg-gradient-to-r from-lime-400 to-emerald-400 hover:brightness-105 text-emerald-950 py-3.5 px-3 rounded-2xl font-black shadow-lg flex items-center justify-center border-b-4 border-emerald-700 text-xs gap-1.5">
+                    <div className="bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-3 rounded-2xl font-bold shadow-xs flex items-center justify-center text-xs gap-1.5">
                       <Camera size={15} />
                       <span>{uploadingPhoto ? 'Uploading...' : 'Snap Camera'}</span>
                     </div>
@@ -1680,55 +1745,28 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         }
                       }}
                     />
-                    <div className="bg-white/15 hover:bg-white/25 text-emerald-50 py-3.5 px-3 rounded-2xl font-bold shadow-lg flex items-center justify-center border-b-4 border-emerald-950/50 text-xs">
+                    <div className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/80 py-3 px-3 rounded-2xl font-bold flex items-center justify-center text-xs">
                       {uploadingPhoto ? 'Uploading...' : 'From Gallery'}
                     </div>
                   </label>
                 </div>
               ) : (
-                <div className="space-y-3 relative z-10">
+                <div className="space-y-2.5 text-center">
                   {tribePhoto && (
-                    <div className="w-44 h-44 mx-auto rounded-3xl overflow-hidden border-2 border-lime-300 shadow-2xl bg-slate-950 p-1.5 relative">
-                      <img src={tribePhoto} alt="Victory" className="w-full h-full object-cover rounded-2xl" />
-                      <span className="absolute bottom-3 inset-x-3 bg-black/65 backdrop-blur-md text-lime-300 text-[10px] font-black uppercase tracking-widest py-1 rounded-full border border-lime-400/30">
-                        🏆 Live on Tribe Feed
-                      </span>
+                    <div className="w-40 h-40 mx-auto rounded-2xl overflow-hidden border-2 border-emerald-400 shadow-md bg-slate-950 p-1 relative">
+                      <img src={tribePhoto} alt="Victory" className="w-full h-full object-cover rounded-xl" />
                     </div>
                   )}
-                  <div className="bg-emerald-800/70 text-emerald-100 py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center border border-emerald-400/30">
-                    <CheckCircle size={16} className="mr-2 text-lime-400" /> Photo Shared with Tribe!
+                  <div className="bg-emerald-50 text-emerald-800 py-2 px-4 rounded-xl font-bold text-xs flex items-center justify-center border border-emerald-200">
+                    <CheckCircle size={15} className="mr-1.5 text-emerald-600" /> Photo Shared with Tribe!
                   </div>
                 </div>
               )}
             </div>
 
-            {/* AI Coach Analysis Cards */}
-            <div className="space-y-3 mb-6">
-              <div className="bg-white/12 backdrop-blur-md border border-white/15 p-4 rounded-3xl">
-                <h3 className="text-lime-300 font-bold text-xs uppercase tracking-widest mb-1.5 flex items-center">
-                  <Trophy size={14} className="mr-1.5" /> Celebration
-                </h3>
-                <p className="text-white font-medium text-base leading-snug font-['Fredoka']">{analysis.celebration}</p>
-              </div>
-
-              <div className="bg-white/8 backdrop-blur-md border border-white/10 p-4 rounded-3xl">
-                <h3 className="text-sky-300 font-bold text-xs uppercase tracking-widest mb-1.5 flex items-center">
-                  <TrendingUp size={14} className="mr-1.5" /> Coach's Note
-                </h3>
-                <p className="text-emerald-50/90 text-sm leading-relaxed">{analysis.insight}</p>
-              </div>
-
-              <div className="bg-white/8 backdrop-blur-md border border-white/10 p-4 rounded-3xl">
-                <h3 className="text-purple-300 font-bold text-xs uppercase tracking-widest mb-1.5 flex items-center">
-                  <Lightbulb size={14} className="mr-1.5" /> Next Mission
-                </h3>
-                <p className="text-emerald-50/90 text-sm leading-relaxed">{analysis.nudge}</p>
-              </div>
-            </div>
-
             <button
               onClick={() => onFinish(tribePhoto || undefined)}
-              className="w-full bg-gradient-to-r from-lime-300 to-emerald-300 text-emerald-950 font-black py-4 rounded-3xl shadow-xl hover:brightness-105 active:scale-95 transition-all text-lg border-b-4 border-emerald-600"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold font-['Fredoka'] py-4 rounded-2xl shadow-lg shadow-emerald-600/20 hover:brightness-105 active:scale-95 transition-all text-lg border-b-4 border-emerald-800 cursor-pointer"
             >
               Return to Village
             </button>
@@ -1741,7 +1779,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const cooldownPct = plan.cooldown.length > 0 ? Math.round((cooldownCompletedCount / plan.cooldown.length) * 100) : 100;
 
   return (
-    <div className="min-h-screen bg-emerald-50 pb-6">
+    <div className="min-h-screen bg-emerald-50 pb-8">
       {exitModal}
       <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100 shadow-2xs">
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
@@ -1755,14 +1793,13 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               <ChevronLeft size={15} /> Sets
             </button>
             <div className="min-w-0">
-              <span className="inline-block text-[10px] font-black text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">Phase 3 of 3</span>
+              <div className="text-[10px] font-extrabold text-teal-700 uppercase tracking-widest">
+                Phase 3 of 3 • {cooldownCompletedCount}/{plan.cooldown.length} Stretches
+              </div>
               <h2 className="font-bold text-emerald-950 text-lg leading-tight font-['Fredoka'] truncate">Zen Mode</h2>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-100 whitespace-nowrap">
-              {cooldownCompletedCount}/{plan.cooldown.length} Done
-            </span>
             <button onClick={() => setShowExitModal(true)} aria-label="Exit workout" className="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl border border-red-100 transition-colors">
               <X size={18} />
             </button>
@@ -1772,47 +1809,55 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
       <Confetti active={showCelebration} />
 
-      <div className="px-2.5 sm:px-4 py-3 max-w-xl mx-auto w-full space-y-3">
-        {/* Single Cohesive Zen Cooldown Card (No Nested Cards) */}
-        <div className="bg-white rounded-2xl border border-teal-200/80 shadow-xs overflow-hidden">
-          <div className="px-3.5 py-3 bg-teal-50/60 border-b border-teal-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="relative flex items-center justify-center w-9 h-9">
-                <div className="absolute inset-0 rounded-full bg-teal-300/40 animate-ping" style={{ animationDuration: '4s' }} />
-                <div className="relative w-8 h-8 rounded-full bg-white border border-teal-200 flex items-center justify-center text-lg">
-                  🎋
-                </div>
+      <div className="px-3 sm:px-4 py-3.5 max-w-xl mx-auto w-full space-y-3.5">
+        {/* Cohesive Zen Cooldown Card with Panda Guide */}
+        <div className="bg-white rounded-3xl border border-emerald-100/90 shadow-xs overflow-hidden">
+          <div className="p-4 bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-white border-b border-emerald-100/80 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-12 h-12 rounded-2xl bg-teal-100/70 border border-teal-200/80 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="absolute inset-0 rounded-2xl bg-teal-300/30 animate-ping" style={{ animationDuration: '4s' }} />
+                <img
+                  src={getAvatarPath(userProfile.avatarId)}
+                  alt="Zen Panda"
+                  className="relative w-10 h-10 object-contain"
+                />
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-emerald-950 font-['Fredoka']">Cool down in the shade</h3>
-                <p className="text-teal-800/80 text-[11px] font-medium">Breathe slowly: 4s inhale • 4s hold • 4s exhale</p>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-emerald-950 font-['Fredoka'] leading-tight">
+                  {cooldownCompletedCount === plan.cooldown.length && plan.cooldown.length > 0
+                    ? 'Zen Master! Fully Recovered 🎋'
+                    : 'Cool down in the bamboo shade'}
+                </h3>
+                <p className="text-teal-800/80 text-xs font-semibold mt-0.5">
+                  Breathe slowly: 4s inhale • 4s hold • 4s exhale
+                </p>
               </div>
             </div>
             {plan.cooldown.length > 0 && cooldownCompletedCount < plan.cooldown.length && (
               <button
                 type="button"
                 onClick={() => setCooldownDone(new Array(plan.cooldown.length).fill(true))}
-                className="text-[11px] font-bold text-teal-800 bg-white hover:bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 active:scale-95 transition-all shrink-0"
+                className="text-xs font-extrabold text-teal-800 bg-white hover:bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/80 active:scale-95 transition-all shrink-0 shadow-2xs"
               >
                 Check All
               </button>
             )}
           </div>
-          <div className="w-full h-1 bg-teal-100/80">
+          <div className="w-full h-1.5 bg-teal-100/70">
             <div
               className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-300"
               style={{ width: `${cooldownPct}%` }}
             />
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-emerald-100/60">
             {plan.cooldown.map((item, idx) => {
               const isDone = cooldownDone[idx];
               return (
                 <label
                   key={idx}
-                  className={`flex items-center px-3.5 py-3 transition-colors cursor-pointer select-none ${
-                    isDone ? 'bg-teal-50/40' : 'bg-white hover:bg-slate-50/70'
+                  className={`flex items-center px-4 py-3.5 transition-colors cursor-pointer select-none ${
+                    isDone ? 'bg-teal-50/40' : 'bg-white hover:bg-emerald-50/30'
                   }`}
                 >
                   <div className="relative flex items-center justify-center w-8 h-8 mr-3 shrink-0">
@@ -1837,11 +1882,11 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                       {item}
                     </span>
                     <span className="text-[11px] font-semibold text-teal-700/70">
-                      {isDone ? 'Stretched & relaxed' : 'Hold stretch for 20-30s'}
+                      {isDone ? 'Stretched & relaxed' : 'Hold gently for 20-30s'}
                     </span>
                   </div>
                   {isDone && (
-                    <span className="text-[10px] font-extrabold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-md ml-2">
+                    <span className="text-[10px] font-extrabold text-teal-800 bg-teal-100 px-2.5 py-0.5 rounded-full ml-2">
                       Zen
                     </span>
                   )}
@@ -1851,41 +1896,32 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           </div>
         </div>
 
-        {/* Complete Mission CTA in natural flow */}
+        {/* Compact 1-Line Session Summary Pill */}
+        <div className="bg-white/90 rounded-2xl border border-emerald-100/90 px-4 py-3 shadow-2xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <span className="text-base">🐼</span>
+            <span>
+              <strong className="text-emerald-950 font-['Fredoka']">{completedSetsCount}/{totalSetsCount}</strong> sets •{' '}
+              <strong className="text-emerald-950 font-['Fredoka']">{records.length}</strong> exercises •{' '}
+              <strong className="text-emerald-950 font-['Fredoka']">
+                {Math.floor(workoutTimer.seconds / 60)}:{String(workoutTimer.seconds % 60).padStart(2, '0')}
+              </strong>
+            </span>
+          </div>
+          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70 shrink-0 uppercase tracking-wider">
+            +XP Ready
+          </span>
+        </div>
+
+        {/* Complete Mission CTA */}
         <div className="pt-1">
           <button
             onClick={() => setShowFeedbackModal(true)}
             disabled={isFinishing}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center space-x-2 border-b-4 border-emerald-800"
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-2xl font-bold font-['Fredoka'] text-lg shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center space-x-2 border-b-4 border-emerald-800 cursor-pointer"
           >
-            {isFinishing ? 'Reviewing...' : <><span>Complete Mission</span><CheckCircle size={19} /></>}
+            {isFinishing ? 'Reviewing...' : <><span>Complete Mission</span><CheckCircle size={20} /></>}
           </button>
-        </div>
-
-        {/* Friendly Session Summary Card */}
-        <div className="bg-white/85 rounded-2xl border border-teal-100 p-3.5 shadow-2xs">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-teal-700">Today&apos;s Training Recap</span>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
-              🐼 Bamboo Spirit +XP
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100/80">
-              <div className="text-base font-black text-emerald-950 font-['Fredoka']">{completedSetsCount}/{totalSetsCount}</div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80">Sets Logged</div>
-            </div>
-            <div className="bg-teal-50/60 rounded-xl p-2.5 border border-teal-100/80">
-              <div className="text-base font-black text-emerald-950 font-['Fredoka']">{records.length}</div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-teal-700/80">Exercises</div>
-            </div>
-            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100/80">
-              <div className="text-base font-black text-emerald-950 font-['Fredoka']">
-                {Math.floor(workoutTimer.seconds / 60)}:{String(workoutTimer.seconds % 60).padStart(2, '0')}
-              </div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80">Session Time</div>
-            </div>
-          </div>
         </div>
       </div>
 

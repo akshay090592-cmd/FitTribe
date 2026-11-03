@@ -406,23 +406,16 @@ export const ExerciseCard: React.FC<Props> = memo(({
                         className="relative z-10 w-[90%] sm:w-[82%] h-full object-cover object-[center_52%] transition-transform duration-300 group-hover:scale-[1.02]"
                     />
 
-                    {/* Single Friendly Floating Muscle Pill (Top-Left) */}
-                    <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 pointer-events-none">
-                        <span
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-white/90 shadow-xs text-[10px] font-extrabold uppercase tracking-wider text-emerald-950"
-                        >
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${visualMeta.muscleTheme.dot}`} aria-hidden="true" />
-                            <span>{visualMeta.primaryMuscle}</span>
-                        </span>
-                    </div>
-
-                    {/* Tier 2 SVG Equipment Overlay Badge (Bottom-Left on Image) */}
+                    {/* Unified Floating Muscle + SVG Equipment Pill (Bottom-Left on Image) */}
                     <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1.5 pointer-events-none">
                         <span
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 backdrop-blur-md border border-white/80 shadow-xs text-[10px] font-black uppercase tracking-wider text-white"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/75 shadow-xs text-[10px] font-black uppercase tracking-wider text-white"
                         >
                             <EquipmentSvgIcon equipment={visualMeta.equipment} size={12} className="text-emerald-300 shrink-0" />
                             <span>{visualMeta.equipmentLabel}</span>
+                            <span className="text-white/40">•</span>
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${visualMeta.muscleTheme.dot}`} aria-hidden="true" />
+                            <span className="text-emerald-100">{visualMeta.primaryMuscle}</span>
                         </span>
                     </div>
 
@@ -483,7 +476,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                 </span>
                                 <span>•</span>
                                 <span className={allCompleted ? 'text-emerald-600 font-extrabold' : 'text-slate-600'}>
-                                    {completedCount}/{sets.length} Sets
+                                    {allCompleted ? `✓ All ${sets.length} Sets Done!` : `${completedCount}/${sets.length} Sets`}
                                 </span>
                                 {totalVolume > 0 && (
                                     <>
@@ -530,36 +523,45 @@ export const ExerciseCard: React.FC<Props> = memo(({
                 {/* Expanded Content — Flat Full-Width Set Table (No Cards Inside Cards) */}
                 {isExpanded && (
                     <div className="border-t border-emerald-100/80 bg-white animate-fade-in">
-                        {/* Compact Note & AI Suggestion Strip */}
+                        {/* Unified Sensei Tip & Progression Strip */}
                         {(notes || suggestion) && (
-                            <div className="px-3 pt-2 pb-1 space-y-1.5">
-                                {notes && (
-                                    <div className="text-xs text-amber-900 bg-amber-50/70 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-                                        <span className="text-sm leading-none">🎋</span>
-                                        <span className="font-semibold">{notes}</span>
-                                    </div>
-                                )}
-
-                                {suggestion && (
-                                    <div className="bg-emerald-50/90 border border-emerald-200/80 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                                                <Sparkles size={11} />
-                                                <span>Target: {suggestion.suggestedWeight}kg × {suggestion.suggestedReps}</span>
+                            <div className="px-3 pt-2.5 pb-1">
+                                <div className="bg-emerald-50/75 border border-emerald-200/70 rounded-xl px-3 py-2 flex items-center justify-between gap-2.5">
+                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                        {suggestion && (
+                                            <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-800">
+                                                <Sparkles size={12} className="text-emerald-600 shrink-0" />
+                                                <span>Aim for {suggestion.suggestedWeight}kg × {suggestion.suggestedReps}</span>
+                                                {suggestion.reason && (
+                                                    <span className="text-[11px] font-medium text-emerald-700/80 truncate hidden sm:inline">
+                                                        — {suggestion.reason}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="text-xs font-semibold text-emerald-900 truncate">{suggestion.reason}</div>
-                                        </div>
+                                        )}
+                                        {notes ? (
+                                            <div className="text-[11px] text-emerald-900/85 font-medium leading-snug flex items-start gap-1.5">
+                                                <span className="shrink-0">🐼</span>
+                                                <span className="line-clamp-2">{notes}</span>
+                                            </div>
+                                        ) : suggestion?.reason ? (
+                                            <div className="text-[11px] text-emerald-800/80 font-medium truncate">
+                                                {suggestion.reason}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                    {suggestion && (
                                         <button
                                             type="button"
                                             onClick={applySuggestion}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 shrink-0 active:scale-95 transition-all"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 shrink-0 active:scale-95 transition-all shadow-2xs"
                                             aria-label="Apply suggested progression"
                                         >
-                                            <ArrowUpCircle size={14} />
+                                            <ArrowUpCircle size={13} />
                                             <span>Apply</span>
                                         </button>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -629,7 +631,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                                     <input
                                                         type="number"
                                                         inputMode="decimal"
-                                                        className="w-full min-w-0 bg-transparent font-bold text-emerald-950 text-center text-base sm:text-lg outline-none font-['Fredoka']"
+                                                        className="w-full min-w-0 bg-transparent font-bold text-emerald-950 text-center text-base sm:text-lg outline-none font-['Fredoka'] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         value={set.weight || ''}
                                                         placeholder="0"
                                                         onChange={(e) => handleInputChange(idx, 'weight', e.target.value)}
@@ -682,7 +684,7 @@ export const ExerciseCard: React.FC<Props> = memo(({
                                                         <input
                                                             type="number"
                                                             inputMode="decimal"
-                                                            className="w-full min-w-0 bg-transparent font-bold text-emerald-950 text-center text-base sm:text-lg outline-none font-['Fredoka']"
+                                                            className="w-full min-w-0 bg-transparent font-bold text-emerald-950 text-center text-base sm:text-lg outline-none font-['Fredoka'] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             value={set.reps || ''}
                                                             placeholder="0"
                                                             onChange={(e) => handleInputChange(idx, 'reps', e.target.value)}

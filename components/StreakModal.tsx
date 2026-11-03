@@ -3,6 +3,7 @@ import { X, Flame, Shield, Sparkles, Check, Calendar, AlertTriangle, Dumbbell } 
 import { UserProfile, UserGamificationState, WorkoutLog } from '../types';
 import { purchasePowerUp } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 interface StreakModalProps {
   isOpen: boolean;
@@ -128,17 +129,25 @@ export const StreakModal: React.FC<StreakModalProps> = ({
           }`}
         >
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition-colors z-10"
-            aria-label="Close Streak Hub"
-          >
-            <X size={18} />
-          </button>
 
-          <div className="flex items-center gap-4 relative z-10">
+          {/* Top Bar: Status Pill + Close Button */}
+          <div className="flex items-center justify-between gap-2 mb-3 relative z-20">
+            <div className="inline-flex items-center gap-1.5 bg-black/25 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/15">
+              <Flame size={11} className="text-yellow-300 shrink-0" />
+              <span>{streakRisk ? 'Streak At Risk!' : isShielded ? 'Ice Shield Protected' : 'Jungle Streak Active'}</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition-colors shrink-0"
+              aria-label="Close Streak Hub"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex items-end gap-3 relative z-10">
             {/* Multi-layered Pure SVG Animated Flame */}
-            <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+            <div className="relative w-14 h-14 flex items-center justify-center shrink-0 mb-2">
               <div
                 className={`absolute inset-0 rounded-full blur-xl opacity-60 ${
                   isShielded ? 'bg-cyan-300' : 'bg-yellow-300'
@@ -146,7 +155,7 @@ export const StreakModal: React.FC<StreakModalProps> = ({
               />
               <svg
                 viewBox="0 0 100 110"
-                className="w-20 h-20 animate-flame-flicker drop-shadow-[0_6px_12px_rgba(0,0,0,0.28)]"
+                className="w-14 h-14 animate-flame-flicker drop-shadow-[0_6px_12px_rgba(0,0,0,0.28)]"
               >
                 <defs>
                   <linearGradient id="outerFlame" x1="0%" y1="100%" x2="0%" y2="0%">
@@ -188,20 +197,16 @@ export const StreakModal: React.FC<StreakModalProps> = ({
               )}
             </div>
 
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-black/25 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/15 mb-1">
-                <Flame size={11} className="text-yellow-300" />
-                {streakRisk ? 'Streak At Risk!' : isShielded ? 'Ice Shield Protected' : 'Jungle Streak Active'}
-              </div>
+            <div className="flex-1 min-w-0 pb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-black tracking-tight leading-none font-['Fredoka']">
+                <span className="text-4xl font-black tracking-tight leading-none font-['Fredoka']">
                   {streak}
                 </span>
-                <span className="text-lg font-black uppercase tracking-wider text-orange-100">
+                <span className="text-base font-black uppercase tracking-wider text-orange-100 whitespace-nowrap">
                   {streak === 1 ? 'Day Streak' : 'Days Strong'}
                 </span>
               </div>
-              <p className="text-xs text-white/90 font-medium mt-1">
+              <p className="text-xs text-white/90 font-medium mt-1 leading-snug">
                 {streakRisk
                   ? 'Log a workout today before midnight to save your flame!'
                   : streak > 0
@@ -209,10 +214,15 @@ export const StreakModal: React.FC<StreakModalProps> = ({
                   : 'Complete a workout today to ignite your streak!'}
               </p>
             </div>
+
+            {/* Sensei Panda grounded directly on top of the 7-Day Flame Strip */}
+            <div className="w-20 h-20 shrink-0 -mb-[2px] pointer-events-none">
+              <PandaSenseiSVG compact mode={streakRisk ? 'lifting' : 'fire'} className="w-full h-full block" />
+            </div>
           </div>
 
           {/* 7-Day Flame Strip */}
-          <div className="mt-5 bg-black/20 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+          <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3 border border-white/15 relative z-10">
             <div className="grid grid-cols-7 gap-1.5">
               {last7Days.map((d, idx) => (
                 <div key={idx} className="flex flex-col items-center">

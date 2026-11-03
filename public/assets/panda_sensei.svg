@@ -1,0 +1,431 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" width="480" height="480" role="img" aria-labelledby="sensei-title sensei-desc" style="max-width:100%;height:auto">
+  <title id="sensei-title">FitTribe Panda Sensei — Animated AI Coach</title>
+  <desc id="sensei-desc">FitTribe's signature Panda Sensei wearing the sky-blue and white athletic headband, emerald Sensei gi with silver coach whistle, curling a sky-blue dumbbell and holding a glowing AI coaching clipboard.</desc>
+
+  <defs>
+    <!-- Dojo / Jungle Ambient Background -->
+    <radialGradient id="senseiBg" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="60%" stop-color="#dcfce7"/>
+      <stop offset="100%" stop-color="#bbf7d0"/>
+    </radialGradient>
+
+    <!-- Panda Head Soft Volume Shading -->
+    <radialGradient id="headShade" cx="50%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="78%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+
+    <!-- Emerald Sensei Gi Gradient -->
+    <linearGradient id="senseiGi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="55%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <!-- Sky-Blue Headband Gradient (matches panda_male.webp) -->
+    <linearGradient id="skyBand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <!-- Sky-Blue Dumbbell Plates (matches panda_male.webp) -->
+    <linearGradient id="dumbbellBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="45%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+
+    <!-- Gold Trim & Whistle Highlight -->
+    <linearGradient id="goldTrim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+
+    <!-- Silver Whistle Metallic -->
+    <linearGradient id="silverMetal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+
+    <!-- Holographic AI Clipboard Glow -->
+    <linearGradient id="holoBoard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <style>
+    .panda-body {
+      transform-origin: 240px 340px;
+      animation: senseiBob 2.8s ease-in-out infinite;
+    }
+    @keyframes senseiBob {
+      0%, 100% { transform: translateY(0) scaleY(1); }
+      50% { transform: translateY(-10px) scaleY(1.015); }
+    }
+
+    .ground-shadow {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: shadowPulse 2.8s ease-in-out infinite;
+    }
+    @keyframes shadowPulse {
+      0%, 100% { transform: scale(1); opacity: 0.2; }
+      50% { transform: scale(0.86); opacity: 0.12; }
+    }
+
+    .enso-ring {
+      transform-origin: 240px 236px;
+      animation: ensoSpin 28s linear infinite;
+    }
+    @keyframes ensoSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .bamboo-left {
+      transform-origin: 68px 450px;
+      animation: bambooSwayL 5.4s ease-in-out infinite;
+    }
+    .bamboo-right {
+      transform-origin: 416px 450px;
+      animation: bambooSwayR 6.2s ease-in-out infinite;
+    }
+    @keyframes bambooSwayL {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(2.2deg); }
+    }
+    @keyframes bambooSwayR {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-2deg); }
+    }
+
+    .head-group {
+      transform-origin: 240px 265px;
+      animation: headNod 4.2s ease-in-out infinite;
+    }
+    @keyframes headNod {
+      0%, 100% { transform: rotate(-1.8deg); }
+      50% { transform: rotate(2.2deg); }
+    }
+
+    .band-tails {
+      transform-origin: 344px 158px;
+      animation: tailFlutter 2.1s ease-in-out infinite;
+    }
+    @keyframes tailFlutter {
+      0%, 100% { transform: rotate(-5deg); }
+      50% { transform: rotate(9deg); }
+    }
+
+    .eyes-blink {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: eyeBlink 4.2s infinite;
+    }
+    @keyframes eyeBlink {
+      0%, 90%, 100% { transform: scaleY(1); }
+      94%, 96% { transform: scaleY(0.08); }
+    }
+
+    .mouth-w {
+      animation: mouthClosed 5.6s infinite;
+    }
+    .mouth-cheer {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: mouthOpen 5.6s infinite;
+    }
+    @keyframes mouthClosed {
+      0%, 50%, 88%, 100% { opacity: 1; }
+      56%, 82% { opacity: 0; }
+    }
+    @keyframes mouthOpen {
+      0%, 50%, 88%, 100% { opacity: 0; transform: scaleY(0.2); }
+      56%, 82% { opacity: 1; transform: scaleY(1); }
+    }
+
+    /* Right Arm Curling Signature Sky-Blue Dumbbell */
+    .arm-curl {
+      transform-origin: 318px 334px;
+      animation: curlRep 2.8s ease-in-out infinite;
+    }
+    @keyframes curlRep {
+      0%, 100% { transform: rotate(8deg); }
+      45%, 55% { transform: rotate(-24deg); }
+    }
+
+    /* Left Arm Holding AI Coach Clipboard */
+    .arm-board {
+      transform-origin: 162px 334px;
+      animation: boardFloat 2.8s ease-in-out infinite;
+    }
+    @keyframes boardFloat {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    /* Swinging Coach Whistle & Belt Ties */
+    .whistle-swing {
+      transform-origin: 240px 320px;
+      animation: pendulum 2.8s ease-in-out infinite;
+    }
+    .belt-ties {
+      transform-origin: 240px 392px;
+      animation: pendulum 2.8s ease-in-out infinite;
+    }
+    @keyframes pendulum {
+      0%, 100% { transform: rotate(-4deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    /* Rising Rep Energy & Sparkles */
+    .spark {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: sparkleTwinkle 2.2s ease-in-out infinite;
+    }
+    .spark.s2 { animation-delay: 0.7s; }
+    .spark.s3 { animation-delay: 1.4s; }
+    @keyframes sparkleTwinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.65) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.2) rotate(15deg); }
+    }
+
+    .holo-bar {
+      animation: barPulse 2s ease-in-out infinite;
+    }
+    @keyframes barPulse {
+      0%, 100% { opacity: 0.65; }
+      50% { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+
+  <!-- Background Card -->
+  <rect width="480" height="480" rx="36" fill="url(#senseiBg)"/>
+
+  <!-- Soft Dojo Sunburst Ring -->
+  <circle cx="240" cy="236" r="196" fill="#ffffff" opacity="0.45"/>
+  <circle class="enso-ring" cx="240" cy="236" r="176" fill="none" stroke="#86efac" stroke-width="14"
+          stroke-linecap="round" stroke-dasharray="880 210" opacity="0.75"/>
+  <circle class="enso-ring" cx="240" cy="236" r="158" fill="none" stroke="#fde047" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="420 600" opacity="0.65"/>
+
+  <!-- Left Bamboo Stalks -->
+  <g class="bamboo-left">
+    <rect x="46" y="150" width="16" height="300" rx="8" fill="#4ade80" stroke="#166534" stroke-width="2.5"/>
+    <line x1="46" y1="220" x2="62" y2="220" stroke="#15803d" stroke-width="3.5"/>
+    <line x1="46" y1="295" x2="62" y2="295" stroke="#15803d" stroke-width="3.5"/>
+    <line x1="46" y1="370" x2="62" y2="370" stroke="#15803d" stroke-width="3.5"/>
+    <path d="M52 162 Q18 136 6 146 Q26 168 52 172 Z" fill="#22c55e" stroke="#166534" stroke-width="2"/>
+    <path d="M58 156 Q88 128 112 134 Q90 158 58 166 Z" fill="#4ade80" stroke="#166534" stroke-width="2"/>
+    <path d="M60 226 Q92 204 114 214 Q90 232 60 234 Z" fill="#22c55e" stroke="#166534" stroke-width="2"/>
+  </g>
+
+  <!-- Right Bamboo Stalks -->
+  <g class="bamboo-right">
+    <rect x="418" y="185" width="14" height="265" rx="7" fill="#4ade80" stroke="#166534" stroke-width="2.5"/>
+    <line x1="418" y1="255" x2="432" y2="255" stroke="#15803d" stroke-width="3.5"/>
+    <line x1="418" y1="330" x2="432" y2="330" stroke="#15803d" stroke-width="3.5"/>
+    <path d="M424 192 Q454 168 470 178 Q450 198 424 202 Z" fill="#22c55e" stroke="#166534" stroke-width="2"/>
+    <path d="M420 258 Q390 238 372 246 Q392 264 420 266 Z" fill="#4ade80" stroke="#166534" stroke-width="2"/>
+  </g>
+
+  <!-- Ambient Sparkles -->
+  <g class="spark s1" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round">
+    <path d="M104 94 v22 M93 105 h22"/>
+  </g>
+  <g class="spark s2" stroke="#0ea5e9" stroke-width="4.5" stroke-linecap="round">
+    <path d="M388 84 v22 M377 95 h22"/>
+  </g>
+  <g class="spark s3" stroke="#10b981" stroke-width="4" stroke-linecap="round">
+    <path d="M356 176 v16 M348 184 h16"/>
+  </g>
+
+  <!-- Ground Shadow -->
+  <ellipse class="ground-shadow" cx="240" cy="450" rx="124" ry="15" fill="#064e3b"/>
+
+  <!-- ================= PANDA SENSEI CHARACTER ================= -->
+  <g class="panda-body">
+
+    <!-- Feet / Paws -->
+    <g stroke="#23272e" stroke-width="4.5">
+      <ellipse cx="192" cy="434" rx="28" ry="15" fill="#2b2f36"/>
+      <ellipse cx="184" cy="433" rx="6" ry="4" fill="#525866" stroke="none"/>
+      <ellipse cx="194" cy="431" rx="6" ry="4" fill="#525866" stroke="none"/>
+      <ellipse cx="288" cy="434" rx="28" ry="15" fill="#2b2f36"/>
+      <ellipse cx="286" cy="431" rx="6" ry="4" fill="#525866" stroke="none"/>
+      <ellipse cx="296" cy="433" rx="6" ry="4" fill="#525866" stroke="none"/>
+    </g>
+
+    <!-- Plump White Belly Under-Layer -->
+    <ellipse cx="240" cy="364" rx="88" ry="68" fill="#ffffff" stroke="#23272e" stroke-width="4.5"/>
+
+    <!-- Sensei Emerald Martial Arts Gi / Coach Vest -->
+    <path d="M156 306 Q240 286 324 306 L346 410 Q348 426 330 428 L150 428 Q132 426 134 410 Z"
+          fill="url(#senseiGi)" stroke="#23272e" stroke-width="4.5" stroke-linejoin="round"/>
+
+    <!-- Inner White Fur Chest V-Neck & Gold Gi Lapels -->
+    <path d="M196 302 L240 366 L284 302 Z" fill="#ffffff"/>
+    <path d="M192 302 L240 368 L288 302" fill="none" stroke="url(#goldTrim)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M192 302 L240 368 L288 302" fill="none" stroke="#23272e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Black Master Belt & Gold Rank Stripes -->
+    <rect x="142" y="378" width="196" height="24" rx="12" fill="#2b2f36" stroke="#23272e" stroke-width="4"/>
+    <rect x="164" y="380" width="6" height="20" rx="2" fill="#fbbf24"/>
+    <rect x="176" y="380" width="6" height="20" rx="2" fill="#fbbf24"/>
+    <rect x="188" y="380" width="6" height="20" rx="2" fill="#fbbf24"/>
+    <!-- Belt Knot -->
+    <rect x="224" y="374" width="32" height="30" rx="8" fill="#1e293b" stroke="#23272e" stroke-width="4"/>
+    <g class="belt-ties" stroke="#23272e" stroke-width="3.5" stroke-linecap="round">
+      <path d="M234 402 L220 434 L232 436 L240 404 Z" fill="#2b2f36"/>
+      <path d="M246 402 L260 434 L248 436 L240 404 Z" fill="#2b2f36"/>
+    </g>
+
+    <!-- Coach Whistle on Lanyard -->
+    <g class="whistle-swing">
+      <path d="M206 312 Q240 356 274 312" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+      <rect x="231" y="338" width="18" height="13" rx="6" fill="url(#silverMetal)" stroke="#23272e" stroke-width="3"/>
+      <circle cx="248" cy="344" r="5" fill="url(#silverMetal)" stroke="#23272e" stroke-width="2.5"/>
+      <circle cx="238" cy="343" r="2" fill="#ffffff"/>
+    </g>
+
+    <!-- LEFT ARM: Holding Holographic AI Coach Clipboard -->
+    <g class="arm-board">
+      <!-- Dark Panda Arm & Gi Sleeve -->
+      <path d="M160 322 Q122 342 114 378" fill="none" stroke="#059669" stroke-width="36" stroke-linecap="round"/>
+      <path d="M160 322 Q122 342 114 378" fill="none" stroke="#23272e" stroke-width="4.5" stroke-linecap="round"/>
+      <!-- Holographic AI Clipboard -->
+      <g transform="rotate(-10 104 362)">
+        <rect x="66" y="316" width="68" height="86" rx="12" fill="url(#holoBoard)" stroke="#23272e" stroke-width="4"/>
+        <rect x="86" y="310" width="28" height="12" rx="5" fill="#fbbf24" stroke="#23272e" stroke-width="3"/>
+        <!-- Glowing Telemetry Lines -->
+        <rect class="holo-bar" x="78" y="334" width="44" height="7" rx="3.5" fill="#ffffff"/>
+        <rect class="holo-bar" x="78" y="348" width="32" height="7" rx="3.5" fill="#a5f3fc"/>
+        <rect class="holo-bar" x="78" y="362" width="38" height="7" rx="3.5" fill="#fde047"/>
+        <!-- Checkmark Badge -->
+        <circle cx="100" cy="384" r="9" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+        <path d="M96 384 l3 3 l6 -6" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <!-- Left Dark Paw Gripping Board -->
+      <circle cx="122" cy="376" r="18" fill="#2b2f36" stroke="#23272e" stroke-width="4"/>
+    </g>
+
+    <!-- RIGHT ARM: Curling Signature Sky-Blue Dumbbell (matches panda_male.webp) -->
+    <g class="arm-curl">
+      <!-- Gi Shoulder + Dark Panda Arm -->
+      <path d="M318 326 Q358 312 374 268" fill="none" stroke="#2b2f36" stroke-width="34" stroke-linecap="round"/>
+      <path d="M318 326 Q344 318 354 300" fill="none" stroke="#059669" stroke-width="38" stroke-linecap="round"/>
+      <!-- Dumbbell Handle & Plates -->
+      <g transform="rotate(-12 378 256)">
+        <!-- Chrome Bar -->
+        <rect x="332" y="250" width="92" height="12" rx="6" fill="url(#silverMetal)" stroke="#23272e" stroke-width="3.5"/>
+        <!-- Inner & Outer Sky-Blue Weight Plates (Left Side of Dumbbell) -->
+        <rect x="342" y="232" width="12" height="48" rx="6" fill="url(#dumbbellBlue)" stroke="#23272e" stroke-width="3.5"/>
+        <rect x="328" y="226" width="14" height="60" rx="7" fill="url(#dumbbellBlue)" stroke="#23272e" stroke-width="3.5"/>
+        <!-- Inner & Outer Sky-Blue Weight Plates (Right Side of Dumbbell) -->
+        <rect x="402" y="232" width="12" height="48" rx="6" fill="url(#dumbbellBlue)" stroke="#23272e" stroke-width="3.5"/>
+        <rect x="414" y="226" width="14" height="60" rx="7" fill="url(#dumbbellBlue)" stroke="#23272e" stroke-width="3.5"/>
+        <!-- Specular Shine on Plates -->
+        <line x1="333" y1="234" x2="333" y2="252" stroke="#e0f2fe" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="419" y1="234" x2="419" y2="252" stroke="#e0f2fe" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <!-- Right Dark Paw Gripping Dumbbell Center -->
+      <circle cx="376" cy="262" r="18" fill="#2b2f36" stroke="#23272e" stroke-width="4"/>
+      <ellipse cx="372" cy="258" rx="6" ry="4" fill="#525866"/>
+    </g>
+
+    <!-- ================= PANDA HEAD (Matches FitTribe Avatar Identity) ================= -->
+    <g class="head-group">
+
+      <!-- Flowing Headband Tails Behind Right Ear -->
+      <g class="band-tails">
+        <path d="M336 154 Q378 144 398 170 Q374 176 340 166 Z" fill="#0284c7" stroke="#23272e" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M336 164 Q374 168 388 196 Q360 192 336 174 Z" fill="#38bdf8" stroke="#23272e" stroke-width="3.5" stroke-linejoin="round"/>
+      </g>
+
+      <!-- Round Dark Charcoal Ears with Slate-Grey Inner Pads -->
+      <g stroke="#23272e" stroke-width="4.5">
+        <circle cx="152" cy="122" r="36" fill="#2b2f36"/>
+        <circle cx="154" cy="124" r="19" fill="#525866" stroke="none"/>
+        <circle cx="328" cy="122" r="36" fill="#2b2f36"/>
+        <circle cx="326" cy="124" r="19" fill="#525866" stroke="none"/>
+      </g>
+
+      <!-- Plump Squircle-Round White Head with Signature Crown Fur Tuft -->
+      <path d="M222 104
+               Q228 88 235 98
+               Q242 84 249 98
+               Q256 90 258 104
+               C324 108 352 154 352 214
+               C352 272 308 304 240 304
+               C172 304 128 272 128 214
+               C128 154 156 108 222 104 Z"
+            fill="url(#headShade)" stroke="#23272e" stroke-width="4.5" stroke-linejoin="round"/>
+
+      <!-- Signature FitTribe Sky-Blue & White Athletic Headband -->
+      <path d="M134 166 Q240 132 346 166 L349 144 Q240 110 131 144 Z"
+            fill="url(#skyBand)" stroke="#23272e" stroke-width="4" stroke-linejoin="round"/>
+      <!-- Crisp White Center Stripe on Headband -->
+      <path d="M135 156 Q240 122 345 156" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+      <!-- Center Gold Sensei Emblem on Headband -->
+      <circle cx="240" cy="138" r="10" fill="url(#goldTrim)" stroke="#23272e" stroke-width="3"/>
+      <circle cx="238" cy="136" r="3" fill="#fef08a"/>
+
+      <!-- Soft Rosy Cheeks -->
+      <ellipse cx="166" cy="246" rx="16" ry="10" fill="#fda4af" opacity="0.55"/>
+      <ellipse cx="314" cy="246" rx="16" ry="10" fill="#fda4af" opacity="0.55"/>
+
+      <!-- Signature Tilted Teardrop Dark Eye Patches -->
+      <ellipse cx="194" cy="212" rx="28" ry="34" fill="#2b2f36" stroke="#23272e" stroke-width="3" transform="rotate(-16 194 212)"/>
+      <ellipse cx="286" cy="212" rx="28" ry="34" fill="#2b2f36" stroke="#23272e" stroke-width="3" transform="rotate(16 286 212)"/>
+
+      <!-- Expressive Blinking Eyes with Dual Specular Catchlights -->
+      <g class="eyes-blink">
+        <!-- Left Eye -->
+        <circle cx="198" cy="208" r="14.5" fill="#ffffff" stroke="#23272e" stroke-width="2.5"/>
+        <circle cx="200" cy="208" r="9.5" fill="#1e1b18"/>
+        <circle cx="196" cy="203" r="4.2" fill="#ffffff"/>
+        <circle cx="204" cy="213" r="2" fill="#ffffff"/>
+
+        <!-- Right Eye -->
+        <circle cx="282" cy="208" r="14.5" fill="#ffffff" stroke="#23272e" stroke-width="2.5"/>
+        <circle cx="280" cy="208" r="9.5" fill="#1e1b18"/>
+        <circle cx="276" cy="203" r="4.2" fill="#ffffff"/>
+        <circle cx="284" cy="213" r="2" fill="#ffffff"/>
+      </g>
+
+      <!-- Confident Sensei Eyebrows -->
+      <path d="M174 178 Q196 170 214 180" fill="none" stroke="#23272e" stroke-width="5" stroke-linecap="round"/>
+      <path d="M306 178 Q284 170 266 180" fill="none" stroke="#23272e" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Subtle Snout Bridge Crease (from panda_male.webp) -->
+      <path d="M228 224 Q240 219 252 224" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- Rounded Triangular Dark Nose with Specular Highlight -->
+      <path d="M225 236 Q240 230 255 236 Q256 250 240 254 Q224 250 225 236 Z" fill="#23272e"/>
+      <ellipse cx="236" cy="238" rx="5.5" ry="2.8" fill="#ffffff" opacity="0.45"/>
+
+      <!-- Signature ':3' W-Shaped Panda Smile (Swaps with Happy Coach Grin) -->
+      <g class="mouth-w" fill="none" stroke="#23272e" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M240 253 L240 260"/>
+        <path d="M218 262 Q229 273 240 261 Q251 273 262 262"/>
+      </g>
+
+      <!-- Open Encouraging Coach Grin -->
+      <g class="mouth-cheer">
+        <path d="M220 260 Q240 263 260 260 Q256 284 240 284 Q224 284 220 260 Z" fill="#881337" stroke="#23272e" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M228 274 Q240 268 252 274 Q248 283 240 283 Q232 283 228 274 Z" fill="#fb7185"/>
+      </g>
+
+    </g>
+  </g>
+</svg>

@@ -20,6 +20,7 @@ import { TribeStatusCard } from './TribeStatusCard';
 import { getAvatarPath } from '../utils/avatar';
 import { BadgeIcon } from './BadgeIcon';
 import { getThemePalette } from '../utils/themeConfig';
+import { JungleChestSVG } from './JungleChestSVG';
 
 
 interface Props {
@@ -177,7 +178,8 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
         <div className="inline-flex items-center gap-1.5 bg-amber-50/90 border border-amber-200/80 px-3 py-1 rounded-full text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 shadow-sm">
           <span>🏆</span> Loot &amp; Rewards
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm flex items-center justify-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm flex items-center justify-center gap-2">
+          <JungleChestSVG tier="gold" state="ready" className="w-10 h-10 shrink-0" />
           Treasure Trove
         </h2>
       </div>
@@ -409,8 +411,16 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                   className="p-3.5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/30 flex items-center justify-between gap-3 shadow-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0">
-                      {p.icon}
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                      {p.id === 'mystery_crate' || (p.id as string) === 'mystery_box' ? (
+                        <JungleChestSVG
+                          tier="mystery"
+                          state={buyingPowerUpId === p.id ? 'opening' : canAfford ? 'ready' : 'locked'}
+                          className="w-11 h-11"
+                        />
+                      ) : (
+                        <span>{p.emoji || (p as any).icon}</span>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">

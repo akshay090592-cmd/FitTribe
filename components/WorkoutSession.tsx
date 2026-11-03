@@ -25,6 +25,7 @@ import { updateQuestProgress } from '../utils/questUtils';
 import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
 import { ConfirmPopup } from './ConfirmPopup';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 interface Props {
   user: User;
@@ -1159,23 +1160,28 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
         <div className="px-3 sm:px-4 py-3.5 max-w-xl mx-auto w-full space-y-3.5">
           {isStreakAtRisk && (
-            <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-2xl flex items-start shadow-2xs animate-fade-in">
-              <AlertTriangle className="text-orange-500 mr-2.5 flex-shrink-0 mt-0.5" size={18} />
-              <div>
-                <h3 className="text-orange-900 font-bold text-xs mb-0.5">Streak at Risk! 🔥</h3>
+            <div className="px-3.5 pt-2.5 pb-0 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-2xl flex items-end gap-3 shadow-2xs animate-fade-in">
+              <div className="w-14 h-14 shrink-0 -mb-[1px] pointer-events-none">
+                <PandaSenseiSVG compact mode="fire" className="w-full h-full block" />
+              </div>
+              <div className="min-w-0 pb-3">
+                <h3 className="text-orange-900 font-bold text-xs mb-0.5 flex items-center gap-1">
+                  <AlertTriangle className="text-orange-500 shrink-0" size={14} /> Streak at Risk! 🔥
+                </h3>
                 <p className="text-orange-700 text-xs leading-relaxed">You haven&apos;t trained in 2 days. Complete this workout to protect your bamboo streak!</p>
               </div>
             </div>
           )}
 
-          {/* Friendly Sensei Warmup Card */}
+          {/* Friendly Sensei Warmup Card — Sensei stands directly on the warmup progress bar */}
           <div className="bg-white rounded-3xl border border-emerald-200/80 shadow-xs overflow-hidden">
-            <div className="px-4 py-3.5 bg-gradient-to-r from-emerald-50/90 via-teal-50/50 to-emerald-50/80 border-b border-emerald-100 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-white border border-emerald-200/80 shadow-2xs flex items-center justify-center shrink-0 p-1">
-                  <img src={getAvatarPath(userProfile.avatarId)} alt={user} className="w-full h-full object-contain" />
+            <div className="px-4 pt-2.5 pb-0 bg-gradient-to-r from-emerald-50/90 via-teal-50/50 to-emerald-50/80 border-b border-emerald-100 flex items-end justify-between gap-2">
+              <div className="flex items-end gap-2.5 min-w-0">
+                <div className="w-16 h-16 shrink-0 -mb-[1px] pointer-events-none">
+                  <PandaSenseiSVG compact mode={allWarmupDone ? 'fire' : 'lifting'} className="w-full h-full block" />
+                  <img src={getAvatarPath(userProfile.avatarId)} alt={user} className="sr-only" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 pb-3">
                   <h3 className="text-base font-bold text-emerald-950 font-['Fredoka'] leading-tight">
                     {allWarmupDone ? 'All Warmed Up! 🔥' : `Dynamic Joint Prep`}
                   </h3>
@@ -1188,12 +1194,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 <button
                   type="button"
                   onClick={() => setWarmupDone(new Array(plan.warmup.length).fill(true))}
-                  className="text-xs font-extrabold text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 active:scale-95 transition-all shrink-0 shadow-2xs"
+                  className="mb-3 text-xs font-extrabold text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 active:scale-95 transition-all shrink-0 shadow-2xs"
                 >
                   Check All
                 </button>
               ) : (
-                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-xl shrink-0">
+                <span className="mb-3 text-xs font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-xl shrink-0">
                   {warmupCompletedCount}/{plan.warmup.length}
                 </span>
               )}
@@ -1313,9 +1319,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const exitModal = showExitModal ? createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-md animate-fade-in">
       <div className="glass-panel p-6 w-full max-w-sm animate-scale-up border border-emerald-100 shadow-2xl" style={{ background: 'hsla(140,50%,99%,0.97)', borderRadius: '32px' }}>
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <span className="text-3xl">🐼</span>
+        <div className="text-center mb-5">
+          <div className="w-28 h-28 flex items-end justify-center mx-auto border-b border-emerald-200/80 mb-3 pointer-events-none">
+            <PandaSenseiSVG mode="zen" className="w-28 h-28 -mb-[1px] block" />
           </div>
           <h3 className="text-xl font-bold text-emerald-950 mb-1.5 font-['Fredoka']">Leaving the Dojo?</h3>
           <p className="text-emerald-700/80 text-sm">Do you want to end this workout completely or just pause for a bamboo snack?</p>
@@ -1497,10 +1503,13 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
         {/* Sticky Workout Header with Live Progress Bar */}
         <div className="sticky top-0 z-30 bg-emerald-50/95 backdrop-blur-xl border-b border-emerald-100/80 shadow-2xs">
-          <div className="max-w-xl mx-auto px-3 sm:px-4 pt-2 pb-1.5">
-            <div className="flex justify-between items-center mb-1.5">
-              <div className="flex items-center flex-1 min-w-0 mr-2">
-                <div className="min-w-0">
+          <div className="max-w-xl mx-auto px-3 sm:px-4 pt-1.5 pb-1.5">
+            <div className="flex justify-between items-end">
+              <div className="flex items-end flex-1 min-w-0 mr-2 gap-2">
+                <div className="w-14 h-14 shrink-0 -mb-[1px] pointer-events-none">
+                  <PandaSenseiSVG compact mode={showRestTimer ? 'zen' : 'lifting'} className="w-full h-full block" />
+                </div>
+                <div className="min-w-0 pb-1.5">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
@@ -1512,7 +1521,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1.5 shrink-0">
+              <div className="flex items-center space-x-1.5 shrink-0 pb-1.5">
                 <button
                   type="button"
                   onClick={() => setSoundMuted(toggleSoundMuted())}
@@ -1638,8 +1647,9 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
         {!analysis ? (
           <div className="my-auto text-center relative z-20 p-6 bg-white rounded-3xl border border-emerald-100 shadow-lg max-w-sm w-full">
-            <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-bounce border border-emerald-200 shadow-xs">
-              <img src={getAvatarPath(userProfile.avatarId)} className="w-15 h-15 object-contain" alt={user} />
+            <div className="w-28 h-28 flex items-end justify-center mx-auto mb-3 border-b border-emerald-100 pointer-events-none">
+              <PandaSenseiSVG mode="coaching" className="w-28 h-28 -mb-[1px] block" />
+              <img src={getAvatarPath(userProfile.avatarId)} className="sr-only" alt={user} />
             </div>
             <h2 className="text-2xl font-bold text-emerald-950 mb-1.5 font-['Fredoka']">Great Work, {user}!</h2>
             <p className="text-emerald-700/80 animate-pulse text-xs font-bold">Sensei Panda is preparing your dojo report...</p>
@@ -1651,12 +1661,13 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               <div className="absolute inset-0 opacity-[0.07] bg-[url('/assets/jungle_bg_pattern.webp')] pointer-events-none" />
               <div className="absolute -top-16 -right-16 w-48 h-48 bg-lime-400/20 rounded-full blur-3xl pointer-events-none" />
 
-              <div className="relative z-10 flex items-center justify-between gap-2.5 mb-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md p-1.5 border-2 border-lime-400/60 shadow-lg shrink-0 flex items-center justify-center">
-                    <img src={getAvatarPath(userProfile.avatarId, 'fire')} className="w-11 h-11 object-contain" alt={user} />
+              <div className="relative z-10 flex items-end justify-between gap-2.5">
+                <div className="flex items-end gap-2.5 min-w-0">
+                  <div className="w-20 h-20 shrink-0 -mb-[2px] pointer-events-none">
+                    <PandaSenseiSVG compact mode="victory" className="w-full h-full block" />
+                    <img src={getAvatarPath(userProfile.avatarId, 'fire')} className="sr-only" alt={user} />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 pb-3">
                     <div className="inline-flex items-center gap-1 bg-lime-400/20 border border-lime-300/40 text-lime-300 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 whitespace-nowrap">
                       <Sparkles size={10} /> Mission Complete
                     </div>
@@ -1666,7 +1677,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </div>
 
                 {/* Integrated XP Pill */}
-                <div className="bg-lime-400/20 border border-lime-300/40 px-2.5 py-2 rounded-2xl text-right shrink-0 backdrop-blur-xs animate-squash-bounce">
+                <div className="mb-3 bg-lime-400/20 border border-lime-300/40 px-2.5 py-2 rounded-2xl text-right shrink-0 backdrop-blur-xs animate-squash-bounce">
                   <div className="text-[9px] font-black uppercase tracking-wider text-lime-300 flex items-center justify-end gap-0.5 whitespace-nowrap">
                     <Zap size={10} className="fill-lime-300" /> XP Earned
                   </div>
@@ -1710,12 +1721,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
             {/* 2. Unified Sensei Panda's Report Card (Matches Home & Loot white card aesthetic) */}
             <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-emerald-950 font-['Fredoka'] text-base flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-base shadow-2xs">🐼</span>
-                  Sensei Panda&apos;s Report
+              <div className="flex items-end justify-between border-b border-emerald-100/90 pb-0">
+                <h3 className="font-bold text-emerald-950 font-['Fredoka'] text-base flex items-end gap-2">
+                  <span className="w-14 h-14 shrink-0 -mb-[1px] pointer-events-none block">
+                    <PandaSenseiSVG compact mode="coaching" className="w-full h-full block" />
+                  </span>
+                  <span className="pb-2.5">Sensei Panda&apos;s Report</span>
                 </h3>
-                <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                <span className="mb-2.5 text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-full uppercase tracking-wider">
                   Coach Insights
                 </span>
               </div>
@@ -1968,19 +1981,19 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       <Confetti active={showCelebration} />
 
       <div className="px-3 sm:px-4 py-3.5 max-w-xl mx-auto w-full space-y-3.5">
-        {/* Cohesive Zen Cooldown Card with Panda Guide */}
+        {/* Cohesive Zen Cooldown Card with Panda Guide — Sensei sits directly on the cooldown progress bar */}
         <div className="bg-white rounded-3xl border border-emerald-100/90 shadow-xs overflow-hidden">
-          <div className="p-4 bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-white border-b border-emerald-100/80 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-12 h-12 rounded-2xl bg-teal-100/70 border border-teal-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-                <div className="absolute inset-0 rounded-2xl bg-teal-300/30 animate-ping" style={{ animationDuration: '4s' }} />
+          <div className="px-4 pt-2.5 pb-0 bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-white border-b border-emerald-100/80 flex items-end justify-between gap-3">
+            <div className="flex items-end gap-2.5 min-w-0">
+              <div className="relative w-16 h-16 shrink-0 -mb-[1px] pointer-events-none">
+                <PandaSenseiSVG compact mode="zen" className="w-full h-full block" />
                 <img
                   src={getAvatarPath(userProfile.avatarId)}
                   alt="Zen Panda"
-                  className="relative w-10 h-10 object-contain"
+                  className="sr-only"
                 />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 pb-3">
                 <h3 className="text-base font-bold text-emerald-950 font-['Fredoka'] leading-tight">
                   {cooldownCompletedCount === plan.cooldown.length && plan.cooldown.length > 0
                     ? 'Zen Master! Fully Recovered 🎋'
@@ -1995,7 +2008,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               <button
                 type="button"
                 onClick={() => setCooldownDone(new Array(plan.cooldown.length).fill(true))}
-                className="text-xs font-extrabold text-teal-800 bg-white hover:bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/80 active:scale-95 transition-all shrink-0 shadow-2xs"
+                className="mb-3 text-xs font-extrabold text-teal-800 bg-white hover:bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/80 active:scale-95 transition-all shrink-0 shadow-2xs"
               >
                 Check All
               </button>

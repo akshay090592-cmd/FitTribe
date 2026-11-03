@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activit
 import { InfoTooltip } from './InfoTooltip';
 import { claimDailyQuestChest } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
+import { JungleChestSVG, ChestTier, ChestState } from './JungleChestSVG';
 
 interface Props {
   quests: Quest[];
@@ -18,53 +19,15 @@ interface Props {
 
 const DailyChestSvg: React.FC<{
   tier: 1 | 2 | 3;
-  state: 'locked' | 'ready' | 'claimed';
+  state: ChestState;
 }> = ({ tier, state }) => {
-  const palette =
-    tier === 1
-      ? { lid: '#d97706', body: '#b45309', band: '#fde047', rim: '#78350f' }
-      : tier === 2
-      ? { lid: '#64748b', body: '#475569', band: '#38bdf8', rim: '#1e293b' }
-      : { lid: '#f59e0b', body: '#d97706', band: '#fef08a', rim: '#92400e' };
-
+  const chestTier: ChestTier = tier === 1 ? 'bronze' : tier === 2 ? 'silver' : 'gold';
   return (
-    <svg
-      viewBox="0 0 48 48"
-      className={`w-8 h-8 transition-transform ${
-        state === 'ready' ? 'animate-chest-wobble drop-shadow-[0_4px_10px_rgba(245,158,11,0.55)]' : ''
-      } ${state === 'locked' ? 'opacity-65 grayscale-[30%]' : ''}`}
-    >
-      {/* Chest Base */}
-      <rect x="7" y="22" width="34" height="19" rx="4" fill={palette.body} stroke={palette.rim} strokeWidth="2" />
-      <rect x="21" y="22" width="6" height="19" fill={palette.band} opacity="0.85" />
-      {/* Chest Lid (tilts open when claimed) */}
-      <g
-        style={{
-          transform: state === 'claimed' ? 'translateY(-5px) rotate(-14deg)' : 'none',
-          transformOrigin: '10px 22px',
-          transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }}
-      >
-        <path
-          d="M7 22 C7 14 14 11 24 11 C34 11 41 14 41 22 Z"
-          fill={palette.lid}
-          stroke={palette.rim}
-          strokeWidth="2"
-        />
-        <rect x="21" y="11" width="6" height="11" fill={palette.band} />
-      </g>
-      {/* Lock / Star */}
-      <circle cx="24" cy="23" r="4" fill={palette.band} stroke={palette.rim} strokeWidth="1.5" />
-      {state === 'claimed' && (
-        <path
-          d="M19 9 L24 3 L29 9"
-          stroke="#fde047"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          fill="none"
-        />
-      )}
-    </svg>
+    <JungleChestSVG
+      tier={chestTier}
+      state={state}
+      className="w-11 h-11 shrink-0"
+    />
   );
 };
 
@@ -180,7 +143,7 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
  */
 export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false, userProfile, userState, onStateUpdated }) => {
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
-  const [chestToast, setChestToast] = useState<string | null>(null);
+  const [chestToast, setChestToast] = useState<{ text: string; tier: ChestTier } | null>(null);
 
   if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
 
@@ -201,12 +164,13 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   const handleClaimChest = async (tier: 1 | 2 | 3) => {
     if (!userProfile || claimingTier !== null) return;
     setClaimingTier(tier);
+    const chestTier: ChestTier = tier === 1 ? 'bronze' : tier === 2 ? 'silver' : 'gold';
     try {
       const res = await claimDailyQuestChest(userProfile, tier);
       if (res.success) {
         playChestOpenSound();
         triggerHaptic([30, 50, 80]);
-        setChestToast(res.rewardText);
+        setChestToast({ text: res.rewardText, tier: chestTier });
         setTimeout(() => setChestToast(null), 4000);
         onStateUpdated?.();
       }
@@ -286,11 +250,14 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
                 ]).map(({ tier, label, reward, req }) => {
                   const isClaimed = claimedTiersToday.includes(tier);
                   const isReady = completedCount >= req && !isClaimed;
-                  const state: 'locked' | 'ready' | 'claimed' = isClaimed
-                    ? 'claimed'
-                    : isReady
-                    ? 'ready'
-                    : 'locked';
+                  const state: ChestState =
+                    claimingTier === tier
+                      ? 'opening'
+                      : isClaimed
+                      ? 'claimed'
+                      : isReady
+                      ? 'ready'
+                      : 'locked';
 
                   return (
                     <button
@@ -298,8 +265,8 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
                       type="button"
                       disabled={!isReady || claimingTier === tier}
                       onClick={() => handleClaimChest(tier)}
-                      className={`flex items-center gap-2 p-2 rounded-2xl border text-left transition-all ${
-                        state === 'ready'
+                      className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 p-2 sm:p-2.5 rounded-2xl border text-center sm:text-left transition-all ${
+                        state === 'ready' || state === 'opening'
                           ? 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-300 shadow-sm cursor-pointer hover:scale-[1.02] active:scale-95'
                           : state === 'claimed'
                           ? 'bg-emerald-50/70 border-emerald-200/80 cursor-default'
@@ -307,13 +274,13 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
                       }`}
                     >
                       <DailyChestSvg tier={tier} state={state} />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 w-full sm:flex-1">
                         <div className="text-[10px] font-black text-slate-800 truncate leading-tight">
-                          {state === 'claimed' ? 'Claimed ✓' : state === 'ready' ? 'Tap to Open!' : `${req}/${quests.length} Quests`}
+                          {state === 'claimed' ? 'Claimed ✓' : state === 'opening' ? 'Opening...' : state === 'ready' ? 'Tap to Open!' : `${req}/${quests.length} Quests`}
                         </div>
                         <div
-                          className={`text-[9px] font-bold truncate ${
-                            state === 'ready'
+                          className={`text-[9px] font-bold truncate mt-0.5 ${
+                            state === 'ready' || state === 'opening'
                               ? 'text-amber-700'
                               : state === 'claimed'
                               ? 'text-emerald-700'
@@ -330,9 +297,12 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
             </div>
 
             {chestToast && (
-              <div className="mt-2 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md animate-squash-bounce">
-                <Sparkles size={14} />
-                <span>Chest Opened: {chestToast}!</span>
+              <div className="mt-2.5 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white text-xs font-black flex items-center justify-center gap-2.5 shadow-md animate-squash-bounce">
+                <JungleChestSVG tier={chestToast.tier} state="opening" className="w-11 h-11 shrink-0" />
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-yellow-200 shrink-0" />
+                  <span>Chest Opened: {chestToast.text}!</span>
+                </div>
               </div>
             )}
           </div>

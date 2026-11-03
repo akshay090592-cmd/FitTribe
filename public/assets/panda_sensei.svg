@@ -79,14 +79,6 @@
       50% { transform: scale(0.86); opacity: 0.12; }
     }
 
-    .enso-ring {
-      transform-origin: 240px 236px;
-      animation: ensoSpin 28s linear infinite;
-    }
-    @keyframes ensoSpin {
-      to { transform: rotate(360deg); }
-    }
-
     .bamboo-left {
       transform-origin: 68px 450px;
       animation: bambooSwayL 5.4s ease-in-out infinite;
@@ -211,13 +203,6 @@
 
   <!-- Background Card -->
   <rect width="480" height="480" rx="36" fill="url(#senseiBg)"/>
-
-  <!-- Soft Dojo Sunburst Ring -->
-  <circle cx="240" cy="236" r="196" fill="#ffffff" opacity="0.45"/>
-  <circle class="enso-ring" cx="240" cy="236" r="176" fill="none" stroke="#86efac" stroke-width="14"
-          stroke-linecap="round" stroke-dasharray="880 210" opacity="0.75"/>
-  <circle class="enso-ring" cx="240" cy="236" r="158" fill="none" stroke="#fde047" stroke-width="4"
-          stroke-linecap="round" stroke-dasharray="420 600" opacity="0.65"/>
 
   <!-- Left Bamboo Stalks -->
   <g class="bamboo-left">

@@ -120,7 +120,7 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
                     {activeTodayCount}/{members.length} Active Today
                 </span>
             </div>
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pt-2.5 pb-1.5 px-1.5 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
                 {members.map(user => (
                     <button
                         key={user}

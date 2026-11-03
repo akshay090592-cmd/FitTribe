@@ -156,14 +156,6 @@ export const PandaSenseiSVG: React.FC<PandaSenseiSVGProps> = React.memo(({
           50% { transform: scale(${isVictory ? '0.76' : '0.86'}); opacity: 0.12; }
         }
 
-        .${uid}_enso {
-          transform-origin: 240px 236px;
-          animation: ${uid}_spin ${isFire ? '14s' : '26s'} linear infinite;
-        }
-        @keyframes ${uid}_spin {
-          to { transform: rotate(360deg); }
-        }
-
         .${uid}_head {
           transform-origin: 240px 265px;
           animation: ${uid}_nod ${isZen ? '5.5s' : '3.8s'} ease-in-out infinite;
@@ -258,7 +250,7 @@ export const PandaSenseiSVG: React.FC<PandaSenseiSVGProps> = React.memo(({
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .${uid}_body, .${uid}_shadow, .${uid}_enso, .${uid}_head,
+          .${uid}_body, .${uid}_shadow, .${uid}_head,
           .${uid}_tails, .${uid}_eyes, .${uid}_mouth_w, .${uid}_mouth_open,
           .${uid}_arm_r, .${uid}_arm_l, .${uid}_pendulum, .${uid}_flame_aura, .${uid}_spark {
             animation: none !important;
@@ -268,25 +260,8 @@ export const PandaSenseiSVG: React.FC<PandaSenseiSVGProps> = React.memo(({
 
       {/* Optional Rounded Background Card */}
       {showBackground && (
-        <>
-          <rect width="480" height="480" rx="36" fill={`url(#${uid}_bg)`} />
-          <circle cx="240" cy="236" r="192" fill="#ffffff" opacity="0.45" />
-        </>
+        <rect width="480" height="480" rx="36" fill={`url(#${uid}_bg)`} />
       )}
-
-      {/* Ambient Aura / Enso Ring */}
-      <circle
-        className={`${uid}_enso`}
-        cx="240"
-        cy="236"
-        r="164"
-        fill="none"
-        stroke={isFire ? '#fdba74' : isZen ? '#5eead4' : isVictory ? '#fde047' : '#86efac'}
-        strokeWidth="11"
-        strokeLinecap="round"
-        strokeDasharray="820 200"
-        opacity={showBackground ? '0.78' : '0.42'}
-      />
 
       {/* FIRE MODE: Blazing Multi-Layer SVG Flame Aura Behind Sensei */}
       {isFire && (
@@ -301,13 +276,6 @@ export const PandaSenseiSVG: React.FC<PandaSenseiSVGProps> = React.memo(({
             fill="#fde047"
             opacity="0.35"
           />
-        </g>
-      )}
-
-      {/* ZEN MODE: Pulsing Healing Lotus Halo */}
-      {isZen && (
-        <g opacity="0.45">
-          <circle cx="240" cy="250" r="150" fill="none" stroke="#2dd4bf" strokeWidth="4" strokeDasharray="18 14" />
         </g>
       )}
 

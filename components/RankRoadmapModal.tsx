@@ -2,27 +2,39 @@ import React from 'react';
 import { X, Crown, Sparkles, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
 import { RANK_TIERS, calculateLevel, getLevelProgress, getRankDetails } from '../utils/gamification';
 import { UserGamificationState, UserProfile } from '../types';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 interface RankRoadmapModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentXp: number;
-  currentUserDisplayName: string;
-  gamificationState?: Record<string, UserGamificationState>;
+  currentXp?: number;
+  userXp?: number;
+  currentUserDisplayName?: string;
+  currentUser?: string;
+  gamificationState?: Record<string, UserGamificationState> | null;
+  allGamificationState?: Record<string, UserGamificationState> | null;
   tribeMembers?: UserProfile[];
+  avatarMap?: Record<string, string>;
 }
 
 export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
   isOpen,
   onClose,
   currentXp,
+  userXp,
   currentUserDisplayName,
-  gamificationState = {},
+  currentUser,
+  gamificationState,
+  allGamificationState,
   tribeMembers = []
 }) => {
   if (!isOpen) return null;
 
-  const levelData = getLevelProgress(currentXp);
+  const resolvedXp = Number(currentXp ?? userXp ?? 0) || 0;
+  const resolvedUser = currentUserDisplayName || currentUser || '';
+  const resolvedGamification = gamificationState || allGamificationState || {};
+
+  const levelData = getLevelProgress(resolvedXp);
   const currentRank = getRankDetails(levelData.level);
 
   // Map tribe members to their current rank tierIndex
@@ -30,9 +42,9 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
   const seenNames = new Set<string>();
 
   tribeMembers.forEach(m => {
-    const uState = gamificationState[m.displayName];
-    const xp = m.displayName === currentUserDisplayName
-      ? currentXp
+    const uState = resolvedGamification[m.displayName];
+    const xp = m.displayName === resolvedUser
+      ? resolvedXp
       : (uState?.lifetimeXp ?? uState?.points ?? 0);
     const lvl = calculateLevel(xp);
     const r = getRankDetails(lvl);
@@ -41,15 +53,15 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
       name: m.displayName,
       avatar: m.avatarUrl,
       level: lvl,
-      isMe: m.displayName === currentUserDisplayName
+      isMe: m.displayName === resolvedUser
     });
     seenNames.add(m.displayName);
   });
 
-  Object.entries(gamificationState).forEach(([name, uState]) => {
+  Object.entries(resolvedGamification).forEach(([name, uState]) => {
     if (seenNames.has(name)) return;
-    const xp = name === currentUserDisplayName
-      ? currentXp
+    const xp = name === resolvedUser
+      ? resolvedXp
       : (uState?.lifetimeXp ?? uState?.points ?? 0);
     const lvl = calculateLevel(xp);
     const r = getRankDetails(lvl);
@@ -57,7 +69,7 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
     membersByTier[r.tierIndex].push({
       name,
       level: lvl,
-      isMe: name === currentUserDisplayName
+      isMe: name === resolvedUser
     });
   });
 
@@ -73,34 +85,42 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
         {/* Hero Crest Header */}
         <div className={`bg-gradient-to-br ${currentRank.gradient} p-6 text-white relative overflow-hidden shrink-0`}>
           <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <button
-            onClick={onClose}
-            aria-label="Close Rank Roadmap"
-            className="absolute top-4 right-4 bg-black/20 hover:bg-black/30 text-white p-2 rounded-full transition-colors"
-          >
-            <X size={18} />
-          </button>
 
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-3xl shadow-lg animate-squash-bounce">
+          {/* Top Bar: Tier Pill + Close Button */}
+          <div className="flex items-center justify-between gap-2 mb-3 relative z-20">
+            <div className="inline-flex items-center gap-1.5 bg-black/25 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <Crown size={11} className="text-amber-300 shrink-0" />
+              <span>Tier {currentRank.tierIndex} of {RANK_TIERS.length} • Level {levelData.level}</span>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close Rank Roadmap"
+              className="bg-black/20 hover:bg-black/30 text-white p-2 rounded-full transition-colors shrink-0"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex items-end gap-3 relative z-10">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-3xl shadow-lg animate-squash-bounce shrink-0 mb-2">
               {currentRank.icon}
             </div>
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-black/25 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-1">
-                <Crown size={11} className="text-amber-300" />
-                Tier {currentRank.tierIndex} of {RANK_TIERS.length} • Level {levelData.level}
-              </div>
-              <h2 className="text-2xl font-black font-['Fredoka'] tracking-wide leading-tight">
+            <div className="flex-1 min-w-0 pb-2">
+              <h2 className="text-xl sm:text-2xl font-black font-['Fredoka'] tracking-wide leading-tight truncate">
                 {currentRank.fullTitle}
               </h2>
-              <p className="text-xs text-white/90 font-medium mt-0.5">
+              <p className="text-xs text-white/90 font-medium mt-0.5 line-clamp-2 leading-snug">
                 {currentRank.description}
               </p>
+            </div>
+            {/* Sensei Panda grounded directly on top of the XP Progress Card */}
+            <div className="w-20 h-20 shrink-0 -mb-[2px] pointer-events-none">
+              <PandaSenseiSVG compact mode="victory" className="w-full h-full block" />
             </div>
           </div>
 
           {/* Progress to next level & rank */}
-          <div className="mt-5 bg-black/20 backdrop-blur-xs rounded-2xl p-3.5 border border-white/15">
+          <div className="bg-black/20 backdrop-blur-xs rounded-2xl p-3.5 border border-white/15 relative z-10">
             <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-wider mb-1.5">
               <span>Level {levelData.level} Progress</span>
               <span>{Math.round(levelData.currentXp)} / {levelData.neededXp} XP</span>
@@ -112,7 +132,7 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
               />
             </div>
             <div className="flex justify-between items-center mt-2 text-[10px] font-bold text-white/85">
-              <span>Total: {currentXp.toLocaleString()} XP</span>
+              <span>Total: {resolvedXp.toLocaleString()} XP</span>
               {currentRank.nextRankTitle ? (
                 <span className="flex items-center gap-1 text-amber-200 font-black">
                   <Sparkles size={11} />

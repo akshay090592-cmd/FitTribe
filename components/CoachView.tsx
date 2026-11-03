@@ -7,6 +7,7 @@ import { monthDayFormatter, weekdayShortFormatter, formatWithCache } from '../ut
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 import { STARTER_PLANS } from '../constants';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 const FormattedMessage = ({ text }: { text: string }) => {
     return (
@@ -653,20 +654,29 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                 <div className="animate-slide-up space-y-5">
                     {!isCheckinActive ? (
                         <>
-                            <div className="rounded-[32px] p-7 sm:p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden text-center border border-white/20" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,20%))' }}>
+                            <div className="rounded-[32px] p-6 sm:p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden border border-white/20" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,20%))' }}>
                                 <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-400/15 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-300/15 rounded-full blur-xl -ml-10 -mb-10 pointer-events-none"></div>
-                                <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3 border border-white/25 text-emerald-100">
+                                <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-2.5 border border-white/25 text-emerald-100">
                                     <span>🐼</span> Sage Weekly Sync
                                 </div>
-                                <h2 className="text-3xl font-bold font-['Fredoka'] mb-2 drop-shadow-sm">New Week, New Plan</h2>
-                                <p className="text-emerald-100/90 mb-6 font-medium text-sm max-w-sm mx-auto leading-relaxed">Let's check your vibe and build a custom schedule tailored to your recovery and goals.</p>
-                                <button
-                                    onClick={startCheckin}
-                                    className="bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:from-amber-300 hover:to-orange-400 font-bold py-3.5 px-8 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center mx-auto text-sm"
-                                >
-                                    Start Check-in <Sparkles size={18} className="ml-2 text-slate-900" />
-                                </button>
+                                <h2 className="text-3xl font-bold font-['Fredoka'] mb-1.5 drop-shadow-sm">New Week, New Plan</h2>
+                                <p className="text-emerald-100/90 font-medium text-sm max-w-xs leading-relaxed">Let's check your vibe and build a custom schedule tailored to your recovery and goals.</p>
+
+                                {/* Sensei Panda standing directly on the horizontal divider line */}
+                                <div className="mt-2 pt-2 border-b border-white/20 flex items-end justify-between gap-3">
+                                    <div className="pb-3">
+                                        <button
+                                            onClick={startCheckin}
+                                            className="bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:from-amber-300 hover:to-orange-400 font-bold py-3.5 px-6 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center text-sm"
+                                        >
+                                            Start Check-in <Sparkles size={18} className="ml-2 text-slate-900" />
+                                        </button>
+                                    </div>
+                                    <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 -mb-[2px] pointer-events-none">
+                                        <PandaSenseiSVG mode="coaching" className="w-full h-full block" />
+                                    </div>
+                                </div>
                             </div>
 
                             {weeklyPlan && (
@@ -745,15 +755,15 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                         </>
                     ) : (
                         <div className="flex flex-col h-[68vh] glass-panel rounded-[32px] shadow-xl overflow-hidden border border-emerald-100/80 relative" style={{ background: 'hsla(var(--hue-jungle),40%,98%,0.92)' }}>
-                            <div className="p-4 flex items-center text-white shadow-md z-10" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
-                                <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center mr-3 backdrop-blur-sm border border-white/30 shadow-xs">
-                                    <span className="text-2xl">🐼</span>
+                            <div className="px-4 pt-3 pb-0 flex items-end text-white shadow-md z-10" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
+                                <div className="w-16 h-16 mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
+                                    <PandaSenseiSVG compact mode={isGeneratingPlan ? 'lifting' : proposedPlan ? 'victory' : 'coaching'} className="w-full h-full block" />
                                 </div>
-                                <div>
+                                <div className="pb-3">
                                     <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
                                     <div className="text-[10px] text-emerald-200 font-bold uppercase tracking-widest">Weekly Sync & Planning</div>
                                 </div>
-                                <div className="ml-auto flex items-center gap-2">
+                                <div className="ml-auto pb-3 flex items-center gap-2">
                                     {checkinAssessment && !proposedPlan && (
                                         <button
                                             onClick={generateWeeklyPlan}
@@ -1021,13 +1031,13 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
 
             {activeTab === 'chat' && (
                 <div className="flex flex-col h-[66vh] glass-panel overflow-hidden animate-slide-up shadow-xl border border-emerald-100/80 rounded-[30px]" style={{ background: 'hsla(var(--hue-jungle),40%,98%,0.90)' }}>
-                    {/* Sage Panda Header */}
-                    <div className="p-4 flex items-center justify-between text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
-                        <div className="flex items-center">
-                            <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center mr-3 backdrop-blur-sm border border-white/30 shadow-sm">
-                                <span className="text-2xl">🐼</span>
+                    {/* Sage Panda Header — Sensei stands directly on the bottom edge of the header bar */}
+                    <div className="px-4 pt-2.5 pb-0 flex items-end justify-between text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
+                        <div className="flex items-end">
+                            <div className="w-16 h-16 mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
+                                <PandaSenseiSVG compact mode={loadingChat ? 'lifting' : pendingAction ? 'victory' : 'coaching'} className="w-full h-full block" />
                             </div>
-                            <div>
+                            <div className="pb-3">
                                 <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
                                 <div className="text-xs font-medium flex items-center" style={{ color: 'hsl(var(--hue-jungle),65%,78%)' }}>
                                     <div className="w-2 h-2 rounded-full mr-1.5 animate-pulse" style={{ background: 'hsl(var(--hue-jungle),75%,58%)' }} />
@@ -1035,7 +1045,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="pb-3 flex items-center gap-2">
                             {messages.length > 1 && (
                                 <button
                                     onClick={resetChat}

@@ -2257,8 +2257,12 @@ const App: React.FC = () => {
             isOpen={isRankModalOpen}
             onClose={() => setIsRankModalOpen(false)}
             currentUser={currentUser}
+            currentUserDisplayName={currentUser}
             userXp={xpData.xp || 0}
+            currentXp={xpData.xp || 0}
             allGamificationState={allGamificationState}
+            gamificationState={allGamificationState}
+            tribeMembers={tribeMembers}
             avatarMap={avatarMap}
           />
         )}

@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { User, WorkoutType } from '../types';
+import { User, UserGamificationState, WorkoutType } from '../types';
 import { getLogs } from '../utils/storage';
 import { CheckCircle2, BedDouble, Flame, Hand, AlertTriangle, CalendarDays } from 'lucide-react';
 import { getAvatarPath } from '../utils/avatar';
+import { calculateLevel, getRankDetails } from '../utils/gamification';
 
 interface Props {
     currentUser: string | null;
     tribeId?: string;
     members?: string[];
     avatarMap?: Record<string, string>;
+    gamificationState?: Record<string, UserGamificationState>;
     refreshTrigger?: number;
     onUserClick?: (user: string) => void;
 }
 
 // Performance Optimization: Memoize TribePulse to prevent redundant re-renders from App state
-export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, members = [], avatarMap = {}, refreshTrigger = 0, onUserClick }) => {
+export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, members = [], avatarMap = {}, gamificationState = {}, refreshTrigger = 0, onUserClick }) => {
     const [statuses, setStatuses] = useState<Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'>>({});
     const [loading, setLoading] = useState(true);
 
@@ -165,6 +167,22 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
                                     <BedDouble size={11} />
                                 </div>
                             )}
+                            {(() => {
+                                const uState = gamificationState[user];
+                                if (!uState) return null;
+                                const xp = uState.lifetimeXp ?? uState.points ?? 0;
+                                const lvl = calculateLevel(xp);
+                                const rank = getRankDetails(lvl);
+                                return (
+                                    <div
+                                        title={`${rank.fullTitle} (Lvl ${lvl})`}
+                                        className={`absolute -top-1.5 -left-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-black border shadow-2xs leading-tight flex items-center gap-0.5 ${rank.bgClass} ${rank.textClass} ${rank.borderClass}`}
+                                    >
+                                        <span>{rank.icon}</span>
+                                        <span>{lvl}</span>
+                                    </div>
+                                );
+                            })()}
                         </div>
                         <span className="text-[11px] font-bold mt-1.5 text-slate-700 truncate max-w-[68px] group-hover:text-emerald-700">{user === currentUser ? 'You' : user}</span>
                     </button>

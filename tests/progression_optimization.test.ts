@@ -81,6 +81,37 @@ describe('getProgressionSuggestion Optimization & Correctness', () => {
     });
   });
 
+  it('suggests rep progression (not 2.5kg) for bodyweight exercises when weight is 0', () => {
+    const sets: ExerciseSet[] = [
+      { reps: 10, weight: 0, completed: true },
+      { reps: 10, weight: 0, completed: true },
+      { reps: 10, weight: 0, completed: true }
+    ];
+
+    const suggestion = getProgressionSuggestion(sets, '8-10', { equipment: 'bodyweight' });
+    expect(suggestion).toEqual({
+      type: 'increase_reps',
+      suggestedWeight: 0,
+      suggestedReps: 12,
+      reason: 'Bodyweight mastered! Aim for 12 reps.'
+    });
+  });
+
+  it('uses +2kg increment for dumbbell/cable/isolation movements', () => {
+    const sets: ExerciseSet[] = [
+      { reps: 12, weight: 12, completed: true },
+      { reps: 12, weight: 12, completed: true }
+    ];
+
+    const suggestion = getProgressionSuggestion(sets, '10-12', { equipment: 'dumbbell', archetype: 'isolation_curl' });
+    expect(suggestion).toEqual({
+      type: 'increase_weight',
+      suggestedWeight: 14,
+      suggestedReps: 10,
+      reason: 'You mastered 12kg! Level up +2kg.'
+    });
+  });
+
   it('runs significantly faster than unoptimized array method in a 10,000 call benchmark', () => {
     const testSets: ExerciseSet[] = [
       { reps: 10, weight: 60, completed: true },

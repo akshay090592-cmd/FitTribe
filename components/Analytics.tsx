@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { User, UserProfile } from '../types';
 import { getUserLogs, calculateStats, getTribeMembers } from '../utils/storage';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import { Filter, Trophy, Dumbbell, Activity } from 'lucide-react';
+import { Filter, Trophy, Dumbbell, Activity, Sparkles } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroups, MUSCLE_GROUPS } from '../utils/muscleMapping';
 import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache } from '../utils/dateUtils';
+import { AICoachService } from '../services/aiCoach';
 
 import { Calendar } from './Calendar';
 
@@ -340,6 +341,59 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           <span>📊</span> Track Your Journey
         </div>
         <h2 className="text-2xl md:text-3xl font-bold text-emerald-950 font-['Fredoka'] drop-shadow-sm">Jungle Insights</h2>
+      </div>
+
+      {/* Sensei's Jungle Insights Card */}
+      <div className="glass-panel p-4 sm:p-5 rounded-[28px] border border-emerald-100/90 shadow-sm md:col-span-2" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.92)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-lg shrink-0 shadow-2xs">
+              🐼
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-emerald-950 text-base font-['Fredoka'] leading-tight">
+                Sensei&apos;s Jungle Insights
+              </h3>
+              <p className="text-[11px] font-semibold text-emerald-700/80 truncate">
+                AI analysis of your muscle balance, consistency &amp; top PRs
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={loadingAi}
+            onClick={async () => {
+              setLoadingAi(true);
+              try {
+                const insights = await AICoachService.generateAnalyticsInsights(user, logs, userProfile);
+                setAiAdvice(insights);
+              } catch (err) {
+                console.error("Failed to generate AI analytics insights", err);
+                setAiAdvice("• Keep logging sets consistently so Sensei Panda can spot your strength trends!");
+              } finally {
+                setLoadingAi(false);
+              }
+            }}
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 shrink-0 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+          >
+            <Sparkles size={13} />
+            <span>{loadingAi ? 'Analyzing...' : aiAdvice ? 'Refresh' : 'Ask Sensei'}</span>
+          </button>
+        </div>
+
+        {aiAdvice && (
+          <div className="mt-3.5 pt-3 border-t border-emerald-100/80 space-y-1.5 animate-fade-in">
+            {aiAdvice
+              .split('\n')
+              .map(line => line.trim())
+              .filter(Boolean)
+              .map((line, idx) => (
+                <div key={idx} className="text-xs font-semibold text-emerald-950 bg-emerald-50/60 border border-emerald-100/80 px-3 py-2 rounded-xl leading-relaxed">
+                  {line}
+                </div>
+              ))}
+          </div>
+        )}
       </div>
 
       {/* Calendar Section */}

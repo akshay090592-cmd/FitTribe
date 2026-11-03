@@ -96,13 +96,408 @@ export const getLevelProgress = (xp: number) => {
   };
 };
 
+export interface RankTierDefinition {
+  tierIndex: number;
+  title: string;
+  shortTitle: string;
+  icon: string;
+  minLevel: number;
+  maxLevel: number; // Infinity for top tier
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  gradient: string;
+  description: string;
+}
+
+export interface RankDetails extends RankTierDefinition {
+  level: number;
+  subTier: 'I' | 'II' | 'III' | '';
+  fullTitle: string;
+  nextRankTitle: string | null;
+  levelsToNextRank: number;
+  tierProgressPercent: number;
+}
+
+export const RANK_TIERS: RankTierDefinition[] = [
+  {
+    tierIndex: 1,
+    title: 'Bamboo Cub',
+    shortTitle: 'Novice',
+    icon: '🌱',
+    minLevel: 1,
+    maxLevel: 4,
+    bgClass: 'bg-lime-100',
+    textClass: 'text-lime-800',
+    borderClass: 'border-lime-300',
+    gradient: 'from-lime-400 to-emerald-500',
+    description: 'Taking your first steps into the Bamboo Jungle.'
+  },
+  {
+    tierIndex: 2,
+    title: 'Jungle Scout',
+    shortTitle: 'Scout',
+    icon: '🧭',
+    minLevel: 5,
+    maxLevel: 9,
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-800',
+    borderClass: 'border-emerald-300',
+    gradient: 'from-emerald-400 to-teal-500',
+    description: 'Tracking trails and building the daily habit.'
+  },
+  {
+    tierIndex: 3,
+    title: 'Canopy Ranger',
+    shortTitle: 'Ranger',
+    icon: '🏹',
+    minLevel: 10,
+    maxLevel: 14,
+    bgClass: 'bg-teal-100',
+    textClass: 'text-teal-800',
+    borderClass: 'border-teal-300',
+    gradient: 'from-teal-400 to-cyan-500',
+    description: 'Swinging high through the emerald canopy.'
+  },
+  {
+    tierIndex: 4,
+    title: 'Iron Warrior',
+    shortTitle: 'Warrior',
+    icon: '⚔️',
+    minLevel: 15,
+    maxLevel: 19,
+    bgClass: 'bg-sky-100',
+    textClass: 'text-sky-800',
+    borderClass: 'border-sky-300',
+    gradient: 'from-sky-400 to-blue-600',
+    description: 'Forged in sweat and iron discipline.'
+  },
+  {
+    tierIndex: 5,
+    title: 'Jade Guardian',
+    shortTitle: 'Guardian',
+    icon: '🛡️',
+    minLevel: 20,
+    maxLevel: 26,
+    bgClass: 'bg-indigo-100',
+    textClass: 'text-indigo-800',
+    borderClass: 'border-indigo-300',
+    gradient: 'from-indigo-500 to-violet-600',
+    description: 'A pillar of strength protecting the Tribe.'
+  },
+  {
+    tierIndex: 6,
+    title: 'Volcano Champion',
+    shortTitle: 'Champion',
+    icon: '🌋',
+    minLevel: 27,
+    maxLevel: 34,
+    bgClass: 'bg-orange-100',
+    textClass: 'text-orange-800',
+    borderClass: 'border-orange-300',
+    gradient: 'from-orange-500 to-red-600',
+    description: 'Unstoppable volcanic intensity in every session.'
+  },
+  {
+    tierIndex: 7,
+    title: 'Apex Warlord',
+    shortTitle: 'Warlord',
+    icon: '🔥',
+    minLevel: 35,
+    maxLevel: 44,
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-800',
+    borderClass: 'border-rose-300',
+    gradient: 'from-rose-500 to-pink-600',
+    description: 'Commanding the jungle with relentless grit.'
+  },
+  {
+    tierIndex: 8,
+    title: 'Jungle Sovereign',
+    shortTitle: 'Sovereign',
+    icon: '👑',
+    minLevel: 45,
+    maxLevel: 54,
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-900',
+    borderClass: 'border-amber-400',
+    gradient: 'from-amber-400 to-yellow-600',
+    description: 'Royalty of the Iron Jungle.'
+  },
+  {
+    tierIndex: 9,
+    title: 'Mythic Sensei',
+    shortTitle: 'Sensei',
+    icon: '🐉',
+    minLevel: 55,
+    maxLevel: 69,
+    bgClass: 'bg-purple-100',
+    textClass: 'text-purple-900',
+    borderClass: 'border-purple-400',
+    gradient: 'from-purple-500 to-fuchsia-600',
+    description: 'Master of form, mind, and iron.'
+  },
+  {
+    tierIndex: 10,
+    title: 'Celestial Immortal',
+    shortTitle: 'Immortal',
+    icon: '⚡',
+    minLevel: 70,
+    maxLevel: 84,
+    bgClass: 'bg-fuchsia-100',
+    textClass: 'text-fuchsia-900',
+    borderClass: 'border-fuchsia-400',
+    gradient: 'from-fuchsia-500 to-indigo-600',
+    description: 'Ascended beyond mortal limits.'
+  },
+  {
+    tierIndex: 11,
+    title: 'Astral Grandmaster',
+    shortTitle: 'Grandmaster',
+    icon: '🌌',
+    minLevel: 85,
+    maxLevel: 99,
+    bgClass: 'bg-cyan-100',
+    textClass: 'text-cyan-900',
+    borderClass: 'border-cyan-400',
+    gradient: 'from-cyan-400 via-blue-500 to-purple-600',
+    description: 'Wielding cosmic strength across the bamboo stars.'
+  },
+  {
+    tierIndex: 12,
+    title: 'Eternal Panda Legend',
+    shortTitle: 'Legend',
+    icon: '🐼✨',
+    minLevel: 100,
+    maxLevel: Infinity,
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-950',
+    borderClass: 'border-amber-500',
+    gradient: 'from-amber-400 via-rose-500 to-indigo-600',
+    description: 'The ultimate pinnacle of FitTribe mastery.'
+  }
+];
+
+export const getRankDetails = (rawLevel: number): RankDetails => {
+  const level = Math.max(1, Math.floor(rawLevel || 1));
+  const tier = RANK_TIERS.find(t => level >= t.minLevel && level <= t.maxLevel) || RANK_TIERS[RANK_TIERS.length - 1];
+  const nextTier = RANK_TIERS.find(t => t.tierIndex === tier.tierIndex + 1) || null;
+
+  let subTier: 'I' | 'II' | 'III' | '' = '';
+  let tierProgressPercent = 100;
+
+  if (Number.isFinite(tier.maxLevel)) {
+    const span = Math.max(1, tier.maxLevel - tier.minLevel + 1);
+    const offset = level - tier.minLevel;
+    const ratio = offset / span;
+    if (ratio < 1 / 3) subTier = 'I';
+    else if (ratio < 2 / 3) subTier = 'II';
+    else subTier = 'III';
+    tierProgressPercent = Math.min(100, Math.round(((offset + 1) / span) * 100));
+  } else {
+    subTier = '';
+    tierProgressPercent = 100;
+  }
+
+  const fullTitle = subTier ? `${tier.title} ${subTier}` : tier.title;
+  const levelsToNextRank = nextTier ? Math.max(1, nextTier.minLevel - level) : 0;
+
+  return {
+    ...tier,
+    level,
+    subTier,
+    fullTitle,
+    nextRankTitle: nextTier ? nextTier.title : null,
+    levelsToNextRank,
+    tierProgressPercent
+  };
+};
+
 export const getRank = (level: number) => {
-  if (level < 5) return 'Novice';
-  if (level < 10) return 'Scout';
-  if (level < 15) return 'Ranger';
-  if (level < 20) return 'Warrior';
-  if (level < 30) return 'Guardian';
-  return 'Legend';
+  return getRankDetails(level).fullTitle;
+};
+
+export interface ShopPowerUp {
+  id: 'streak_freeze' | 'double_xp' | 'streak_wager' | 'mystery_crate';
+  name: string;
+  emoji: string;
+  price: number;
+  badgeText: string;
+  description: string;
+  accentColor: string;
+}
+
+export const SHOP_POWERUPS: ShopPowerUp[] = [
+  {
+    id: 'streak_freeze',
+    name: 'Bamboo Ice Shield',
+    emoji: '🧊',
+    price: 50,
+    badgeText: 'Max 2 Equipped',
+    description: 'Protects your workout streak if life gets busy for an extra grace window.',
+    accentColor: 'from-cyan-400 to-sky-600'
+  },
+  {
+    id: 'double_xp',
+    name: '2x XP Jungle Espresso',
+    emoji: '⚡',
+    price: 30,
+    badgeText: '24h Boost',
+    description: 'Doubles all XP earned from workouts completed in the next 24 hours!',
+    accentColor: 'from-amber-400 to-orange-500'
+  },
+  {
+    id: 'streak_wager',
+    name: '7-Day Streak Wager',
+    emoji: '🎲',
+    price: 20,
+    badgeText: 'Win 40 Pts + 100 XP',
+    description: 'Bet 20 Pts that you will maintain your active streak for 7 days straight!',
+    accentColor: 'from-rose-500 to-orange-600'
+  },
+  {
+    id: 'mystery_crate',
+    name: 'Mystery Jungle Crate',
+    emoji: '🎁',
+    price: 25,
+    badgeText: 'Instant Loot',
+    description: 'Crack open for 15–60 Bonus XP, 2–3 Tribe Gifts, or a rare Ice Shield!',
+    accentColor: 'from-purple-500 to-indigo-600'
+  }
+];
+
+export interface MasteryBadgeDefinition {
+  id: string;
+  title: string;
+  unit: string;
+  icon: string;
+  description: string;
+  tiers: number[]; // 7 progressive thresholds (Tier I -> VII)
+  colorGradient: string;
+}
+
+export interface MasteryCategoryProgress extends MasteryBadgeDefinition {
+  currentValue: number;
+  currentTier: number; // 0 to 7
+  romanTier: string;
+  nextThreshold: number;
+  prevThreshold: number;
+  progressPercent: number;
+  isMaxed: boolean;
+}
+
+export const MASTERY_BADGES: MasteryBadgeDefinition[] = [
+  {
+    id: 'iron_titan',
+    title: 'Iron Titan',
+    unit: 'workouts',
+    icon: 'Dumbbell',
+    description: 'Total workouts logged in the Jungle',
+    tiers: [5, 15, 30, 60, 100, 175, 300],
+    colorGradient: 'from-emerald-400 to-teal-600'
+  },
+  {
+    id: 'wildfire',
+    title: 'Wildfire',
+    unit: 'day streak',
+    icon: 'Flame',
+    description: 'Active workout streak days',
+    tiers: [3, 7, 14, 30, 60, 100, 180],
+    colorGradient: 'from-orange-400 to-red-600'
+  },
+  {
+    id: 'mountain_mover',
+    title: 'Mountain Mover',
+    unit: 'kg lifted',
+    icon: 'Award',
+    description: 'Cumulative iron volume lifted across all sessions',
+    tiers: [5000, 25000, 75000, 150000, 300000, 500000, 1000000],
+    colorGradient: 'from-sky-400 to-indigo-600'
+  },
+  {
+    id: 'calorie_inferno',
+    title: 'Calorie Inferno',
+    unit: 'kcal torched',
+    icon: 'Zap',
+    description: 'Cumulative calories burned across workouts',
+    tiers: [2500, 10000, 30000, 60000, 100000, 200000, 400000],
+    colorGradient: 'from-amber-400 to-rose-600'
+  },
+  {
+    id: 'tribe_spirit',
+    title: 'Tribe Spirit',
+    unit: 'gifts sent',
+    icon: 'Users',
+    description: 'Gifts and boosts sent to hype your Tribe',
+    tiers: [5, 15, 40, 80, 150, 250, 400],
+    colorGradient: 'from-pink-400 to-purple-600'
+  }
+];
+
+const ROMAN_NUMERALS = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+export const calculateMasteryProgress = (
+  logs: WorkoutLog[] | null | undefined,
+  userStateOrStreak: UserGamificationState | number | null | undefined,
+  sentGiftsCount = 0
+): MasteryCategoryProgress[] => {
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  let validWorkouts = 0;
+  let totalVolume = 0;
+  let totalCalories = 0;
+
+  for (let i = 0; i < safeLogs.length; i++) {
+    const l = safeLogs[i];
+    if (l.type === WorkoutType.COMMITMENT) continue;
+    validWorkouts++;
+    totalCalories += l.calories || 0;
+    if (l.exercises) {
+      totalVolume += calculateWorkoutVolume(l.exercises);
+    }
+  }
+
+  const currentStreak =
+    typeof userStateOrStreak === 'number'
+      ? userStateOrStreak
+      : userStateOrStreak?.streak || 0;
+
+  const valuesById: Record<string, number> = {
+    iron_titan: validWorkouts,
+    wildfire: currentStreak,
+    mountain_mover: Math.round(totalVolume),
+    calorie_inferno: Math.round(totalCalories),
+    tribe_spirit: sentGiftsCount
+  };
+
+  return MASTERY_BADGES.map(def => {
+    const val = valuesById[def.id] || 0;
+    let tierIdx = 0;
+    for (let i = 0; i < def.tiers.length; i++) {
+      if (val >= def.tiers[i]) {
+        tierIdx = i + 1;
+      } else {
+        break;
+      }
+    }
+    const isMaxed = tierIdx >= def.tiers.length;
+    const prevThreshold = tierIdx === 0 ? 0 : def.tiers[tierIdx - 1];
+    const nextThreshold = isMaxed ? def.tiers[def.tiers.length - 1] : def.tiers[tierIdx];
+    const span = Math.max(1, nextThreshold - prevThreshold);
+    const progressPercent = isMaxed
+      ? 100
+      : Math.min(100, Math.max(0, Math.round(((val - prevThreshold) / span) * 100)));
+
+    return {
+      ...def,
+      currentValue: val,
+      currentTier: tierIdx,
+      romanTier: ROMAN_NUMERALS[tierIdx] || '0',
+      nextThreshold,
+      prevThreshold,
+      progressPercent,
+      isMaxed
+    };
+  });
 };
 
 export const calculateXP = (logs: WorkoutLog[], options: { isSortedDesc?: boolean } = {}) => {
@@ -664,6 +1059,13 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
     xpEarned += streakBonus;
   }
 
+  // Apply 2x XP Jungle Espresso if currently active
+  if (userState.activeXpBoost && Date.parse(userState.activeXpBoost.expiresAt) > Date.now()) {
+    xpEarned = Math.round(xpEarned * (userState.activeXpBoost.multiplier || 2));
+  } else if (userState.activeXpBoost) {
+    userState.activeXpBoost = null;
+  }
+
   // Log Workout Rewards
   if (xpEarned > 0) {
     await addXPLog(userProfile.id, xpEarned, 'workout', log.id);
@@ -674,6 +1076,21 @@ export const checkAchievements = async (log: WorkoutLog, userProfile: UserProfil
 
   userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpEarned;
   userState.points = (userState.points || 0) + pointsEarned;
+
+  // Settle 7-Day Streak Wager if active
+  if (userState.streakWager && userState.streakWager.status === 'active') {
+    const startMs = Date.parse(userState.streakWager.startDate);
+    const daysElapsed = Math.floor((Date.now() - startMs) / MS_PER_DAY);
+    const currentStreakNow = await getStreaks(log.user, userLogs);
+    if (daysElapsed >= userState.streakWager.targetDays && currentStreakNow >= userState.streakWager.targetDays) {
+      const rewardPts = userState.streakWager.stakePoints * 2;
+      userState.points += rewardPts;
+      userState.lifetimeXp += 100;
+      userState.streakWager = { ...userState.streakWager, status: 'won' };
+      await addPointLog(userProfile.id, rewardPts, 'earned', 'quest', 'streak_wager_won');
+      await addXPLog(userProfile.id, 100, 'quest', 'streak_wager_won');
+    }
+  }
 
   // Helper to unlock
   const unlock = (badgeId: string) => {
@@ -1272,4 +1689,196 @@ export const revertGamificationForLog = async (log: WorkoutLog, userProfile: Use
   userState.streak = currentStreak; // Persist recalculated streak
 
   await saveGamificationState(userProfile, userState);
+};
+
+export interface PowerUpPurchaseResult {
+  success: boolean;
+  message: string;
+  rewardSummary?: string;
+  updatedState?: UserGamificationState;
+}
+
+export const purchasePowerUp = async (
+  userProfile: UserProfile,
+  powerUpId: ShopPowerUp['id']
+): Promise<PowerUpPurchaseResult> => {
+  const powerUp = SHOP_POWERUPS.find(p => p.id === powerUpId);
+  if (!powerUp) return { success: false, message: 'Power-up not found.' };
+
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || {
+    badges: [],
+    inventory: [],
+    points: 0,
+    streak: 0,
+    lifetimeXp: 0,
+    activeTheme: 'default',
+    unlockedThemes: ['default'],
+    commitment: null
+  };
+
+  if ((userState.points || 0) < powerUp.price) {
+    return { success: false, message: `Need ${powerUp.price} Pts to unlock ${powerUp.name}!` };
+  }
+
+  if (powerUpId === 'streak_freeze') {
+    const currentFreezes = userState.streakFreezes || 0;
+    if (currentFreezes >= 2) {
+      return { success: false, message: 'You already have the maximum 2 Bamboo Ice Shields equipped!' };
+    }
+    userState.points -= powerUp.price;
+    userState.streakFreezes = currentFreezes + 1;
+    await addPointLog(userProfile.id, -powerUp.price, 'spent', 'shop', 'streak_freeze');
+    await saveGamificationState(userProfile, userState);
+    return {
+      success: true,
+      message: `🧊 Bamboo Ice Shield Equipped (${userState.streakFreezes}/2)!`,
+      rewardSummary: `${userState.streakFreezes}/2 Shields Ready`,
+      updatedState: userState
+    };
+  }
+
+  if (powerUpId === 'double_xp') {
+    const isAlreadyActive = userState.activeXpBoost && Date.parse(userState.activeXpBoost.expiresAt) > Date.now();
+    if (isAlreadyActive) {
+      return { success: false, message: '2x XP Jungle Espresso is already active!' };
+    }
+    userState.points -= powerUp.price;
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    userState.activeXpBoost = { multiplier: 2, expiresAt };
+    await addPointLog(userProfile.id, -powerUp.price, 'spent', 'shop', 'double_xp');
+    await saveGamificationState(userProfile, userState);
+    return {
+      success: true,
+      message: '⚡ 2x XP Jungle Espresso Activated for 24 Hours!',
+      rewardSummary: '2x XP Active (24h)',
+      updatedState: userState
+    };
+  }
+
+  if (powerUpId === 'streak_wager') {
+    if (userState.streakWager && userState.streakWager.status === 'active') {
+      return { success: false, message: 'You already have an active 7-Day Streak Wager running!' };
+    }
+    userState.points -= powerUp.price;
+    userState.streakWager = {
+      startDate: new Date().toISOString(),
+      targetDays: 7,
+      stakePoints: powerUp.price,
+      status: 'active'
+    };
+    await addPointLog(userProfile.id, -powerUp.price, 'spent', 'shop', 'streak_wager');
+    await saveGamificationState(userProfile, userState);
+    return {
+      success: true,
+      message: '🎲 7-Day Streak Wager Locked In! Keep your streak alive to win 40 Pts + 100 XP!',
+      rewardSummary: 'Wager Active (Day 1/7)',
+      updatedState: userState
+    };
+  }
+
+  if (powerUpId === 'mystery_crate') {
+    userState.points -= powerUp.price;
+    await addPointLog(userProfile.id, -powerUp.price, 'spent', 'shop', 'mystery_crate');
+
+    const roll = Math.random();
+    let rewardSummary = '';
+
+    if (roll < 0.25 && (userState.streakFreezes || 0) < 2) {
+      userState.streakFreezes = (userState.streakFreezes || 0) + 1;
+      userState.lifetimeXp = (userState.lifetimeXp || 0) + 25;
+      await addXPLog(userProfile.id, 25, 'quest', 'mystery_crate');
+      rewardSummary = '🧊 1x Bamboo Ice Shield + 25 XP!';
+    } else if (roll < 0.65) {
+      const gift1 = GIFT_ITEMS[Math.floor(Math.random() * GIFT_ITEMS.length)];
+      const gift2 = GIFT_ITEMS[Math.floor(Math.random() * GIFT_ITEMS.length)];
+      [gift1, gift2].forEach(g => {
+        const existing = userState.inventory.find(i => i.id === g.id);
+        if (existing) existing.count++;
+        else userState.inventory.push({ ...g, count: 1 });
+      });
+      userState.lifetimeXp = (userState.lifetimeXp || 0) + 35;
+      await addXPLog(userProfile.id, 35, 'quest', 'mystery_crate');
+      rewardSummary = `${gift1.emoji} ${gift1.name} + ${gift2.emoji} ${gift2.name} + 35 XP!`;
+    } else {
+      const bonusXp = 50;
+      const bonusPts = 15;
+      userState.lifetimeXp = (userState.lifetimeXp || 0) + bonusXp;
+      userState.points += bonusPts;
+      await addXPLog(userProfile.id, bonusXp, 'quest', 'mystery_crate');
+      await addPointLog(userProfile.id, bonusPts, 'earned', 'quest', 'mystery_crate');
+      rewardSummary = `⚡ +${bonusXp} Bonus XP & +${bonusPts} Jungle Points!`;
+    }
+
+    await saveGamificationState(userProfile, userState);
+    return {
+      success: true,
+      message: `🎁 Mystery Crate Unboxed: ${rewardSummary}`,
+      rewardSummary,
+      updatedState: userState
+    };
+  }
+
+  return { success: false, message: 'Unknown power-up.' };
+};
+
+export const claimDailyQuestChest = async (
+  userProfile: UserProfile,
+  tier: 1 | 2 | 3
+): Promise<{ success: boolean; rewardText: string; xpAwarded: number; pointsAwarded: number; giftEmoji?: string }> => {
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || {
+    badges: [],
+    inventory: [],
+    points: 0,
+    streak: 0,
+    lifetimeXp: 0,
+    activeTheme: 'default',
+    unlockedThemes: ['default'],
+    commitment: null
+  };
+
+  const claimed = userState.claimedDailyChests?.date === todayStr
+    ? userState.claimedDailyChests.tiers
+    : [];
+
+  if (claimed.includes(tier)) {
+    return { success: false, rewardText: 'Already claimed today!', xpAwarded: 0, pointsAwarded: 0 };
+  }
+
+  const tierRewards = {
+    1: { xp: 15, pts: 5, label: 'Bronze Chest: +15 XP & +5 Pts' },
+    2: { xp: 30, pts: 10, label: 'Silver Chest: +30 XP & +10 Pts' },
+    3: { xp: 60, pts: 20, label: 'Gold Chest: +60 XP, +20 Pts & Tribe Gift!' }
+  }[tier];
+
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + tierRewards.xp;
+  userState.points = (userState.points || 0) + tierRewards.pts;
+
+  let giftEmoji: string | undefined;
+  if (tier === 3) {
+    const randomGift = GIFT_ITEMS[Math.floor(Math.random() * GIFT_ITEMS.length)];
+    giftEmoji = randomGift.emoji;
+    const existing = userState.inventory.find(i => i.id === randomGift.id);
+    if (existing) existing.count++;
+    else userState.inventory.push({ ...randomGift, count: 1 });
+  }
+
+  userState.claimedDailyChests = {
+    date: todayStr,
+    tiers: [...claimed, tier]
+  };
+
+  await addXPLog(userProfile.id, tierRewards.xp, 'quest', `daily_chest_${tier}_${todayStr}`);
+  await addPointLog(userProfile.id, tierRewards.pts, 'earned', 'quest', `daily_chest_${tier}_${todayStr}`);
+  await saveGamificationState(userProfile, userState);
+
+  return {
+    success: true,
+    rewardText: tierRewards.label,
+    xpAwarded: tierRewards.xp,
+    pointsAwarded: tierRewards.pts,
+    giftEmoji
+  };
 };

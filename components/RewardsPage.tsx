@@ -1,10 +1,11 @@
 import React, { useState, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { User, UserGamificationState, GiftItem, UserProfile, Badge, Theme } from '../types';
-import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs } from '../utils/storage';
+import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs, getGiftTransactions } from '../utils/storage';
 import { notifyOnGiftReceived } from '../services/notificationService';
-import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES } from '../utils/gamification';
-import { Trophy, Lock, Gift, Zap, Crown, Star, Send, Target, MessageCircle, Store, Palette, CheckCircle, LogOut, X } from 'lucide-react';
+import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES, SHOP_POWERUPS, calculateMasteryProgress, purchasePowerUp, MasteryCategoryProgress } from '../utils/gamification';
+import { Trophy, Lock, Gift, Zap, Crown, Star, Send, Target, MessageCircle, Store, Palette, CheckCircle, LogOut, X, Sparkles } from 'lucide-react';
+import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
 
 // BOLT: Pre-compute module-scoped map for O(1) gift image lookups to avoid O(N) array .find() calls during renders
 export const GIFT_IMAGE_MAP = new Map<string, string | undefined>(
@@ -49,6 +50,8 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
   const [hasLoaded, setHasLoaded] = useState(() => !!localStorage.getItem('cache_gamification_state'));
   const [activePointsPopup, setActivePointsPopup] = useState(false);
   const [pointsLogs, setPointsLogs] = useState<any[]>([]);
+  const [masteryItems, setMasteryItems] = useState<MasteryCategoryProgress[]>([]);
+  const [buyingPowerUpId, setBuyingPowerUpId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -63,14 +66,21 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
     try {
       // BOLT: Parallelize independent data fetches and ensure cache alignment by passing tribeId
-      const [state, stats, str, members] = await Promise.all([
+      const [state, stats, str, members, userLogs, gifts] = await Promise.all([
         getGamificationState(profile.tribeId),
         getTeamStats(profile.tribeId),
         getStreaks(currentUser, profile.tribeId),
-        profile.tribeId ? getTribeMembers(profile.tribeId) : Promise.resolve([])
+        profile.tribeId ? getTribeMembers(profile.tribeId) : Promise.resolve([]),
+        typeof getUserLogs === 'function' ? getUserLogs(currentUser) : Promise.resolve([]),
+        typeof getGiftTransactions === 'function' ? getGiftTransactions(profile.tribeId) : Promise.resolve([])
       ]);
 
-      setTribeMembers(members);
+      setTribeMembers(members || []);
+
+      const sentGiftsCount = Array.isArray(gifts) ? gifts.filter(g => g.from === currentUser).length : 0;
+      if (typeof calculateMasteryProgress === 'function') {
+        setMasteryItems(calculateMasteryProgress(userLogs, str, sentGiftsCount));
+      }
 
       setGameState(state);
       localStorage.setItem('cache_gamification_state', JSON.stringify(state));
@@ -85,6 +95,23 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
   };
 
   const myState = gameState?.[currentUser] || { badges: [], inventory: [], points: 0 };
+
+  const handleBuyPowerUp = async (powerUpId: 'streak_freeze' | 'double_xp' | 'streak_wager' | 'mystery_crate') => {
+    setBuyingPowerUpId(powerUpId);
+    try {
+      const res = await purchasePowerUp(profile, powerUpId);
+      if (res.success) {
+        playChestOpenSound();
+        triggerHaptic([25, 45, 75]);
+        showToast(res.message, 'success');
+        await loadData(true);
+      } else {
+        showToast(res.message, 'error');
+      }
+    } finally {
+      setBuyingPowerUpId(null);
+    }
+  };
 
   const handleSendGift = async (toUser: User) => {
     if (!giftModalItem || !gameState) return;
@@ -247,6 +274,56 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
             );
           })}
         </div>
+
+        {/* 7-Tier Progressive Mastery Badges (Duolingo-style continuous bars) */}
+        {masteryItems.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-amber-200/70">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="font-bold text-amber-950 font-['Fredoka'] text-base flex items-center gap-1.5">
+                  <Sparkles size={16} className="text-amber-600" /> Progressive Mastery Tracks (Tier I → VII)
+                </h4>
+                <p className="text-[11px] font-bold text-amber-800/75">
+                  Long-horizon mastery tiers built for veteran legends
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {masteryItems.map(item => (
+                <div
+                  key={item.id}
+                  className="bg-white/85 rounded-2xl p-3.5 border border-amber-200/80 shadow-xs flex items-center gap-3.5"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-yellow-200 border border-amber-300 flex flex-col items-center justify-center shrink-0 shadow-inner text-amber-900">
+                    <BadgeIcon name={item.icon} size={20} />
+                    <span className="text-[9px] font-black text-amber-900 mt-0.5 leading-none">
+                      {item.romanTier}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black text-xs text-slate-800 truncate">
+                        {item.title} • Tier {item.romanTier}
+                      </span>
+                      <span className="text-[10px] font-black text-amber-700 shrink-0">
+                        {item.currentValue.toLocaleString()} / {item.nextThreshold.toLocaleString()} {item.unit}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-bold truncate mt-0.5">
+                      {item.description}
+                    </p>
+                    <div className="w-full h-2 bg-amber-100 rounded-full overflow-hidden mt-2">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-500 rounded-full transition-all duration-700"
+                        style={{ width: `${item.progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Inventory / Gifting */}
@@ -307,6 +384,79 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
           </div>
         </div>
 
+        {/* Power-Ups & Boosters Shelf */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+              <Zap size={14} className="text-amber-500 fill-amber-500" /> Power-Ups &amp; Boosters
+            </h4>
+            <span className="text-[10px] font-bold text-slate-500">Instant Jungle Buffs</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {SHOP_POWERUPS.map(p => {
+              const canAfford = (myState.points || 0) >= p.price;
+              const isMaxShield = p.id === 'streak_freeze' && (myState.streakFreezes || 0) >= 2;
+              const isBoostActive =
+                p.id === 'double_xp' &&
+                myState.activeXpBoost &&
+                new Date(myState.activeXpBoost.expiresAt).getTime() > Date.now();
+              const isWagerActive = p.id === 'streak_wager' && myState.streakWager?.status === 'active';
+              const isDisabled = !canAfford || isMaxShield || Boolean(isBoostActive) || Boolean(isWagerActive) || buyingPowerUpId === p.id;
+
+              return (
+                <div
+                  key={p.id}
+                  className="p-3.5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/30 flex items-center justify-between gap-3 shadow-xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0">
+                      {p.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h5 className="font-bold text-slate-800 text-sm font-['Fredoka'] truncate">{p.name}</h5>
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700">
+                          {p.badgeText}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium line-clamp-2 mt-0.5">
+                        {p.description}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => handleBuyPowerUp(p.id)}
+                    className={`px-3.5 py-2.5 rounded-xl font-black text-xs shrink-0 transition-all active:scale-95 ${
+                      isMaxShield || isBoostActive || isWagerActive
+                        ? 'bg-emerald-100 text-emerald-700 cursor-default'
+                        : canAfford
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isMaxShield
+                      ? `${myState.streakFreezes}/2 Full`
+                      : isBoostActive
+                      ? '2x Active'
+                      : isWagerActive
+                      ? 'Wager On'
+                      : buyingPowerUpId === p.id
+                      ? '...'
+                      : `${p.price} ⭐`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-2.5">
+          <h4 className="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+            <Palette size={14} className="text-indigo-500" /> App Themes
+          </h4>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {SHOP_THEMES.map(theme => {
             const isUnlocked = myState.unlockedThemes?.includes(theme.id);

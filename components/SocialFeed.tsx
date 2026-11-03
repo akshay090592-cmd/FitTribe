@@ -177,7 +177,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
             localStorage.setItem('cache_feed_items', JSON.stringify(combined));
             setReactions(allReactions);
             setTeamStats(stats);
-            setGamificationState(gameState);
+            setGamificationState(gameState || {});
 
             if (!silent) setLoading(false);
             setHasLoaded(true);
@@ -533,7 +533,14 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                                             {mood === 'tired' && <div className="absolute -top-1 -right-1 text-sm animate-pulse drop-shadow-sm">💤</div>}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-slate-800 text-sm font-['Fredoka']">{u}</div>
+                                            <div className="font-bold text-slate-800 text-sm font-['Fredoka'] flex items-center flex-wrap gap-1.5">
+                                                <span>{u}</span>
+                                                {gamificationState?.[u] && (
+                                                    <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                                                        Lvl {Math.floor(((gamificationState[u].lifetimeXp ?? gamificationState[u].points ?? 0) / 500)) + 1}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-[10px] font-bold flex items-center mt-0.5" style={{ color: isActive ? 'hsl(var(--hue-jungle),60%,32%)' : 'hsl(0,0%,55%)' }}>
                                                 <Activity size={10} className="mr-1" /> {weeklyCount} workouts this week
                                             </div>
@@ -582,6 +589,9 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                         return <FeedGiftItem key={item.data.id} gift={item.data} />;
                     }
                     const log = item.data;
+                    const authorState = gamificationState?.[log.user];
+                    const authorXp = authorState?.lifetimeXp ?? authorState?.points ?? 0;
+                    const authorLevel = Math.floor(authorXp / 500) + 1;
                     return (
                         <FeedLogItem
                             key={log.id}
@@ -597,6 +607,7 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                             onToggleComments={toggleComments}
                             onDelete={handleDelete}
                             avatarId={avatarMap[log.user]}
+                            authorLevel={authorLevel}
                         />
                     );
                 })}

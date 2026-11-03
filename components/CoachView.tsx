@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, WeeklyPlan, PlanStatus } from '../types';
-import { AICoachService } from '../services/aiCoach';
-import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogs, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
-import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info } from 'lucide-react';
+import { UserProfile, WeeklyPlan, PlanStatus, WorkoutPlan, WorkoutLog } from '../types';
+import { AICoachService, CoachContextBundle } from '../services/aiCoach';
+import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogsById, saveCustomWorkoutPlan } from '../utils/storage';
+import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info, Play, RotateCcw } from 'lucide-react';
 import { monthDayFormatter, weekdayShortFormatter, formatWithCache } from '../utils/dateUtils';
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
-
-import { WorkoutLog } from '../types';
+import { STARTER_PLANS } from '../constants';
 
 const FormattedMessage = ({ text }: { text: string }) => {
     return (
@@ -31,7 +30,16 @@ interface Props {
     userProfile: UserProfile;
     lastWorkout?: WorkoutLog;
     onFetching?: (fetching: boolean) => void;
+    onStartCustomWorkout?: (plan: WorkoutPlan) => void;
+    onUpdateProfile?: (profile: UserProfile) => void;
 }
+
+const DEFAULT_CHECKIN_CHIPS = [
+    '⚡ High energy, low stress',
+    '⚖️ Moderate energy, busy week',
+    '😴 Feeling tired / sore',
+    '🚀 Ready for 4+ sessions'
+];
 
 const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyPlan, onStatusChange?: (idx: number, status: PlanStatus) => void, editable?: boolean }) => {
     const getStatusIcon = (status: PlanStatus) => {
@@ -94,10 +102,11 @@ const PlanDisplay = ({ plan, onStatusChange, editable = false }: { plan: WeeklyP
  * BOLT: Memoize CoachView to prevent redundant re-renders from background state changes.
  * Performance Impact: Maintains stable frame rates during workout sessions and news updates.
  */
-export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout, onFetching }) => {
+export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout, onFetching, onStartCustomWorkout, onUpdateProfile }) => {
     const [activeTab, setActiveTab] = useState<'diet' | 'chat' | 'checkin'>('chat');
     const [dietPlan, setDietPlan] = useState<any>(null);
     const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
+    const [activeWorkoutPlans, setActiveWorkoutPlans] = useState<Record<string, WorkoutPlan>>({});
     const [loadingDiet, setLoadingDiet] = useState(false);
     const [userLogs, setUserLogs] = useState<WorkoutLog[]>([]);
 
@@ -107,21 +116,62 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
     const [dietSupplements, setDietSupplements] = useState('');
     const [showDietForm, setShowDietForm] = useState(false);
 
-    // Chat State
-    const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
-        { role: 'model', text: `Hello ${userProfile.displayName}! I am Sage Panda, your AI fitness coach. 🐼\n\nI can help you with:\n• **Custom Workouts**\n• **Diet Plans**\n• **Weekly Schedules**\n\nWhat would you like to work on today?` }
-    ]);
+    // Chat State (with session persistence keyed to user + displayName)
+    const chatStorageKey = `coach_chat_${userProfile.id}_${userProfile.displayName}`;
+    const defaultWelcomeMessage = useMemo(() => ({
+        role: 'model' as const,
+        text: `Hello ${userProfile.displayName}! I am Sage Panda, your AI fitness coach. 🐼\n\nI can help you with:\n• **Custom Workouts**\n• **Diet Plans**\n• **Weekly Schedules**\n\nWhat would you like to work on today?`
+    }), [userProfile.displayName]);
+
+    const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>(() => {
+        try {
+            const saved = sessionStorage.getItem(chatStorageKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 1) {
+                    return [defaultWelcomeMessage, ...parsed.slice(1)];
+                }
+            }
+        } catch {
+            // Ignore storage errors
+        }
+        return [defaultWelcomeMessage];
+    });
     const [input, setInput] = useState('');
     const [loadingChat, setLoadingChat] = useState(false);
+    const [lastSavedWorkout, setLastSavedWorkout] = useState<WorkoutPlan | null>(null);
 
     // Check-in State
     const [checkinMessages, setCheckinMessages] = useState<{ role: 'user' | 'model', text: string }[]>([]);
+    const [checkinQuickReplies, setCheckinQuickReplies] = useState<string[]>(DEFAULT_CHECKIN_CHIPS);
     const [isCheckinActive, setIsCheckinActive] = useState(false);
     const [checkinAssessment, setCheckinAssessment] = useState<any>(null);
     const [proposedPlan, setProposedPlan] = useState<any>(null);
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ type: string, payload: any } | null>(null);
     const [actionStatus, setActionStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+
+    // Sync chat history to sessionStorage when user messages are added
+    useEffect(() => {
+        try {
+            if (messages.length > 1) {
+                sessionStorage.setItem(chatStorageKey, JSON.stringify(messages.slice(-20)));
+            }
+        } catch {
+            // Ignore storage quota errors
+        }
+    }, [messages, chatStorageKey]);
+
+    const resetChat = () => {
+        try {
+            sessionStorage.removeItem(chatStorageKey);
+        } catch {
+            // Ignore
+        }
+        setMessages([defaultWelcomeMessage]);
+        setPendingAction(null);
+        setLastSavedWorkout(null);
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -130,14 +180,46 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
             const dPlan = await getUserDiet(userProfile.id);
             if (dPlan) setDietPlan(dPlan);
 
-            const wPlan = await getUserPlans(userProfile.id) as WeeklyPlan;
+            const logs = (await getUserLogsById(userProfile.id, userProfile.displayName)) || [];
+            setUserLogs(logs.slice(0, 5));
+
+            // Build date lookup map (YYYY-MM-DD -> WorkoutLog) to auto-sync completed workouts
+            const logsByDate = new Map<string, WorkoutLog>();
+            for (let i = 0; i < logs.length; i++) {
+                const l = logs[i];
+                if (l.date && l.type !== 'COMMITMENT') {
+                    const dateKey = l.date.split('T')[0];
+                    if (!logsByDate.has(dateKey)) {
+                        logsByDate.set(dateKey, l);
+                    }
+                }
+            }
+
+            const rawPlans = await getUserPlans(userProfile.id);
+            const starterForLevel = STARTER_PLANS[userProfile.fitnessLevel || 'beginner'] || STARTER_PLANS['beginner'];
+            setActiveWorkoutPlans({
+                A: (rawPlans && rawPlans.A) ? rawPlans.A : starterForLevel.A,
+                B: (rawPlans && rawPlans.B) ? rawPlans.B : starterForLevel.B,
+                ...(rawPlans?.Custom ? { Custom: rawPlans.Custom } : {})
+            });
+
+            const wPlan = rawPlans as WeeklyPlan | null;
             if (wPlan && wPlan.schedule) {
-                // Auto-mark previous days
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 let changed = false;
                 const updatedSchedule = wPlan.schedule.map(item => {
                     if (item.date) {
+                        const dateKey = item.date.split('T')[0];
+                        const matchingLog = logsByDate.get(dateKey);
+
+                        // Auto-mark as 'done' (or 'alternate') if user logged a workout on this scheduled date
+                        if (matchingLog && (!item.status || item.status === 'not_done') && item.type !== 'REST') {
+                            changed = true;
+                            const isAlt = (item.type === 'A' || item.type === 'B') && matchingLog.type && matchingLog.type !== item.type;
+                            return { ...item, status: (isAlt ? 'alternate' : 'done') as PlanStatus };
+                        }
+
                         const itemDate = new Date(item.date);
                         itemDate.setHours(0, 0, 0, 0);
                         if (itemDate < today && !item.status) {
@@ -156,10 +238,6 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     setWeeklyPlan(wPlan);
                 }
             }
-
-
-            const logs = await getUserLogsById(userProfile.id, userProfile.displayName);
-            setUserLogs(logs.slice(0, 5));
 
             setLoadingDiet(false);
             onFetching?.(false);
@@ -223,20 +301,26 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
         onFetching?.(false);
     };
 
+    const sendMessage = async (overrideText?: string) => {
+        const textToSend = (overrideText ?? input).trim();
+        if (!textToSend || loadingChat) return;
 
-
-    const sendMessage = async () => {
-        if (!input.trim() || loadingChat) return;
-
-        const userMsg = input;
-        setInput('');
+        if (!overrideText) setInput('');
         setLoadingChat(true);
-        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        setMessages(prev => [...prev, { role: 'user', text: textToSend }]);
+
+        const contextBundle: CoachContextBundle = {
+            userProfile,
+            activePlans: activeWorkoutPlans,
+            weeklyPlan,
+            dietPlan,
+            recentLogs: userLogs
+        };
 
         const response = await AICoachService.chatWithCoach(
             messages,
-            userMsg,
-            `User Profile: ${JSON.stringify(userProfile)}`,
+            textToSend,
+            contextBundle,
             userLogs
         );
 
@@ -246,6 +330,20 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
             handleAIAction(response.action);
         }
         setLoadingChat(false);
+    };
+
+    const inferScheduleItemType = (item: any): 'A' | 'B' | 'REST' | 'CARDIO' | 'YOGA' | 'CUSTOM' => {
+        const rawType = String(item.type || '').toUpperCase();
+        if (['A', 'B', 'REST', 'CARDIO', 'YOGA', 'CUSTOM'].includes(rawType)) {
+            return rawType as any;
+        }
+        const act = String(item.activity || item.focus || '').toLowerCase();
+        if (act.includes('rest') || act.includes('recovery') || act.includes('off')) return 'REST';
+        if (act.includes('yoga') || act.includes('mobility') || act.includes('stretch') || act.includes('pilates')) return 'YOGA';
+        if (act.includes('cardio') || act.includes('run') || act.includes('walk') || act.includes('hiit') || act.includes('swim') || act.includes('cycle')) return 'CARDIO';
+        if (act.includes('workout b') || act.includes('plan b') || act.includes('hinge') || act.includes('pull')) return 'B';
+        if (act.includes('custom')) return 'CUSTOM';
+        return 'A';
     };
 
     const handleAIAction = (action: { type: string, payload: any }) => {
@@ -264,15 +362,23 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
             }
 
             if (sourceArray && Array.isArray(sourceArray)) {
-                const mappedSchedule = sourceArray.map((item: any) => ({
-                    day: item.day || item.dayOfWeek,
-                    activity: item.activity || item.focus || "Rest",
-                    notes: item.notes || item.description || item.focus || item.duration || '',
-                    type: (item.activity || '').toLowerCase().includes('rest') ? 'REST' :
-                        (item.activity || '').toLowerCase().includes('cardio') ? 'CARDIO' : 'A', // Default type fallback
-                    date: item.date || new Date().toISOString(),
-                    status: null
-                }));
+                const baseDate = new Date();
+                const mappedSchedule = sourceArray.map((item: any, idx: number) => {
+                    const fallbackDate = new Date(baseDate);
+                    fallbackDate.setDate(baseDate.getDate() + idx);
+                    const dateStr = item.date && /^\d{4}-\d{2}-\d{2}/.test(String(item.date))
+                        ? String(item.date).split('T')[0]
+                        : fallbackDate.toISOString().split('T')[0];
+
+                    return {
+                        day: item.day || item.dayOfWeek || weekdayShortFormatter.format(new Date(dateStr)),
+                        activity: item.activity || item.focus || "Rest",
+                        notes: item.notes || item.description || item.focus || item.duration || '',
+                        type: inferScheduleItemType(item),
+                        date: dateStr,
+                        status: null
+                    };
+                });
                 normalizedAction.payload = { ...action.payload, schedule: mappedSchedule };
             }
         }
@@ -305,22 +411,15 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
         }
 
         if (action.type === 'SAVE_WORKOUT') {
-            // Normalize workout structure: AI might send { warmup: [], exercises: [], cooldown: [] }
-            // We need to ensure the payload has a proper WorkoutPlan structure
-
             // Extract exercises from nested structure if needed
             let exercises = action.payload.exercises;
-
-            // If exercises is nested or missing, try to extract it
             if (!exercises && action.payload.workout?.exercises) {
                 exercises = action.payload.workout.exercises;
             }
 
-            // Ensure warmup and cooldown are arrays
             const warmup = action.payload.warmup || action.payload.workout?.warmup || [];
             const cooldown = action.payload.cooldown || action.payload.workout?.cooldown || [];
 
-            // Normalize exercise structure to match WorkoutPlan.exercises format
             if (exercises && Array.isArray(exercises)) {
                 const normalizedExercises = exercises.map((ex: any) => {
                     const exName = ex.name || ex.exercise || 'Exercise';
@@ -376,13 +475,20 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     setDietPlan(pendingAction.payload);
                     await saveUserDiet(userProfile.id, pendingAction.payload);
                     break;
-                case 'SAVE_SCHEDULE':
-                    setWeeklyPlan(pendingAction.payload); // Update state immediately
-                    await saveUserPlan(userProfile.id, pendingAction.payload);
+                case 'SAVE_SCHEDULE': {
+                    const mergedPlan = { ...(weeklyPlan || {}), ...pendingAction.payload };
+                    setWeeklyPlan(mergedPlan);
+                    await saveUserPlan(userProfile.id, mergedPlan);
                     break;
-                case 'SAVE_WORKOUT':
-                    await saveCustomWorkoutPlan(userProfile, pendingAction.payload);
+                }
+                case 'SAVE_WORKOUT': {
+                    const updatedTemplates = await saveCustomWorkoutPlan(userProfile, pendingAction.payload);
+                    setLastSavedWorkout(pendingAction.payload);
+                    if (updatedTemplates && onUpdateProfile) {
+                        onUpdateProfile({ ...userProfile, workoutTemplates: updatedTemplates });
+                    }
                     break;
+                }
             }
             setActionStatus('success');
 
@@ -431,20 +537,41 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
     const startCheckin = () => {
         const intro = AICoachService.startWeeklyCheckin(userProfile, lastWorkout, weeklyPlan || undefined);
         setCheckinMessages([intro]);
+        setCheckinQuickReplies(DEFAULT_CHECKIN_CHIPS);
         setIsCheckinActive(true);
         setProposedPlan(null);
         setCheckinAssessment(null);
     };
 
-    const handleCheckinMessage = async () => {
-        if (!input.trim() || loadingChat) return;
+    const handleCheckinMessage = async (overrideMsg?: string) => {
+        const userMsg = (overrideMsg ?? input).trim();
+        if (!userMsg || loadingChat) return;
 
-        const userMsg = input;
-        setInput('');
+        if (!overrideMsg) setInput('');
         setCheckinMessages(prev => [...prev, { role: 'user', text: userMsg }]);
         setLoadingChat(true);
 
-        // 1. Analyze context for assessment
+        // Single-turn check-in optimization (reduces latency & Gemini API calls by 50%)
+        if (typeof AICoachService.processCheckinTurn === 'function') {
+            const turn = await AICoachService.processCheckinTurn(
+                checkinMessages,
+                userMsg,
+                userProfile,
+                userLogs
+            );
+            if (turn.assessment && (turn.assessment.stress || turn.assessment.energy)) {
+                setCheckinAssessment(turn.assessment);
+            }
+            if (turn.quickReplies && turn.quickReplies.length > 0) {
+                setCheckinQuickReplies(turn.quickReplies);
+            }
+            setCheckinMessages(prev => [...prev, { role: 'model', text: turn.reply }]);
+            if (turn.action) handleAIAction(turn.action);
+            setLoadingChat(false);
+            return;
+        }
+
+        // Fallback if processCheckinTurn is not available
         const history = [...checkinMessages, { role: 'user' as const, text: userMsg }];
         const assessment = await AICoachService.analyzeUserContext(history);
 
@@ -452,7 +579,6 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
             setCheckinAssessment(assessment);
         }
 
-        // 2. Chat response
         const response = await AICoachService.chatWithCoach(
             checkinMessages,
             userMsg,
@@ -475,11 +601,11 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
     };
 
     const confirmPlan = async () => {
-        // Save plan to DB
-        saveUserPlan(userProfile.id, proposedPlan);
-        setWeeklyPlan(proposedPlan);
+        const mergedPlan = { ...(weeklyPlan || {}), ...proposedPlan };
+        saveUserPlan(userProfile.id, mergedPlan);
+        setWeeklyPlan(mergedPlan);
         setCheckinMessages(prev => [...prev, { role: 'model', text: "Perfect! I've updated your schedule. Let's crush this week! 🐼💪" }]);
-        setProposedPlan(null); // Hide card
+        setProposedPlan(null);
         setIsCheckinActive(false);
     };
 
@@ -503,10 +629,10 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     onClick={() => setActiveTab('checkin')}
                     className={`flex-1 py-3 rounded-[16px] font-bold flex items-center justify-center transition-all text-xs sm:text-sm tactile-press ${
                         activeTab === 'checkin'
-                            ? 'text-white shadow-md shadow-orange-500/25'
+                            ? 'text-white shadow-md shadow-emerald-600/25'
                             : 'text-emerald-800 hover:bg-white/60'
                     }`}
-                    style={activeTab === 'checkin' ? { background: 'linear-gradient(135deg, hsl(25,95%,55%), hsl(15,90%,48%))' } : {}}
+                    style={activeTab === 'checkin' ? { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),65%,36%), hsl(var(--hue-canopy),70%,28%))' } : {}}
                 >
                     <Calendar size={16} className="mr-1.5 shrink-0" /> Schedule
                 </button>
@@ -527,19 +653,19 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                 <div className="animate-slide-up space-y-5">
                     {!isCheckinActive ? (
                         <>
-                            <div className="bg-gradient-to-br from-orange-500 via-amber-500 to-rose-500 rounded-[32px] p-7 sm:p-8 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden text-center border border-white/20">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-white/15 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
-                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-300/20 rounded-full blur-xl -ml-10 -mb-10 pointer-events-none"></div>
-                                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3 border border-white/25">
+                            <div className="rounded-[32px] p-7 sm:p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden text-center border border-white/20" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,20%))' }}>
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-400/15 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-300/15 rounded-full blur-xl -ml-10 -mb-10 pointer-events-none"></div>
+                                <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3 border border-white/25 text-emerald-100">
                                     <span>🐼</span> Sage Weekly Sync
                                 </div>
                                 <h2 className="text-3xl font-bold font-['Fredoka'] mb-2 drop-shadow-sm">New Week, New Plan</h2>
-                                <p className="text-orange-50 mb-6 font-medium text-sm max-w-sm mx-auto leading-relaxed">Let's check your vibe and build a custom schedule tailored to your recovery and goals.</p>
+                                <p className="text-emerald-100/90 mb-6 font-medium text-sm max-w-sm mx-auto leading-relaxed">Let's check your vibe and build a custom schedule tailored to your recovery and goals.</p>
                                 <button
                                     onClick={startCheckin}
-                                    className="bg-white text-orange-600 hover:bg-orange-50 font-bold py-3.5 px-8 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center mx-auto text-sm"
+                                    className="bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:from-amber-300 hover:to-orange-400 font-bold py-3.5 px-8 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center mx-auto text-sm"
                                 >
-                                    Start Check-in <Sparkles size={18} className="ml-2 text-amber-500" />
+                                    Start Check-in <Sparkles size={18} className="ml-2 text-slate-900" />
                                 </button>
                             </div>
 
@@ -549,7 +675,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                         <div>
                                             <h3 className="text-xl font-bold text-slate-800 font-['Fredoka']">Current Weekly Plan</h3>
                                             <div className="text-[11px] font-bold text-slate-400 uppercase flex items-center mt-0.5">
-                                                <Info size={11} className="mr-1 text-emerald-500" /> Tap icons to change state
+                                                <Info size={11} className="mr-1 text-emerald-500" /> Tap icons to change state • Auto-syncs with completed workouts
                                             </div>
                                         </div>
                                         {adherenceStats && (
@@ -618,40 +744,73 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                             )}
                         </>
                     ) : (
-                        <div className="flex flex-col h-[68vh] bg-white rounded-[32px] shadow-xl overflow-hidden border border-orange-100 relative">
-                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-4 flex items-center text-white shadow-md z-10">
+                        <div className="flex flex-col h-[68vh] glass-panel rounded-[32px] shadow-xl overflow-hidden border border-emerald-100/80 relative" style={{ background: 'hsla(var(--hue-jungle),40%,98%,0.92)' }}>
+                            <div className="p-4 flex items-center text-white shadow-md z-10" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
                                 <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center mr-3 backdrop-blur-sm border border-white/30 shadow-xs">
                                     <span className="text-2xl">🐼</span>
                                 </div>
                                 <div>
                                     <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
-                                    <div className="text-[10px] text-orange-100 font-bold uppercase tracking-widest">Weekly Planning</div>
+                                    <div className="text-[10px] text-emerald-200 font-bold uppercase tracking-widest">Weekly Sync & Planning</div>
                                 </div>
-                                {checkinAssessment && !proposedPlan && (
+                                <div className="ml-auto flex items-center gap-2">
+                                    {checkinAssessment && !proposedPlan && (
+                                        <button
+                                            onClick={generateWeeklyPlan}
+                                            disabled={isGeneratingPlan}
+                                            className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-all flex items-center active:scale-95"
+                                        >
+                                            {isGeneratingPlan ? 'Generating...' : 'Create Plan'} <Sparkles size={13} className="ml-1.5 text-slate-900" />
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={generateWeeklyPlan}
-                                        disabled={isGeneratingPlan}
-                                        className="ml-auto bg-white text-orange-600 hover:bg-orange-50 text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-all flex items-center active:scale-95"
+                                        onClick={() => setIsCheckinActive(false)}
+                                        className="text-xs font-bold text-emerald-100 hover:text-white bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/15"
                                     >
-                                        {isGeneratingPlan ? 'Generating...' : 'Create Plan'} <Sparkles size={13} className="ml-1.5 text-amber-500" />
+                                        Back
                                     </button>
-                                )}
+                                </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-orange-50/30 pb-24">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32" style={{ background: 'hsla(var(--hue-jungle),35%,97%,0.65)' }}>
                                 {checkinMessages.map((m, idx) => (
                                     <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-xs ${m.role === 'user'
-                                            ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-br-xs'
-                                            : 'bg-white text-slate-700 border border-orange-100/80 rounded-bl-xs'
-                                            }`}>
+                                        <div
+                                            className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-xs ${
+                                                m.role === 'user'
+                                                    ? 'text-white rounded-br-xs'
+                                                    : 'bg-white text-slate-700 border border-emerald-100/80 rounded-bl-xs'
+                                            }`}
+                                            style={m.role === 'user' ? { background: 'linear-gradient(135deg, hsl(var(--hue-jungle),62%,32%), hsl(var(--hue-canopy),65%,25%))' } : {}}
+                                        >
                                             <FormattedMessage text={m.text} />
                                         </div>
                                     </div>
                                 ))}
+
+                                {checkinAssessment && !proposedPlan && (
+                                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+                                        <div>
+                                            <div className="text-xs font-bold text-emerald-900 font-['Fredoka'] flex items-center gap-1.5">
+                                                <Sparkles size={14} className="text-amber-500" /> Vibe Check Complete!
+                                            </div>
+                                            <div className="text-[11px] text-emerald-700 font-medium">
+                                                Energy: <b>{checkinAssessment.energy || 'Moderate'}</b> • Stress: <b>{checkinAssessment.stress || 'Manageable'}</b>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={generateWeeklyPlan}
+                                            disabled={isGeneratingPlan}
+                                            className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0"
+                                        >
+                                            {isGeneratingPlan ? 'Crafting Schedule...' : '✨ Generate My Weekly Plan'}
+                                        </button>
+                                    </div>
+                                )}
+
                                 {loadingChat && (
                                     <div className="flex justify-start">
-                                        <div className="bg-white text-orange-600 p-3.5 rounded-2xl rounded-bl-xs text-xs font-bold animate-pulse border border-orange-100 shadow-xs">
+                                        <div className="bg-white text-emerald-700 p-3.5 rounded-2xl rounded-bl-xs text-xs font-bold animate-pulse border border-emerald-100 shadow-xs">
                                             Analyzing vibes... 🎋
                                         </div>
                                     </div>
@@ -686,19 +845,33 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 </div>
                             )}
 
-                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-orange-100/80">
-                                <div className="flex items-center bg-slate-100/90 rounded-2xl p-1 pr-1.5 border border-slate-200/70 focus-within:border-orange-300 focus-within:bg-white transition-all">
+                            <div className="absolute bottom-0 left-0 right-0 p-3 border-t" style={{ background: 'hsla(var(--hue-jungle),40%,97%,0.95)', backdropFilter: 'blur(12px)', borderColor: 'hsla(var(--hue-jungle),40%,85%,0.6)' }}>
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-1">
+                                    {checkinQuickReplies.map((chip) => (
+                                        <button
+                                            key={chip}
+                                            type="button"
+                                            disabled={loadingChat}
+                                            onClick={() => handleCheckinMessage(chip)}
+                                            className="shrink-0 text-[11px] font-bold px-3 py-1 rounded-full bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200/70 shadow-2xs transition-all active:scale-95 disabled:opacity-50"
+                                        >
+                                            {chip}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center rounded-2xl p-1 pr-1.5 border shadow-inner" style={{ background: 'hsla(var(--hue-jungle),45%,94%,0.85)', borderColor: 'hsl(var(--hue-jungle),40%,82%)' }}>
                                     <input
                                         value={input}
                                         onChange={e => setInput(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCheckinMessage()}
                                         placeholder="I'm feeling..."
-                                        className="flex-1 bg-transparent p-3 text-sm focus:outline-none text-slate-700 placeholder-slate-400"
+                                        className="flex-1 bg-transparent p-3 text-sm font-medium focus:outline-none text-slate-700 placeholder-slate-400"
                                     />
                                     <button
-                                        onClick={handleCheckinMessage}
+                                        onClick={() => handleCheckinMessage()}
                                         disabled={!input.trim() || loadingChat}
-                                        className="p-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl shadow-md disabled:opacity-40 active:scale-95 transition-transform"
+                                        className="p-2.5 rounded-xl shadow-md disabled:opacity-40 active:scale-95 transition-transform text-white"
+                                        style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),62%,38%), hsl(var(--hue-canopy),68%,30%))' }}
                                     >
                                         <Send size={18} />
                                     </button>
@@ -858,12 +1031,23 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
                                 <div className="text-xs font-medium flex items-center" style={{ color: 'hsl(var(--hue-jungle),65%,78%)' }}>
                                     <div className="w-2 h-2 rounded-full mr-1.5 animate-pulse" style={{ background: 'hsl(var(--hue-jungle),75%,58%)' }} />
-                                    Always online
+                                    Always online • Context-aware
                                 </div>
                             </div>
                         </div>
-                        <div className="hidden sm:flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/15">
-                            <Sparkles size={12} className="text-amber-300" /> Bamboo AI
+                        <div className="flex items-center gap-2">
+                            {messages.length > 1 && (
+                                <button
+                                    onClick={resetChat}
+                                    title="Reset Chat"
+                                    className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border border-white/15 transition-colors active:scale-95"
+                                >
+                                    <RotateCcw size={12} /> Reset
+                                </button>
+                            )}
+                            <div className="hidden sm:flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/15">
+                                <Sparkles size={12} className="text-amber-300" /> Bamboo AI
+                            </div>
                         </div>
                     </div>
 
@@ -889,6 +1073,22 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 <div className="p-3.5 rounded-2xl rounded-bl-xs text-xs font-bold animate-pulse border shadow-xs" style={{ background: 'hsla(0,0%,100%,0.92)', borderColor: 'hsl(var(--hue-jungle),40%,88%)', color: 'hsl(var(--hue-jungle),45%,40%)' }}>
                                     Sage is thinking... 🎋
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Quick Launch Card for Newly Saved Custom Workout */}
+                        {lastSavedWorkout && !pendingAction && onStartCustomWorkout && (
+                            <div className="mx-2 sm:mx-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-3 animate-fade-in">
+                                <div>
+                                    <div className="text-xs font-bold text-emerald-950 font-['Fredoka']">{lastSavedWorkout.title}</div>
+                                    <div className="text-[11px] text-emerald-700 font-medium">{lastSavedWorkout.exercises?.length || 0} exercises ready in your library</div>
+                                </div>
+                                <button
+                                    onClick={() => onStartCustomWorkout(lastSavedWorkout)}
+                                    className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-transform shrink-0"
+                                >
+                                    <Play size={13} fill="currentColor" /> Start Now
+                                </button>
                             </div>
                         )}
 
@@ -1020,16 +1220,17 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     <div className="p-3 border-t" style={{ background: 'hsla(var(--hue-jungle),40%,97%,0.95)', backdropFilter: 'blur(12px)', borderColor: 'hsla(var(--hue-jungle),40%,85%,0.6)' }}>
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-1">
                             {[
-                                '🎋 20-min Upper Body',
-                                '🥗 High-Protein Snack',
-                                '🧘 Mobility Stretch',
-                                '⚡ Boost Recovery'
+                                '🎯 Review my recent workouts',
+                                '🔄 Joint-friendly exercise swap',
+                                '🎋 20-min Upper Body workout',
+                                '🥗 High-Protein Snack ideas'
                             ].map((chip) => (
                                 <button
                                     key={chip}
                                     type="button"
-                                    onClick={() => setInput(chip.replace(/^[^\s]+\s/, ''))}
-                                    className="shrink-0 text-[11px] font-bold px-3 py-1 rounded-full bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200/70 shadow-2xs transition-all active:scale-95"
+                                    disabled={loadingChat}
+                                    onClick={() => sendMessage(chip.replace(/^[^\s]+\s/, ''))}
+                                    className="shrink-0 text-[11px] font-bold px-3 py-1 rounded-full bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200/70 shadow-2xs transition-all active:scale-95 disabled:opacity-50"
                                 >
                                     {chip}
                                 </button>
@@ -1045,7 +1246,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                 style={{ color: 'hsl(var(--hue-jungle),50%,15%)', caretColor: 'hsl(var(--hue-jungle),60%,40%)' }}
                             />
                             <button
-                                onClick={sendMessage}
+                                onClick={() => sendMessage()}
                                 disabled={!input.trim() || loadingChat}
                                 className="p-2.5 rounded-xl shadow-md disabled:opacity-40 active:scale-95 transition-all"
                                 style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),62%,38%), hsl(var(--hue-canopy),68%,30%))' }}

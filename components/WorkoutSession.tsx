@@ -13,7 +13,8 @@ import { getLastLogForExercise, getLastLogForExerciseByType, parseDurationToSeco
 import { checkAchievements, getStreakRisk, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT } from '../utils/gamification';
 import { getProgressionSuggestion } from '../utils/progression';
 import { calculateCalories } from '../utils/calorieUtils';
-import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera, Plus, RefreshCw, Search } from 'lucide-react';
+import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera, Plus, RefreshCw, Search, Volume2, VolumeX } from 'lucide-react';
+import { isSoundMuted, toggleSoundMuted, playSetCompleteChime, playComboFanfare, playLevelUpSound } from '../utils/soundEffects';
 import { EXERCISE_MUSCLE_MAP, MUSCLE_GROUPS, getMuscleGroup } from '../utils/muscleMapping';
 import { resolveExerciseVisualMeta, KNOWN_EXERCISE_BLUEPRINTS } from '../utils/exerciseVisuals';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
@@ -291,6 +292,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
   const [earnedXp, setEarnedXp] = useState(0);
+  const [modifiedNextPlan, setModifiedNextPlan] = useState<WorkoutPlan | null>(null);
+  const [revertedPlan, setRevertedPlan] = useState(false);
 
   const [showExitModal, setShowExitModal] = useState(false);
   const [showCooldownConfirm, setShowCooldownConfirm] = useState(false);
@@ -302,6 +305,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [exercisePickerModal, setExercisePickerModal] = useState<{ mode: 'swap' | 'add'; targetIndex?: number } | null>(null);
   const [pickerMuscleFilter, setPickerMuscleFilter] = useState<string>('All');
   const [pickerSearch, setPickerSearch] = useState<string>('');
+  const [soundMuted, setSoundMuted] = useState<boolean>(() => isSoundMuted());
+  const [comboToast, setComboToast] = useState<string | null>(null);
+  const [floatingXpBurst, setFloatingXpBurst] = useState<number>(0);
+  const [displayedXp, setDisplayedXp] = useState<number>(0);
 
   const getExerciseMeta = useCallback((record: ExerciseRecord, index: number) => {
     const planEx = plan.exercises[index];
@@ -381,7 +388,15 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // Initialize from plan (Async)
       const initializedRecords = await Promise.all(plan.exercises.map(async ex => {
         const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id);
-        const suggestion = getProgressionSuggestion(lastSets, ex.defaultReps);
+        const visualMeta = resolveExerciseVisualMeta(ex.name, {
+          customImage: ex.image,
+          visualArchetype: ex.visualArchetype,
+          equipment: ex.equipment
+        });
+        const suggestion = getProgressionSuggestion(lastSets, ex.defaultReps, {
+          equipment: ex.equipment || visualMeta.equipment,
+          archetype: ex.visualArchetype || visualMeta.archetype
+        });
         const targetSetCount = (lastSets && lastSets.length > 0) ? lastSets.length : ex.defaultSets;
 
         const sets = Array(targetSetCount).fill(null).map((_, idx) => {
@@ -527,6 +542,18 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     const currentEx = currentRecord ? getExerciseMeta(currentRecord, exerciseIndex) : plan.exercises[exerciseIndex];
     let nextRest = currentEx?.restSeconds || 60;
 
+    // Micro-dopamine audio + floating XP arc
+    playSetCompleteChime(setIndex);
+    setFloatingXpBurst(Date.now());
+    if (currentRecord) {
+      const allSetsDone = currentRecord.sets.every((s, idx) => idx === setIndex || s.completed);
+      if (allSetsDone) {
+        setTimeout(() => playComboFanfare(), 160);
+        setComboToast(`🔥 ${currentRecord.name} Crushed! All sets complete!`);
+        setTimeout(() => setComboToast(null), 3200);
+      }
+    }
+
     const scrollToExercise = (exName: string) => {
       setExpandedExerciseId(exName);
       setTimeout(() => {
@@ -638,7 +665,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     } catch {
       lastSets = null;
     }
-    const suggestion = getProgressionSuggestion(lastSets, catalogMeta.defaultReps);
+    const suggestion = getProgressionSuggestion(lastSets, catalogMeta.defaultReps, {
+      equipment: catalogMeta.equipment,
+      archetype: catalogMeta.visualArchetype
+    });
     const targetSetCount = (lastSets && lastSets.length > 0) ? lastSets.length : catalogMeta.defaultSets;
 
     const initialSets: ExerciseSet[] = Array(targetSetCount).fill(null).map((_, idx) => {
@@ -820,6 +850,27 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         if (result) finalLogId = result;
       }
 
+      // Auto-sync today's entry in WeeklyPlan.schedule if present
+      const todayIsoStr = new Date().toISOString().split('T')[0];
+      try {
+        const existingPlans = await getUserPlans(userProfile.id);
+        if (existingPlans && Array.isArray((existingPlans as any).schedule)) {
+          let scheduleChanged = false;
+          const updatedSchedule = (existingPlans as any).schedule.map((item: any) => {
+            if (item?.date === todayIsoStr && item?.type !== 'REST' && item?.status !== 'done') {
+              scheduleChanged = true;
+              return { ...item, status: 'done' };
+            }
+            return item;
+          });
+          if (scheduleChanged) {
+            await saveUserPlan(userProfile.id, { ...(existingPlans as any), schedule: updatedSchedule });
+          }
+        }
+      } catch (schedErr) {
+        console.warn("Could not auto-sync weekly schedule status:", schedErr);
+      }
+
       if (feedback) {
         // Save feedback linked to the log (using the log's ID)
         await saveWorkoutFeedback({ ...feedback, logId: String(finalLogId) }, userProfile);
@@ -830,10 +881,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             .then(async newPlan => {
               if (newPlan) {
                 console.log("AI Suggested New Plan:", newPlan);
+                setModifiedNextPlan(newPlan);
+                setRevertedPlan(false);
                 try {
-                  const currentPlans = await getUserPlans(userProfile.id) || (STARTER_PLANS[userProfile.fitnessLevel || 'beginner'] as any);
-                  currentPlans[newPlan.id] = newPlan;
-                  await saveUserPlan(userProfile.id, currentPlans);
+                  const currentPlans = await getUserPlans(userProfile.id) || { ...(STARTER_PLANS[userProfile.fitnessLevel || 'beginner'] as any) };
+                  const mergedPlans = { ...(currentPlans as any), [newPlan.id]: newPlan };
+                  await saveUserPlan(userProfile.id, mergedPlans);
                   console.log("Updated user plan in DB");
                 } catch (err) {
                   console.error("Failed to save AI updated plan", err);
@@ -855,8 +908,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       const questRes = await updateQuestProgress(user, userProfile, 'workout', 1);
 
       setEarnedBadges(newBadges);
-      setEarnedXp((currentLog.type === 'B' ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT) + questRes.earnedXp);
+      const totalEarnedXp = (currentLog.type === 'B' ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT) + questRes.earnedXp;
+      setEarnedXp(totalEarnedXp);
       setShowCelebration(true);
+      playLevelUpSound();
 
       // ... AI analysis ...
       try {
@@ -881,13 +936,17 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             }
             return { name: e.name, bestSet };
           });
+          const feedbackSummary = feedback
+            ? `User Feedback: Difficulty ${feedback.difficultyRating}/5${feedback.painPoints?.length ? `, Pain/Soreness: ${feedback.painPoints.join(', ')}` : ''}${feedback.skippedExercises?.length ? `, Skipped: ${feedback.skippedExercises.join(', ')}` : ''}${feedback.notes ? `, Notes: "${feedback.notes}"` : ''}.`
+            : 'User Feedback: None provided.';
           const prompt = `
                     Compare the Current Workout vs Previous Workout (Type ${plan.id}).
                     Current: ${JSON.stringify(summarize(currentLog))}
                     Previous: ${previousLog ? JSON.stringify(summarize(previousLog)) : 'None (First workout)'}
-                    Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app:
-                    1. Celebration: Specific improvement.
-                    2. Insight: Pattern spotted.
+                    ${feedbackSummary}
+                    Generate 3 short, fun, cute sentences suitable for a panda-themed fitness app (acknowledge their effort/difficulty and any soreness gently if reported):
+                    1. Celebration: Specific improvement or consistency win.
+                    2. Insight: Pattern spotted (volume, weight, or recovery note).
                     3. Nudge: What to focus on next.
                 `;
           const aiPromise = geminiClient.generateContent({
@@ -929,6 +988,23 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     }
     setIsFinishing(false);
   };
+
+  useEffect(() => {
+    if (step === 'analysis' && earnedXp > 0) {
+      let current = 0;
+      const stepVal = Math.max(2, Math.ceil(earnedXp / 24));
+      const interval = setInterval(() => {
+        current += stepVal;
+        if (current >= earnedXp) {
+          setDisplayedXp(earnedXp);
+          clearInterval(interval);
+        } else {
+          setDisplayedXp(current);
+        }
+      }, 35);
+      return () => clearInterval(interval);
+    }
+  }, [step, earnedXp]);
 
   if (loading) return (
     <div className="min-h-screen bg-emerald-50 flex flex-col items-center justify-center p-6">
@@ -1437,6 +1513,15 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               </div>
 
               <div className="flex items-center space-x-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSoundMuted(toggleSoundMuted())}
+                  aria-label={soundMuted ? 'Unmute sound effects' : 'Mute sound effects'}
+                  title={soundMuted ? 'Sound Effects Muted' : 'Sound Effects On'}
+                  className="bg-white text-emerald-700 hover:bg-emerald-100/70 p-2 rounded-xl border border-emerald-100 transition-colors active:scale-90"
+                >
+                  {soundMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                </button>
                 <Timer
                   seconds={workoutTimer.seconds}
                   isActive={workoutTimer.isActive}
@@ -1463,6 +1548,24 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               />
             </div>
           </div>
+
+          {/* Non-blocking Combo Banner & Floating +XP Arc */}
+          {floatingXpBurst > 0 && (
+            <div
+              key={floatingXpBurst}
+              className="pointer-events-none fixed top-14 right-14 z-50 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-lg animate-xp-float"
+            >
+              +10 XP ⚡
+            </div>
+          )}
+          {comboToast && (
+            <div className="max-w-xl mx-auto px-3 pb-2 animate-squash-bounce">
+              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-md flex items-center justify-center gap-1.5">
+                <Sparkles size={14} />
+                <span>{comboToast}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Wide, Low-Padding Workout List — No Nested Outer Cards */}
@@ -1563,12 +1666,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </div>
 
                 {/* Integrated XP Pill */}
-                <div className="bg-lime-400/20 border border-lime-300/40 px-2.5 py-2 rounded-2xl text-right shrink-0 backdrop-blur-xs">
+                <div className="bg-lime-400/20 border border-lime-300/40 px-2.5 py-2 rounded-2xl text-right shrink-0 backdrop-blur-xs animate-squash-bounce">
                   <div className="text-[9px] font-black uppercase tracking-wider text-lime-300 flex items-center justify-end gap-0.5 whitespace-nowrap">
                     <Zap size={10} className="fill-lime-300" /> XP Earned
                   </div>
                   <div className="text-xl font-black text-white font-['Fredoka'] leading-none mt-0.5">
-                    +{earnedXp}
+                    +{displayedXp || earnedXp}
                   </div>
                 </div>
               </div>
@@ -1651,6 +1754,61 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                   </div>
                 </div>
               </div>
+
+              {/* 2b. Sensei's Next-Plan Adjustments Card (Adaptive Loop Diff + 1-Tap Undo) */}
+              {modifiedNextPlan && modifiedNextPlan.changesSummary && modifiedNextPlan.changesSummary.length > 0 && (
+                <div className="mt-3 pt-3.5 border-t border-emerald-100/90">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-50/80 border border-emerald-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-sm shadow-2xs shrink-0">
+                          🐼
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800">
+                            Sensei&apos;s Next-Plan Adjustments
+                          </div>
+                          <div className="text-xs font-bold text-emerald-950 truncate font-['Fredoka']">
+                            {revertedPlan ? `Kept Original ${plan.title}` : `Updated ${modifiedNextPlan.title} for Next Session`}
+                          </div>
+                        </div>
+                      </div>
+                      {!revertedPlan ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const currentPlans = await getUserPlans(userProfile.id) || {};
+                              await saveUserPlan(userProfile.id, { ...(currentPlans as any), [plan.id]: plan });
+                              setRevertedPlan(true);
+                            } catch (e) {
+                              console.error("Failed to revert modified plan", e);
+                            }
+                          }}
+                          className="text-[11px] font-extrabold text-emerald-800 bg-white hover:bg-emerald-100/70 px-2.5 py-1.5 rounded-xl border border-emerald-200/90 shadow-2xs active:scale-95 transition-all shrink-0 cursor-pointer"
+                        >
+                          Keep Original Plan
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2.5 py-1 rounded-full shrink-0">
+                          Original Kept ✓
+                        </span>
+                      )}
+                    </div>
+
+                    {!revertedPlan && (
+                      <ul className="space-y-1 pl-1">
+                        {modifiedNextPlan.changesSummary.map((change, idx) => (
+                          <li key={idx} className="text-xs font-semibold text-emerald-900 flex items-start gap-1.5 leading-snug">
+                            <span className="text-emerald-600 font-black mt-0.5">•</span>
+                            <span>{change}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 3. Tribe Victory Spotlight Card */}

@@ -1,7 +1,9 @@
-import React from 'react';
-import { Quest } from '../types';
-import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Lock, User as UserIcon, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Quest, UserProfile, UserGamificationState } from '../types';
+import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Lock, User as UserIcon, Users, Sparkles } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
+import { claimDailyQuestChest } from '../utils/gamification';
+import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
 
 interface Props {
   quests: Quest[];
@@ -9,7 +11,62 @@ interface Props {
   onManualComplete: (questId: string) => void;
   loading?: boolean;
   hasLoggedWorkouts?: boolean;
+  userProfile?: UserProfile | null;
+  userState?: UserGamificationState;
+  onStateUpdated?: () => void;
 }
+
+const DailyChestSvg: React.FC<{
+  tier: 1 | 2 | 3;
+  state: 'locked' | 'ready' | 'claimed';
+}> = ({ tier, state }) => {
+  const palette =
+    tier === 1
+      ? { lid: '#d97706', body: '#b45309', band: '#fde047', rim: '#78350f' }
+      : tier === 2
+      ? { lid: '#64748b', body: '#475569', band: '#38bdf8', rim: '#1e293b' }
+      : { lid: '#f59e0b', body: '#d97706', band: '#fef08a', rim: '#92400e' };
+
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className={`w-8 h-8 transition-transform ${
+        state === 'ready' ? 'animate-chest-wobble drop-shadow-[0_4px_10px_rgba(245,158,11,0.55)]' : ''
+      } ${state === 'locked' ? 'opacity-65 grayscale-[30%]' : ''}`}
+    >
+      {/* Chest Base */}
+      <rect x="7" y="22" width="34" height="19" rx="4" fill={palette.body} stroke={palette.rim} strokeWidth="2" />
+      <rect x="21" y="22" width="6" height="19" fill={palette.band} opacity="0.85" />
+      {/* Chest Lid (tilts open when claimed) */}
+      <g
+        style={{
+          transform: state === 'claimed' ? 'translateY(-5px) rotate(-14deg)' : 'none',
+          transformOrigin: '10px 22px',
+          transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+      >
+        <path
+          d="M7 22 C7 14 14 11 24 11 C34 11 41 14 41 22 Z"
+          fill={palette.lid}
+          stroke={palette.rim}
+          strokeWidth="2"
+        />
+        <rect x="21" y="11" width="6" height="11" fill={palette.band} />
+      </g>
+      {/* Lock / Star */}
+      <circle cx="24" cy="23" r="4" fill={palette.band} stroke={palette.rim} strokeWidth="1.5" />
+      {state === 'claimed' && (
+        <path
+          d="M19 9 L24 3 L29 9"
+          stroke="#fde047"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          fill="none"
+        />
+      )}
+    </svg>
+  );
+};
 
 /**
  * BOLT: Hoist icons map to module level to avoid redundant object creation on every render.
@@ -121,7 +178,10 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
  * BOLT: Memoize QuestBoard to prevent redundant re-renders from parent state changes (e.g. App.tsx data fetches).
  * Performance Impact: Avoids re-rendering the entire quest list when unrelated App state changes.
  */
-export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false }) => {
+export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false, userProfile, userState, onStateUpdated }) => {
+  const [claimingTier, setClaimingTier] = useState<number | null>(null);
+  const [chestToast, setChestToast] = useState<string | null>(null);
+
   if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
 
   // BOLT: Single-pass counting loops eliminate array allocations from .filter().length
@@ -131,6 +191,29 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   }
   const allComplete = completedCount === quests.length && quests.length > 0;
   const completionPct = quests.length > 0 ? Math.round((completedCount / quests.length) * 100) : 0;
+
+  const todayIso = new Date().toISOString().split('T')[0];
+  const claimedTiersToday =
+    userState?.claimedDailyChests?.date === todayIso
+      ? userState.claimedDailyChests.tiers || []
+      : [];
+
+  const handleClaimChest = async (tier: 1 | 2 | 3) => {
+    if (!userProfile || claimingTier !== null) return;
+    setClaimingTier(tier);
+    try {
+      const res = await claimDailyQuestChest(userProfile, tier);
+      if (res.success) {
+        playChestOpenSound();
+        triggerHaptic([30, 50, 80]);
+        setChestToast(res.rewardText);
+        setTimeout(() => setChestToast(null), 4000);
+        onStateUpdated?.();
+      }
+    } finally {
+      setClaimingTier(null);
+    }
+  };
 
   let onboardingCompletedCount = 0;
   if (onboardingQuests) {
@@ -183,13 +266,75 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
           )}
         </div>
 
-        {/* Overall Quest Progress Bar */}
+        {/* Overall Quest Progress Bar + 3 Tiered SVG Chests */}
         {quests.length > 0 && (
-          <div className="w-full h-1.5 bg-emerald-100/80 rounded-full overflow-hidden mb-3.5 relative z-10">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full transition-all duration-500"
-              style={{ width: `${completionPct}%` }}
-            />
+          <div className="mb-4 relative z-10">
+            <div className="relative pt-2 pb-1">
+              <div className="w-full h-2.5 bg-emerald-100/90 rounded-full overflow-hidden border border-emerald-200/60">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-lime-400 rounded-full transition-all duration-500"
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+
+              {/* 3 Milestone Chest Nodes */}
+              <div className="grid grid-cols-3 gap-2 mt-2.5">
+                {([
+                  { tier: 1 as const, label: 'Bronze Chest', reward: '+15 XP', req: 1 },
+                  { tier: 2 as const, label: 'Silver Chest', reward: '+30 XP', req: 2 },
+                  { tier: 3 as const, label: 'Gold Chest', reward: '+60 XP & Gift', req: Math.min(3, quests.length || 3) },
+                ]).map(({ tier, label, reward, req }) => {
+                  const isClaimed = claimedTiersToday.includes(tier);
+                  const isReady = completedCount >= req && !isClaimed;
+                  const state: 'locked' | 'ready' | 'claimed' = isClaimed
+                    ? 'claimed'
+                    : isReady
+                    ? 'ready'
+                    : 'locked';
+
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      disabled={!isReady || claimingTier === tier}
+                      onClick={() => handleClaimChest(tier)}
+                      className={`flex items-center gap-2 p-2 rounded-2xl border text-left transition-all ${
+                        state === 'ready'
+                          ? 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-300 shadow-sm cursor-pointer hover:scale-[1.02] active:scale-95'
+                          : state === 'claimed'
+                          ? 'bg-emerald-50/70 border-emerald-200/80 cursor-default'
+                          : 'bg-white/60 border-slate-200/60 cursor-default'
+                      }`}
+                    >
+                      <DailyChestSvg tier={tier} state={state} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-black text-slate-800 truncate leading-tight">
+                          {state === 'claimed' ? 'Claimed ✓' : state === 'ready' ? 'Tap to Open!' : `${req}/${quests.length} Quests`}
+                        </div>
+                        <div
+                          className={`text-[9px] font-bold truncate ${
+                            state === 'ready'
+                              ? 'text-amber-700'
+                              : state === 'claimed'
+                              ? 'text-emerald-700'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {reward}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {chestToast && (
+              <div className="mt-2 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md animate-squash-bounce">
+                <Sparkles size={14} />
+                <span>Chest Opened: {chestToast}!</span>
+              </div>
+            )}
           </div>
         )}
 

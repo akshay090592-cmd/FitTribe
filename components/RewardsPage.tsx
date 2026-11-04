@@ -21,6 +21,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { BadgeIcon } from './BadgeIcon';
 import { getThemePalette } from '../utils/themeConfig';
 import { JungleChestSVG } from './JungleChestSVG';
+import { PowerUpIconSVG, StreakFlameSVG, AnimatedTrophyMedalSVG } from './AnimatedIconsSVG';
 
 
 interface Props {
@@ -283,7 +284,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h4 className="font-bold text-amber-950 font-['Fredoka'] text-base flex items-center gap-1.5">
-                  <Sparkles size={16} className="text-amber-600" /> Progressive Mastery Tracks (Tier I → VII)
+                  <Sparkles size={16} className="text-amber-600" /> Progressive Mastery Tracks
                 </h4>
                 <p className="text-[11px] font-bold text-amber-800/75">
                   Long-horizon mastery tiers built for veteran legends
@@ -411,13 +412,15 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                   className="p-3.5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/30 flex items-center justify-between gap-3 shadow-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0 overflow-hidden pointer-events-none">
                       {p.id === 'mystery_crate' || (p.id as string) === 'mystery_box' ? (
                         <JungleChestSVG
                           tier="mystery"
                           state={buyingPowerUpId === p.id ? 'opening' : canAfford ? 'ready' : 'locked'}
                           className="w-11 h-11"
                         />
+                      ) : p.id === 'streak_freeze' || p.id === 'double_xp' || p.id === 'streak_wager' ? (
+                        <PowerUpIconSVG id={p.id} className="w-11 h-11 block" />
                       ) : (
                         <span>{p.emoji || (p as any).icon}</span>
                       )}

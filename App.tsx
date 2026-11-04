@@ -28,6 +28,7 @@ import { Plus } from 'lucide-react';
 import { DesktopNavigation } from './components/DesktopNavigation';
 import { TribeVictoryPhoto } from './components/TribeVictoryPhoto';
 import { getThemePalette, AppThemePalette } from './utils/themeConfig';
+import { StreakFlameSVG } from './components/AnimatedIconsSVG';
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -1691,8 +1692,8 @@ const App: React.FC = () => {
                   className="w-full text-left bg-gradient-to-r from-amber-100 to-orange-50 border-l-4 border-amber-500 text-amber-950 p-4 rounded-2xl flex items-center justify-between shadow-md md:col-span-2 active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0">
-                      <Flame size={22} className="text-amber-600 animate-bounce" />
+                    <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center mr-3 shrink-0 pointer-events-none">
+                      <StreakFlameSVG state="at_risk" className="w-9 h-9 block" />
                     </div>
                     <div>
                       <div className="font-bold font-['Fredoka'] text-sm sm:text-base">Streak at Risk!</div>
@@ -1825,8 +1826,11 @@ const App: React.FC = () => {
                     <Flame size={48} className="text-amber-500" />
                   </div>
 
-                  <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                    <Flame size={20} className="fill-current" />
+                  <div className="w-12 h-12 bg-amber-500/15 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300 pointer-events-none">
+                    <StreakFlameSVG
+                      state={streakRisk ? 'at_risk' : streak >= 7 ? 'super' : 'active'}
+                      className="w-10 h-10 block"
+                    />
                   </div>
 
                   <div className="text-left z-10">

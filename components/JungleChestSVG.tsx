@@ -136,18 +136,18 @@ export const JungleChestSVG: React.FC<JungleChestSVGProps> = React.memo(({
           transform-origin: 240px 395px;
           ${
             isReady
-              ? `animation: ${uid}_wobble 1.6s ease-in-out infinite;`
+              ? `animation: ${uid}_wobble 6s ease-in-out infinite;`
               : isOpening
               ? `animation: ${uid}_open_cycle 3.4s ease-in-out infinite;`
               : ''
           }
         }
         @keyframes ${uid}_wobble {
-          0%, 100% { transform: translateY(0) scale(1, 1) rotate(0deg); }
-          20% { transform: translateY(4px) scale(1.06, 0.93) rotate(-4deg); }
-          40% { transform: translateY(-10px) scale(0.95, 1.05) rotate(4deg); }
-          60% { transform: translateY(3px) scale(1.04, 0.95) rotate(-3deg); }
-          80% { transform: translateY(-4px) scale(0.98, 1.02) rotate(2deg); }
+          0%, 18%, 100% { transform: translateY(0) scale(1, 1) rotate(0deg); }
+          3% { transform: translateY(3px) scale(1.05, 0.94) rotate(-3.5deg); }
+          6% { transform: translateY(-9px) scale(0.95, 1.05) rotate(3.5deg); }
+          10% { transform: translateY(2px) scale(1.03, 0.96) rotate(-2.5deg); }
+          14% { transform: translateY(-3px) scale(0.98, 1.02) rotate(1.5deg); }
         }
         @keyframes ${uid}_open_cycle {
           0%, 12%, 92%, 100% { transform: translateY(0) scale(1, 1) rotate(0deg); }

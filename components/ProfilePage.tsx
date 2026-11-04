@@ -8,13 +8,14 @@ import { convertToCSV, downloadCSV } from '../utils/exportUtils';
 import { HistoryModal } from './HistoryModal';
 import { BadgeModal } from './BadgeModal';
 import { StatsDetailPopup } from './StatsDetailPopup';
-import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank } from '../utils/gamification';
+import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank, getRankDetails } from '../utils/gamification';
 import { getAvatarPath } from '../utils/avatar';
 import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
 import { googleHealthService } from '../services/googleHealthService';
 import { ConfirmPopup } from './ConfirmPopup';
 import { BadgeIcon } from './BadgeIcon';
+import { RankCrestSVG, StreakFlameSVG } from './AnimatedIconsSVG';
 
 interface Props {
     userProfile: UserProfile;
@@ -291,11 +292,17 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                         Lvl {xpData?.level || 1}
                                     </div>
                                 </div>
-                                <div className="text-right flex-1 ml-4 pt-14">
+                                <div className="text-right flex-1 ml-4 pt-14 flex flex-col items-end">
                                     <h3 className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-tight mb-0.5">{userProfile.displayName}</h3>
-                                    <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60 uppercase tracking-widest">
-                                        <Crown size={11} className="text-amber-500" /> {getRank(xpData?.level || 1)}
-                                    </div>
+                                    {(() => {
+                                        const rankDetails = getRankDetails(xpData?.level || 1);
+                                        return (
+                                            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 pl-1.5 pr-2.5 py-0.5 rounded-full border border-emerald-200/60 uppercase tracking-widest">
+                                                <RankCrestSVG tierIndex={rankDetails.tierIndex} icon={rankDetails.icon} className="w-6 h-6 shrink-0 block" />
+                                                <span>{getRank(xpData?.level || 1)}</span>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -322,8 +329,8 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                     <div className="text-[9px] font-bold text-emerald-700/80 uppercase tracking-wider mt-0.5">Workouts</div>
                                 </div>
                                 <div className="glass-panel p-3.5 spring-transition flex flex-col items-center justify-center cursor-default shadow-2xs" style={{ background: 'hsla(25,95%,96%,0.75)', border: '1px solid hsl(25,90%,88%)', borderRadius: '22px' }}>
-                                    <div className="text-2xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center leading-tight">
-                                        {streaks} <Zap size={15} className="ml-0.5 fill-current animate-pulse" />
+                                    <div className="text-2xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center leading-tight gap-1">
+                                        {streaks} <StreakFlameSVG state={streaks >= 7 ? 'super' : 'active'} className="w-6 h-6 shrink-0 block" />
                                     </div>
                                     <div className="text-[9px] font-bold text-orange-600/80 uppercase tracking-wider mt-0.5">Streak</div>
                                 </div>

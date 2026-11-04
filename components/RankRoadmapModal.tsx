@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Crown, Sparkles, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
 import { RANK_TIERS, calculateLevel, getLevelProgress, getRankDetails } from '../utils/gamification';
 import { UserGamificationState, UserProfile } from '../types';
-import { PandaSenseiSVG } from './PandaSenseiSVG';
+import { RankCrestSVG } from './AnimatedIconsSVG';
 
 interface RankRoadmapModalProps {
   isOpen: boolean;
@@ -101,21 +101,17 @@ export const RankRoadmapModal: React.FC<RankRoadmapModalProps> = ({
             </button>
           </div>
 
-          <div className="flex items-end gap-3 relative z-10">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-3xl shadow-lg animate-squash-bounce shrink-0 mb-2">
-              {currentRank.icon}
+          <div className="flex items-center gap-3.5 relative z-10 mb-3">
+            <div className="w-[72px] h-[72px] shrink-0 pointer-events-none">
+              <RankCrestSVG tierIndex={currentRank.tierIndex} icon={currentRank.icon} className="w-full h-full block" />
             </div>
-            <div className="flex-1 min-w-0 pb-2">
+            <div className="flex-1 min-w-0">
               <h2 className="text-xl sm:text-2xl font-black font-['Fredoka'] tracking-wide leading-tight truncate">
                 {currentRank.fullTitle}
               </h2>
               <p className="text-xs text-white/90 font-medium mt-0.5 line-clamp-2 leading-snug">
                 {currentRank.description}
               </p>
-            </div>
-            {/* Sensei Panda grounded directly on top of the XP Progress Card */}
-            <div className="w-20 h-20 shrink-0 -mb-[2px] pointer-events-none">
-              <PandaSenseiSVG compact mode="victory" className="w-full h-full block" />
             </div>
           </div>
 

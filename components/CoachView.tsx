@@ -674,7 +674,7 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                                         </button>
                                     </div>
                                     <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 -mb-[2px] pointer-events-none">
-                                        <PandaSenseiSVG mode="coaching" className="w-full h-full block" />
+                                        <PandaSenseiSVG framing="full" context="coach" mode="feast" className="w-full h-full block" />
                                     </div>
                                 </div>
                             </div>
@@ -756,8 +756,15 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     ) : (
                         <div className="flex flex-col h-[68vh] glass-panel rounded-[32px] shadow-xl overflow-hidden border border-emerald-100/80 relative" style={{ background: 'hsla(var(--hue-jungle),40%,98%,0.92)' }}>
                             <div className="px-4 pt-3 pb-0 flex items-end text-white shadow-md z-10" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
-                                <div className="w-16 h-16 mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
-                                    <PandaSenseiSVG compact mode={isGeneratingPlan ? 'lifting' : proposedPlan ? 'victory' : 'coaching'} className="w-full h-full block" />
+                                <div className="w-[72px] h-[72px] mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
+                                    <PandaSenseiSVG
+                                        compact
+                                        framing="peeking"
+                                        context="coach"
+                                        mode={isGeneratingPlan ? 'thinking' : proposedPlan ? 'victory' : 'coaching'}
+                                        triggerKey={checkinMessages.length}
+                                        className="w-full h-full block"
+                                    />
                                 </div>
                                 <div className="pb-3">
                                     <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>
@@ -1034,8 +1041,15 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                     {/* Sage Panda Header — Sensei stands directly on the bottom edge of the header bar */}
                     <div className="px-4 pt-2.5 pb-0 flex items-end justify-between text-white shadow-md" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),63%,28%), hsl(var(--hue-canopy),68%,21%))' }}>
                         <div className="flex items-end">
-                            <div className="w-16 h-16 mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
-                                <PandaSenseiSVG compact mode={loadingChat ? 'lifting' : pendingAction ? 'victory' : 'coaching'} className="w-full h-full block" />
+                            <div className="w-[72px] h-[72px] mr-2.5 shrink-0 -mb-[1px] pointer-events-none">
+                                <PandaSenseiSVG
+                                    compact
+                                    framing="bust"
+                                    context="coach"
+                                    mode={loadingChat ? 'thinking' : pendingAction ? 'victory' : 'coaching'}
+                                    triggerKey={messages.length}
+                                    className="w-full h-full block"
+                                />
                             </div>
                             <div className="pb-3">
                                 <div className="font-bold font-['Fredoka'] text-lg leading-tight">Sage Panda</div>

@@ -5,6 +5,7 @@ import { Trophy, Activity, Zap, Calendar, Crown, Flame } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { getAvatarPath } from '../utils/avatar';
 import { RankBadge } from './RankBadge';
+import { LeaderboardCrownSVG } from './AnimatedIconsSVG';
 
 interface Props {
     logs: WorkoutLog[];
@@ -100,8 +101,8 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
         <div className="glass-panel overflow-hidden mb-6 font-sans" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.80)' }}>
             <div className="p-5 text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-white font-bold text-xl flex items-center font-['Fredoka']">
-                        <Crown size={24} className="mr-2 text-yellow-400 fill-yellow-400" /> Leaderboard
+                    <h3 className="text-white font-bold text-xl flex items-center font-['Fredoka'] gap-2">
+                        <LeaderboardCrownSVG className="w-9 h-9 shrink-0 block" /> Leaderboard
                     </h3>
 
                 </div>

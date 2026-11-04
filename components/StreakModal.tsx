@@ -3,7 +3,7 @@ import { X, Flame, Shield, Sparkles, Check, Calendar, AlertTriangle, Dumbbell } 
 import { UserProfile, UserGamificationState, WorkoutLog } from '../types';
 import { purchasePowerUp } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
-import { PandaSenseiSVG } from './PandaSenseiSVG';
+import { StreakFlameSVG } from './AnimatedIconsSVG';
 
 interface StreakModalProps {
   isOpen: boolean;
@@ -145,48 +145,13 @@ export const StreakModal: React.FC<StreakModalProps> = ({
             </button>
           </div>
 
-          <div className="flex items-end gap-3 relative z-10">
-            {/* Multi-layered Pure SVG Animated Flame */}
-            <div className="relative w-14 h-14 flex items-center justify-center shrink-0 mb-2">
-              <div
-                className={`absolute inset-0 rounded-full blur-xl opacity-60 ${
-                  isShielded ? 'bg-cyan-300' : 'bg-yellow-300'
-                }`}
+          <div className="flex items-center gap-3.5 relative z-10 mb-3">
+            {/* Multi-layered Pure SVG Animated Campfire Flame */}
+            <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+              <StreakFlameSVG
+                state={isShielded ? 'shielded' : streakRisk ? 'at_risk' : streak >= 7 ? 'super' : 'active'}
+                className="w-20 h-20 block"
               />
-              <svg
-                viewBox="0 0 100 110"
-                className="w-14 h-14 animate-flame-flicker drop-shadow-[0_6px_12px_rgba(0,0,0,0.28)]"
-              >
-                <defs>
-                  <linearGradient id="outerFlame" x1="0%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor={isShielded ? '#0284c7' : '#dc2626'} />
-                    <stop offset="55%" stopColor="#f97316" />
-                    <stop offset="100%" stopColor="#facc15" />
-                  </linearGradient>
-                  <linearGradient id="innerFlame" x1="0%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="#f97316" />
-                    <stop offset="65%" stopColor="#fde047" />
-                    <stop offset="100%" stopColor="#ffffff" />
-                  </linearGradient>
-                </defs>
-                {/* Outer Flame */}
-                <path
-                  d="M50 6 C50 6 88 38 86 69 C84 92 68 105 50 105 C32 105 16 92 14 69 C12 48 25 32 31 24 C29 36 36 42 36 42 C33 25 50 6 50 6 Z"
-                  fill="url(#outerFlame)"
-                />
-                {/* Mid Flame */}
-                <path
-                  d="M52 26 C52 26 75 49 73 72 C71 89 61 99 50 99 C39 99 28 89 27 72 C26 57 38 43 52 26 Z"
-                  fill="url(#innerFlame)"
-                  opacity="0.92"
-                />
-                {/* White-Hot Core */}
-                <path
-                  d="M50 54 C50 54 63 68 62 82 C61 91 56 97 50 97 C44 97 39 91 38 82 C37 68 50 54 50 54 Z"
-                  fill="#ffffff"
-                  opacity="0.9"
-                />
-              </svg>
               {isShielded && (
                 <span
                   className="absolute -bottom-1 -right-1 bg-cyan-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-white shadow-md flex items-center gap-0.5"
@@ -197,7 +162,7 @@ export const StreakModal: React.FC<StreakModalProps> = ({
               )}
             </div>
 
-            <div className="flex-1 min-w-0 pb-2">
+            <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-black tracking-tight leading-none font-['Fredoka']">
                   {streak}
@@ -213,11 +178,6 @@ export const StreakModal: React.FC<StreakModalProps> = ({
                   ? `Next Streak Society milestone at ${nextMilestone} days!`
                   : 'Complete a workout today to ignite your streak!'}
               </p>
-            </div>
-
-            {/* Sensei Panda grounded directly on top of the 7-Day Flame Strip */}
-            <div className="w-20 h-20 shrink-0 -mb-[2px] pointer-events-none">
-              <PandaSenseiSVG compact mode={streakRisk ? 'lifting' : 'fire'} className="w-full h-full block" />
             </div>
           </div>
 

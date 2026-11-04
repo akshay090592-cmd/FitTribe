@@ -9,6 +9,7 @@ import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache
 import { AICoachService } from '../services/aiCoach';
 
 import { Calendar } from './Calendar';
+import { AnimatedTrophyMedalSVG } from './AnimatedIconsSVG';
 
 // BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
 // redundant Date object instantiations and expensive formatting calls on hot rendering paths.
@@ -593,8 +594,8 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
 
       <div className="flex items-center justify-between md:col-span-2 pt-1">
         <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center">
-          <span className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200/70 flex items-center justify-center mr-2.5 text-amber-600 shadow-sm">
-            <Trophy className="fill-current" size={16} />
+          <span className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200/70 flex items-center justify-center mr-2.5 text-amber-600 shadow-sm pointer-events-none">
+            <AnimatedTrophyMedalSVG className="w-8 h-8 block" />
           </span>
           Personal Records
         </h3>

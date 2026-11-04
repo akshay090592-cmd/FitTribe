@@ -3,14 +3,36 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { PandaSenseiSVG, PandaSenseiMode } from '../components/PandaSenseiSVG';
 import { JungleChestSVG, ChestTier, ChestState } from '../components/JungleChestSVG';
+import {
+  StreakFlameSVG,
+  RankCrestSVG,
+  AnimatedTrophyMedalSVG,
+  PowerUpIconSVG,
+  LeaderboardCrownSVG,
+} from '../components/AnimatedIconsSVG';
 import { StreakModal } from '../components/StreakModal';
 import { RankRoadmapModal } from '../components/RankRoadmapModal';
 import { QuestBoard } from '../components/QuestBoard';
 import { TribePulse } from '../components/TribePulse';
+import * as storage from '../utils/storage';
 import { User, WorkoutLog, Quest, UserProfile, UserGamificationState } from '../types';
 
-describe('Animated SVG Components (PandaSenseiSVG & JungleChestSVG)', () => {
-  const pandaModes: PandaSenseiMode[] = ['coaching', 'lifting', 'zen', 'fire', 'victory'];
+describe('Animated SVG Components (PandaSenseiSVG, JungleChestSVG & AnimatedIconsSVG)', () => {
+  const pandaModes: PandaSenseiMode[] = [
+    'coaching',
+    'lifting',
+    'zen',
+    'fire',
+    'victory',
+    'thinking',
+    'warmup',
+    'pleading',
+    'feast',
+    'shaker_gulp',
+    'towel_wipe',
+    'chalk_clap',
+    'headband_tighten',
+  ];
 
   it.each(pandaModes)('renders PandaSenseiSVG in %s mode with transparent grounded defaults', (mode) => {
     render(<PandaSenseiSVG mode={mode} />);
@@ -25,12 +47,60 @@ describe('Animated SVG Components (PandaSenseiSVG & JungleChestSVG)', () => {
     expect(svg.innerHTML).not.toContain('_enso');
   });
 
+  it('supports peeking, bust, and full framings on PandaSenseiSVG for visual variety', () => {
+    const { rerender } = render(<PandaSenseiSVG mode="lifting" framing="peeking" />);
+    const peekingSvg = screen.getByTestId('panda-sensei-svg-lifting');
+    expect(peekingSvg.getAttribute('viewBox')).toBe('88 68 304 240');
+    expect(peekingSvg.getAttribute('data-framing')).toBe('peeking');
+    expect(peekingSvg.innerHTML).toContain('transform-origin: 240px 308px');
+
+    rerender(<PandaSenseiSVG mode="coaching" framing="bust" />);
+    const bustSvg = screen.getByTestId('panda-sensei-svg-coaching');
+    expect(bustSvg.getAttribute('viewBox')).toBe('64 68 352 312');
+    expect(bustSvg.getAttribute('data-framing')).toBe('bust');
+    expect(bustSvg.innerHTML).toContain('transform-origin: 240px 380px');
+  });
+
+  it('triggers non-repeating surprise vignettes when triggerKey changes in active context', () => {
+    const { rerender } = render(
+      <PandaSenseiSVG mode="lifting" framing="peeking" context="workout" triggerKey={0} />
+    );
+    const svg = screen.getByTestId('panda-sensei-svg-lifting');
+    // Starts in calm_idle before surprise triggers
+    expect(svg.getAttribute('data-vignette')).toBe('calm_idle');
+
+    // Incrementing triggerKey (e.g. checking off a set) immediately fires a surprise vignette
+    rerender(<PandaSenseiSVG mode="lifting" framing="peeking" context="workout" triggerKey={1} />);
+    expect(svg.getAttribute('data-vignette')).not.toBe('calm_idle');
+  });
+
   it('renders PandaSenseiSVG with full dojo scene when showBackground is true', () => {
     render(<PandaSenseiSVG mode="coaching" showBackground={true} />);
     const svg = screen.getByTestId('panda-sensei-svg-coaching');
     expect(svg.getAttribute('viewBox')).toBe('0 0 480 480');
     expect(svg.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet');
     expect(svg.innerHTML).toContain('transform-origin: 240px 340px');
+  });
+
+  it('renders dedicated tab animated SVGs (StreakFlameSVG, RankCrestSVG, AnimatedTrophyMedalSVG, PowerUpIconSVG, LeaderboardCrownSVG)', () => {
+    render(
+      <div>
+        <StreakFlameSVG state="shielded" />
+        <RankCrestSVG tierIndex={4} icon="🐼" />
+        <AnimatedTrophyMedalSVG />
+        <PowerUpIconSVG id="streak_freeze" />
+        <PowerUpIconSVG id="double_xp" />
+        <PowerUpIconSVG id="streak_wager" />
+        <LeaderboardCrownSVG />
+      </div>
+    );
+    expect(screen.getByTestId('streak-flame-svg-shielded')).toBeDefined();
+    expect(screen.getByTestId('rank-crest-svg-4')).toBeDefined();
+    expect(screen.getByTestId('animated-trophy-medal-svg')).toBeDefined();
+    expect(screen.getByTestId('powerup-icon-svg-streak_freeze')).toBeDefined();
+    expect(screen.getByTestId('powerup-icon-svg-double_xp')).toBeDefined();
+    expect(screen.getByTestId('powerup-icon-svg-streak_wager')).toBeDefined();
+    expect(screen.getByTestId('leaderboard-crown-svg')).toBeDefined();
   });
 
   const chestTiers: ChestTier[] = ['bronze', 'silver', 'gold', 'mystery'];
@@ -76,7 +146,7 @@ describe('UI Integrations for PandaSenseiSVG & JungleChestSVG', () => {
     frozenDates: [],
   };
 
-  it('renders StreakModal with transparent Fire Sensei grounded on the 7-Day Flame Strip', () => {
+  it('renders StreakModal with dedicated StreakFlameSVG hero animation', () => {
     const onClose = vi.fn();
     render(
       <StreakModal
@@ -91,15 +161,14 @@ describe('UI Integrations for PandaSenseiSVG & JungleChestSVG', () => {
       />
     );
 
-    const fireSensei = screen.getByTestId('panda-sensei-svg-fire');
-    expect(fireSensei).toBeDefined();
-    expect(fireSensei.getAttribute('viewBox')).toBe('54 68 380 360');
+    const flameSvg = screen.getByTestId('streak-flame-svg-shielded');
+    expect(flameSvg).toBeDefined();
     expect(screen.getByText(/Days Strong/i)).toBeDefined();
     expect(screen.getByText(/Bamboo Ice Shield/i)).toBeDefined();
     expect(screen.getByText(/7-Day Streak Wager/i)).toBeDefined();
   });
 
-  it('renders RankRoadmapModal with Victory Sensei and supports both userXp and currentXp props', () => {
+  it('renders RankRoadmapModal with dedicated RankCrestSVG and supports both userXp and currentXp props', () => {
     const onClose = vi.fn();
     const { rerender } = render(
       <RankRoadmapModal
@@ -111,9 +180,7 @@ describe('UI Integrations for PandaSenseiSVG & JungleChestSVG', () => {
       />
     );
 
-    const victorySensei = screen.getByTestId('panda-sensei-svg-victory');
-    expect(victorySensei).toBeDefined();
-    expect(victorySensei.getAttribute('viewBox')).toBe('54 68 380 360');
+    expect(screen.getByTestId(/rank-crest-svg-/i)).toBeDefined();
     expect(screen.getByText(/Jungle Prestige Ladder/i)).toBeDefined();
 
     // Verify currentXp fallback prop also works seamlessly
@@ -125,7 +192,7 @@ describe('UI Integrations for PandaSenseiSVG & JungleChestSVG', () => {
         currentUser={'Akshay' as User}
       />
     );
-    expect(screen.getByTestId('panda-sensei-svg-victory')).toBeDefined();
+    expect(screen.getByTestId(/rank-crest-svg-/i)).toBeDefined();
   });
 
   it('renders QuestBoard with Bronze, Silver, and Gold JungleChestSVGs reflecting quest progress and triggers chest claim', () => {
@@ -200,6 +267,7 @@ describe('UI Integrations for PandaSenseiSVG & JungleChestSVG', () => {
   });
 
   it('renders TribePulse level chips with sufficient top padding (pt-2.5) so top edges are not clipped', async () => {
+    vi.spyOn(storage, 'getLogs').mockResolvedValue([]);
     const { container } = render(
       <TribePulse
         currentUser={'Akshay'}

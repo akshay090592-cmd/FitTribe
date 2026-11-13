@@ -14,14 +14,23 @@ vi.mock('../utils/storage', () => ({
   saveWorkoutFeedback: vi.fn().mockResolvedValue(true),
   getUserPlans: vi.fn().mockResolvedValue(null),
   saveUserPlan: vi.fn().mockResolvedValue(true),
+  getGamificationState: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock('../utils/gamification', () => ({
-  checkAchievements: vi.fn().mockResolvedValue([]),
-  getStreakRisk: vi.fn().mockResolvedValue(false),
-  XP_PER_WORKOUT: 10,
-  XP_PER_HARD_WORKOUT: 15,
-}));
+vi.mock('../utils/gamification', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/gamification')>();
+  return {
+    ...actual,
+    checkAchievements: vi.fn().mockResolvedValue([]),
+    getStreakRisk: vi.fn().mockResolvedValue(false),
+    XP_PER_WORKOUT: 10,
+    XP_PER_HARD_WORKOUT: 15,
+    awardHonorPledgeBonus: vi.fn().mockResolvedValue({ xpAwarded: 0, pointsAwarded: 0 }),
+    unlockTimeWindowChest: vi.fn().mockResolvedValue({ unlockedType: null, timeWindowChest: null }),
+    claimWeeklyMuscleMasteryBonusIfEligible: vi.fn().mockResolvedValue({ awarded: false, xpAwarded: 0, pointsAwarded: 0 }),
+    awardLevelUpBonus: vi.fn().mockResolvedValue({ pointsAwarded: 0 }),
+  };
+});
 
 vi.mock('../utils/questUtils', () => ({
   updateQuestProgress: vi.fn().mockResolvedValue({ earnedPoints: 0, earnedXp: 0 }),

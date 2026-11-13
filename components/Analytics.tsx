@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, UserProfile } from '../types';
+import { User, UserProfile, WorkoutLog } from '../types';
 import { getUserLogs, calculateStats, getTribeMembers } from '../utils/storage';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { Filter, Trophy, Dumbbell, Activity, Sparkles } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroups, MUSCLE_GROUPS } from '../utils/muscleMapping';
+import { calculateWeeklyMuscleMastery, CORE_MUSCLE_GROUPS } from '../utils/gamification';
 import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache } from '../utils/dateUtils';
 import { AICoachService } from '../services/aiCoach';
 
 import { Calendar } from './Calendar';
-import { AnimatedTrophyMedalSVG } from './AnimatedIconsSVG';
+import { AnimatedTrophyMedalSVG, MuscleMasterySealSVG } from './AnimatedIconsSVG';
 
 // BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
 // redundant Date object instantiations and expensive formatting calls on hot rendering paths.
@@ -217,6 +218,11 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
   // BOLT: Set isFrequencyOnly to true to skip expensive calculations.
   const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
+
+  const weeklyMastery = useMemo(
+    () => calculateWeeklyMuscleMastery(logs as WorkoutLog[]),
+    [logs]
+  );
 
   const muscleData = useMemo(() => {
     if (!logs.length) return [];
@@ -444,6 +450,42 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
               <Activity className="mr-2 opacity-50 text-emerald-500" size={18} /> No muscle data yet
             </div>
           )}
+        </div>
+
+        {/* Weekly 6-Element Muscle Mastery Seal */}
+        <div className={`mt-4 pt-3.5 border-t border-emerald-100/80 relative z-10`}>
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <MuscleMasterySealSVG count={weeklyMastery.count} className="w-10 h-10 shrink-0 block" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-900">
+                Weekly Muscle Mastery Seal
+              </span>
+            </div>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+              weeklyMastery.isEligibleForBonus
+                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            }`}>
+              {weeklyMastery.count}/6 Groups {weeklyMastery.isEligibleForBonus ? '• +100 XP Unlocked!' : '• 5/6 for +100 XP'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            {CORE_MUSCLE_GROUPS.map((group) => {
+              const isLit = weeklyMastery.trainedGroups.includes(group);
+              return (
+                <div
+                  key={group}
+                  className={`text-center py-1.5 px-1 rounded-xl text-[10px] font-bold border transition-all ${
+                    isLit
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-400 border-slate-200/80'
+                  }`}
+                >
+                  {isLit ? '✓ ' : ''}{group}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

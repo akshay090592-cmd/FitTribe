@@ -222,6 +222,16 @@ export interface UserGamificationState {
   activeXpBoost?: { multiplier: number; expiresAt: string } | null;
   streakWager?: { startDate: string; targetDays: number; stakePoints: number; status: 'active' | 'won' | 'lost' } | null;
   claimedDailyChests?: { date: string; tiers: number[] };
+  claimedWeeklyTribeChestWeekKey?: string;
+  timeWindowChest?: {
+    type: 'early_bird' | 'night_owl';
+    unlocksAt: string;
+    expiresAt: string;
+    claimed?: boolean;
+  } | null;
+  claimedMuscleMasteryWeekKey?: string;
+  dailySupportXp?: { date: string; count: number };
+  honorPledgesFulfilled?: number;
 }
 
 export interface SocialComment {

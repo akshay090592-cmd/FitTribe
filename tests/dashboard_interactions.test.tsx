@@ -39,17 +39,21 @@ vi.mock('../utils/sync', () => ({
     processOfflineQueue: vi.fn(),
 }));
 
-vi.mock('../utils/gamification', () => ({
-    calculateStreaks: vi.fn().mockReturnValue(5),
-    getMood: vi.fn().mockResolvedValue('normal'),
-    calculateMood: vi.fn().mockReturnValue('normal'),
-    getTeamStats: vi.fn().mockResolvedValue({ userStats: {} }),
-    getLevelProgress: vi.fn().mockReturnValue({ level: 1, progress: 0 }),
-    getStreaks: vi.fn().mockResolvedValue(5),
-    checkAchievements: vi.fn().mockResolvedValue([]),
-    getStreakRisk: vi.fn().mockResolvedValue(true),
-    SHOP_THEMES: [{ id: 'default', type: 'color', value: 'bg-emerald-900', cost: 0, name: 'Default' }],
-}));
+vi.mock('../utils/gamification', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../utils/gamification')>();
+    return {
+        ...actual,
+        calculateStreaks: vi.fn().mockReturnValue(5),
+        getMood: vi.fn().mockResolvedValue('normal'),
+        calculateMood: vi.fn().mockReturnValue('normal'),
+        getTeamStats: vi.fn().mockResolvedValue({ userStats: {} }),
+        getLevelProgress: vi.fn().mockReturnValue({ level: 1, progress: 0 }),
+        getStreaks: vi.fn().mockResolvedValue(5),
+        checkAchievements: vi.fn().mockResolvedValue([]),
+        getStreakRisk: vi.fn().mockResolvedValue(true),
+        SHOP_THEMES: [{ id: 'default', type: 'color', value: 'bg-emerald-900', cost: 0, name: 'Default' }],
+    };
+});
 
 vi.mock('../utils/storage', () => ({
     getUserLogs: vi.fn().mockResolvedValue([]),
@@ -215,7 +219,7 @@ describe('Dashboard Interactions', () => {
         render(<App />);
         await waitFor(() => screen.getByText(/Hi, TestUser!/i));
 
-        const commitBtn = screen.getByText(/I Commit to Workout Tomorrow/i);
+        const commitBtn = screen.getByText(/Commit to Tomorrow/i);
         fireEvent.click(commitBtn);
 
         await waitFor(() => expect(storage.saveLog).toHaveBeenCalled());

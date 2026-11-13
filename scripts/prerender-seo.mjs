@@ -449,7 +449,10 @@ function buildRouteHtml(baseHtml, routeConfig) {
 
   let html = baseHtml;
 
-  // Replace <title>
+  // Strip any existing canonical tag before inserting the route-specific canonical
+  html = html.replace(/<link\s+rel="canonical"[^>]*\/?>\s*/gi, '');
+
+  // Replace <title> and inject route canonical
   html = html.replace(
     /<title>[\s\S]*?<\/title>/i,
     `<title>${escapeHtml(routeConfig.title)}</title>\n  <link rel="canonical" href="${fullUrl}" />`
@@ -647,17 +650,19 @@ function prerenderDistRoutes() {
 
   for (const page of CORE_PAGES) {
     const routeHtml = buildRouteHtml(baseHtml, { ...page, isArticle: false });
-    const outDir = path.join(DIST_DIR, page.path.replace(/^\//, ''));
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'index.html'), routeHtml, 'utf8');
+    const cleanPath = page.path.replace(/^\//, '').replace(/\/$/, '');
+    const outFile = path.join(DIST_DIR, `${cleanPath}.html`);
+    fs.mkdirSync(path.dirname(outFile), { recursive: true });
+    fs.writeFileSync(outFile, routeHtml, 'utf8');
     count++;
   }
 
   for (const post of BLOG_ARTICLES) {
     const routeHtml = buildRouteHtml(baseHtml, { ...post, isArticle: true });
-    const outDir = path.join(DIST_DIR, post.path.replace(/^\//, ''));
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'index.html'), routeHtml, 'utf8');
+    const cleanPath = post.path.replace(/^\//, '').replace(/\/$/, '');
+    const outFile = path.join(DIST_DIR, `${cleanPath}.html`);
+    fs.mkdirSync(path.dirname(outFile), { recursive: true });
+    fs.writeFileSync(outFile, routeHtml, 'utf8');
     count++;
   }
 

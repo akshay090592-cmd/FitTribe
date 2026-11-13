@@ -28,7 +28,7 @@ import { Plus } from 'lucide-react';
 import { DesktopNavigation } from './components/DesktopNavigation';
 import { TribeVictoryPhoto } from './components/TribeVictoryPhoto';
 import { getThemePalette, AppThemePalette } from './utils/themeConfig';
-import { StreakFlameSVG } from './components/AnimatedIconsSVG';
+import { StreakFlameSVG, HonorPledgeSealSVG } from './components/AnimatedIconsSVG';
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -1797,9 +1797,21 @@ const App: React.FC = () => {
                   <button
                     onClick={handleCommit}
                     disabled={isCommitting || hasTomorrowCommitment}
-                    className="w-full mt-2.5 bg-black/25 text-white/90 py-3 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full mt-2.5 bg-black/25 text-white/90 py-3 px-4 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center gap-2 backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {isCommitting ? 'Committing...' : hasTomorrowCommitment ? '✅ Committed for Tomorrow' : '✋ I Commit to Workout Tomorrow'}
+                    <HonorPledgeSealSVG className="w-5 h-5 shrink-0 block" />
+                    <span>
+                      {isCommitting
+                        ? 'Committing...'
+                        : hasTomorrowCommitment
+                        ? '✅ Honor Pledge Locked (+40 XP Tomorrow)'
+                        : 'Honor Pledge: Commit to Tomorrow'}
+                    </span>
+                    {!isCommitting && !hasTomorrowCommitment && (
+                      <span className="bg-amber-400/25 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full text-[10px] font-black">
+                        +40 XP
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -2056,7 +2068,14 @@ const App: React.FC = () => {
               )}
 
               {view === 'rewards' && teamStats && (
-                <TribeStatusCard teamStats={teamStats} />
+                <TribeStatusCard
+                  teamStats={teamStats}
+                  userProfile={userProfile}
+                  userState={currentUser ? allGamificationState?.[currentUser] : undefined}
+                  tribeMembers={tribeMembers}
+                  currentUser={currentUser}
+                  onStateUpdated={() => loadProfile(true)}
+                />
               )}
             </React.Suspense>
 

@@ -2,6 +2,7 @@ import { User, WorkoutLog, Badge, UserGamificationState, UserProfile, Theme, Wor
 import { getLogs, getGamificationState, saveGamificationState, getUserLogs, getFromCache, setInCache, addXPLog, addPointLog, getGiftTransactions, getTribeMembers } from './storage';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { compareISODates, getWeekKey } from './dateUtils';
+import { getMuscleGroups, MUSCLE_GROUPS } from './muscleMapping';
 
 export const BADGES_DB: Badge[] = [
   { id: 'first_step', title: 'First Step', description: 'Complete your first workout', icon: 'Footprints', rarity: 'common' },
@@ -834,6 +835,7 @@ export const getTeamStats = async (tribeId?: string) => {
     let weeklyCount = 0;
     let monthlyCount = 0;
     let yearlyCount = 0;
+    const userStats: Record<string, number> = {};
 
     for (let i = 0; i < allLogs.length; i++) {
       const l = allLogs[i];
@@ -842,6 +844,7 @@ export const getTeamStats = async (tribeId?: string) => {
       const logTime = Date.parse(l.date);
       if (logTime >= startOfWeekTime && (l.durationMinutes || 0) >= 30) {
         weeklyCount++;
+        userStats[l.user] = (userStats[l.user] || 0) + 1;
       }
       if (logTime >= startOfMonthTime) {
         monthlyCount++;
@@ -856,7 +859,8 @@ export const getTeamStats = async (tribeId?: string) => {
       monthlyCount,
       yearlyCount,
       teamStreak: 5,
-      userStats: {},
+      userStats,
+      weekKey: getWeekKey(now.toISOString()),
       weeklyTarget: 9,
       monthlyTarget: 36,
       yearlyTarget: 400
@@ -991,6 +995,7 @@ export const getTeamStats = async (tribeId?: string) => {
     yearlyCount,
     teamStreak,
     userStats,
+    weekKey: getWeekKey(now.toISOString()),
     weeklyTarget: 9,
     monthlyTarget: 36,
     yearlyTarget: 400
@@ -1881,4 +1886,353 @@ export const claimDailyQuestChest = async (
     pointsAwarded: tierRewards.pts,
     giftEmoji
   };
+};
+
+// ============================================================================
+// PHASE 2 GAMIFICATION MECHANICS
+// ============================================================================
+
+const createDefaultUserState = (): UserGamificationState => ({
+  badges: [],
+  inventory: [],
+  points: 0,
+  streak: 0,
+  lifetimeXp: 0,
+  activeTheme: 'default',
+  unlockedThemes: ['default'],
+  commitment: null
+});
+
+/**
+ * Feature 1: Co-Op "Tribe Raid" Weekly Gold Chest (+150 XP & +25 Pts once per week at 100%)
+ */
+export const claimWeeklyTribeChest = async (
+  userProfile: UserProfile,
+  weekKeyOverride?: string
+): Promise<{ success: boolean; message: string; xpAwarded: number; pointsAwarded: number; updatedState?: UserGamificationState }> => {
+  const teamStats = await getTeamStats(userProfile.tribeId);
+  const weekKey = weekKeyOverride || teamStats.weekKey || getWeekKey(new Date().toISOString());
+
+  if ((teamStats.weeklyCount || 0) < (teamStats.weeklyTarget || 1)) {
+    return { success: false, message: 'Reach 100% Weekly Bamboo with your Tribe to unlock this chest!', xpAwarded: 0, pointsAwarded: 0 };
+  }
+
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  if (userState.claimedWeeklyTribeChestWeekKey === weekKey) {
+    return { success: false, message: 'Weekly Tribe Tribute already claimed this week!', xpAwarded: 0, pointsAwarded: 0 };
+  }
+
+  const xpAwarded = 150;
+  const pointsAwarded = 25;
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpAwarded;
+  userState.points = (userState.points || 0) + pointsAwarded;
+  userState.claimedWeeklyTribeChestWeekKey = weekKey;
+
+  await addXPLog(userProfile.id, xpAwarded, 'quest', `tribe_chest_${weekKey}`);
+  await addPointLog(userProfile.id, pointsAwarded, 'earned', 'quest', `tribe_chest_${weekKey}`);
+  await saveGamificationState(userProfile, userState);
+
+  return {
+    success: true,
+    message: `Tribe Tribute Claimed: +${xpAwarded} XP & +${pointsAwarded} Pts!`,
+    xpAwarded,
+    pointsAwarded,
+    updatedState: userState
+  };
+};
+
+/**
+ * Feature 2: Early Bird & Night Owl Time-Window Chests (+30 XP & +10 Pts)
+ */
+export interface TimeWindowChestStatus {
+  type: 'early_bird' | 'night_owl';
+  label: string;
+  windowLabel: string;
+  unlocksAt: string;
+  expiresAt: string;
+  isUnlocked: boolean;
+}
+
+export const getTimeWindowChestStatus = (
+  userState?: UserGamificationState | null,
+  now: Date = new Date()
+): TimeWindowChestStatus | null => {
+  const chest = userState?.timeWindowChest;
+  if (!chest || chest.claimed) return null;
+
+  const nowMs = now.getTime();
+  const unlocksMs = Date.parse(chest.unlocksAt);
+  const expiresMs = Date.parse(chest.expiresAt);
+  if (Number.isNaN(unlocksMs) || Number.isNaN(expiresMs) || nowMs > expiresMs) {
+    return null;
+  }
+
+  const isNightOwl = chest.type === 'night_owl';
+  return {
+    type: chest.type,
+    label: isNightOwl ? 'Night Owl Chest' : 'Early Bird Chest',
+    windowLabel: isNightOwl ? '6:00 PM – 11:59 PM' : '5:00 AM – 11:00 AM',
+    unlocksAt: chest.unlocksAt,
+    expiresAt: chest.expiresAt,
+    isUnlocked: nowMs >= unlocksMs
+  };
+};
+
+export const unlockTimeWindowChest = async (
+  userProfile: UserProfile,
+  now: Date = new Date()
+): Promise<{ unlockedType: 'early_bird' | 'night_owl' | null; timeWindowChest: UserGamificationState['timeWindowChest'] }> => {
+  const hour = now.getHours();
+  let newChest: UserGamificationState['timeWindowChest'] = null;
+
+  if (hour >= 5 && hour < 11) {
+    // Morning workout (5–11 AM) unlocks evening Night Owl Chest (6 PM–11:59 PM today)
+    const unlocks = new Date(now);
+    unlocks.setHours(18, 0, 0, 0);
+    const expires = new Date(now);
+    expires.setHours(23, 59, 59, 999);
+    newChest = {
+      type: 'night_owl',
+      unlocksAt: unlocks.toISOString(),
+      expiresAt: expires.toISOString(),
+      claimed: false
+    };
+  } else if (hour >= 18 && hour <= 23) {
+    // Evening workout (6–11:59 PM) unlocks tomorrow morning's Early Bird Chest (5–11 AM)
+    const unlocks = new Date(now);
+    unlocks.setDate(unlocks.getDate() + 1);
+    unlocks.setHours(5, 0, 0, 0);
+    const expires = new Date(unlocks);
+    expires.setHours(11, 0, 0, 0);
+    newChest = {
+      type: 'early_bird',
+      unlocksAt: unlocks.toISOString(),
+      expiresAt: expires.toISOString(),
+      claimed: false
+    };
+  }
+
+  if (!newChest) {
+    return { unlockedType: null, timeWindowChest: null };
+  }
+
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  const existing = userState.timeWindowChest;
+  if (existing && !existing.claimed && existing.type === newChest.type && existing.unlocksAt === newChest.unlocksAt) {
+    return { unlockedType: newChest.type, timeWindowChest: existing };
+  }
+
+  userState.timeWindowChest = newChest;
+  await saveGamificationState(userProfile, userState);
+  return { unlockedType: newChest.type, timeWindowChest: newChest };
+};
+
+export const claimTimeWindowChest = async (
+  userProfile: UserProfile,
+  now: Date = new Date()
+): Promise<{ success: boolean; rewardText: string; xpAwarded: number; pointsAwarded: number; chestType?: 'early_bird' | 'night_owl' }> => {
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  const status = getTimeWindowChestStatus(userState, now);
+  if (!status) {
+    return { success: false, rewardText: 'No active bonus chest to claim.', xpAwarded: 0, pointsAwarded: 0 };
+  }
+  if (!status.isUnlocked) {
+    return { success: false, rewardText: `Unlocks during ${status.windowLabel}!`, xpAwarded: 0, pointsAwarded: 0 };
+  }
+
+  const xpAwarded = 30;
+  const pointsAwarded = 10;
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpAwarded;
+  userState.points = (userState.points || 0) + pointsAwarded;
+  userState.timeWindowChest = { ...userState.timeWindowChest!, claimed: true };
+
+  const sourceId = `window_chest_${status.type}_${now.toISOString().substring(0, 10)}`;
+  await addXPLog(userProfile.id, xpAwarded, 'quest', sourceId);
+  await addPointLog(userProfile.id, pointsAwarded, 'earned', 'quest', sourceId);
+  await saveGamificationState(userProfile, userState);
+
+  return {
+    success: true,
+    rewardText: `${status.label}: +${xpAwarded} XP & +${pointsAwarded} Pts`,
+    xpAwarded,
+    pointsAwarded,
+    chestType: status.type
+  };
+};
+
+/**
+ * Feature 3: Honor Pledge Fulfilled Bonus (+40 XP & +10 Pts when fulfilling a Tomorrow Commitment)
+ */
+export const awardHonorPledgeBonus = async (
+  userProfile: UserProfile,
+  logId?: string
+): Promise<{ xpAwarded: number; pointsAwarded: number; totalFulfilled: number }> => {
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  const xpAwarded = 40;
+  const pointsAwarded = 10;
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpAwarded;
+  userState.points = (userState.points || 0) + pointsAwarded;
+  userState.honorPledgesFulfilled = (userState.honorPledgesFulfilled || 0) + 1;
+
+  const sourceId = `honor_pledge_${logId || Date.now()}`;
+  await addXPLog(userProfile.id, xpAwarded, 'quest', sourceId);
+  await addPointLog(userProfile.id, pointsAwarded, 'earned', 'quest', sourceId);
+  await saveGamificationState(userProfile, userState);
+
+  return {
+    xpAwarded,
+    pointsAwarded,
+    totalFulfilled: userState.honorPledgesFulfilled
+  };
+};
+
+/**
+ * Feature 4: Weekly "6-Element Muscle Mastery" Seal (+100 XP & +20 Pts at >= 5/6 core muscle groups)
+ */
+export const CORE_MUSCLE_GROUPS = [
+  MUSCLE_GROUPS.CHEST,
+  MUSCLE_GROUPS.BACK,
+  MUSCLE_GROUPS.LEGS,
+  MUSCLE_GROUPS.SHOULDERS,
+  MUSCLE_GROUPS.ARMS,
+  MUSCLE_GROUPS.CORE
+] as const;
+
+export interface WeeklyMuscleMastery {
+  weekKey: string;
+  trainedGroups: string[];
+  missingGroups: string[];
+  count: number;
+  total: number;
+  isEligibleForBonus: boolean;
+}
+
+export const calculateWeeklyMuscleMastery = (
+  logs: WorkoutLog[] | null | undefined,
+  referenceDate: Date = new Date()
+): WeeklyMuscleMastery => {
+  const weekKey = getWeekKey(referenceDate.toISOString());
+  const trainedSet = new Set<string>();
+  const safeLogs = Array.isArray(logs) ? logs : [];
+
+  for (let i = 0; i < safeLogs.length; i++) {
+    const l = safeLogs[i];
+    if (!l || l.type === WorkoutType.COMMITMENT) continue;
+    if (getWeekKey(l.date) !== weekKey) continue;
+
+    const exercises = l.exercises || [];
+    for (let j = 0; j < exercises.length; j++) {
+      const ex = exercises[j];
+      if (!ex?.name) continue;
+      const hasCompletedSet = !ex.sets || ex.sets.length === 0 || ex.sets.some(s => s.completed);
+      if (!hasCompletedSet) continue;
+
+      const groups = getMuscleGroups(ex.name);
+      for (let k = 0; k < groups.length; k++) {
+        if ((CORE_MUSCLE_GROUPS as readonly string[]).includes(groups[k])) {
+          trainedSet.add(groups[k]);
+        }
+      }
+    }
+  }
+
+  const trainedGroups = CORE_MUSCLE_GROUPS.filter(g => trainedSet.has(g));
+  const missingGroups = CORE_MUSCLE_GROUPS.filter(g => !trainedSet.has(g));
+
+  return {
+    weekKey,
+    trainedGroups,
+    missingGroups,
+    count: trainedGroups.length,
+    total: CORE_MUSCLE_GROUPS.length,
+    isEligibleForBonus: trainedGroups.length >= 5
+  };
+};
+
+export const claimWeeklyMuscleMasteryBonusIfEligible = async (
+  userProfile: UserProfile,
+  logs: WorkoutLog[],
+  referenceDate: Date = new Date()
+): Promise<{ awarded: boolean; alreadyClaimed?: boolean; xpAwarded: number; pointsAwarded: number; mastery: WeeklyMuscleMastery }> => {
+  const mastery = calculateWeeklyMuscleMastery(logs, referenceDate);
+  if (!mastery.isEligibleForBonus) {
+    return { awarded: false, xpAwarded: 0, pointsAwarded: 0, mastery };
+  }
+
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  if (userState.claimedMuscleMasteryWeekKey === mastery.weekKey) {
+    return { awarded: false, alreadyClaimed: true, xpAwarded: 0, pointsAwarded: 0, mastery };
+  }
+
+  const xpAwarded = 100;
+  const pointsAwarded = 20;
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpAwarded;
+  userState.points = (userState.points || 0) + pointsAwarded;
+  userState.claimedMuscleMasteryWeekKey = mastery.weekKey;
+
+  await addXPLog(userProfile.id, xpAwarded, 'quest', `muscle_mastery_${mastery.weekKey}`);
+  await addPointLog(userProfile.id, pointsAwarded, 'earned', 'quest', `muscle_mastery_${mastery.weekKey}`);
+  await saveGamificationState(userProfile, userState);
+
+  return { awarded: true, xpAwarded, pointsAwarded, mastery };
+};
+
+/**
+ * Feature 5: Social Feed Micro-Rewards (+5 XP per support reaction/nudge, max 3/day)
+ */
+export const awardSocialSupportXP = async (
+  userProfile: UserProfile,
+  sourceId: string,
+  now: Date = new Date()
+): Promise<{ awarded: boolean; xpAwarded: number; remainingToday: number }> => {
+  const todayStr = now.toISOString().substring(0, 10);
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  const currentCount = userState.dailySupportXp?.date === todayStr ? userState.dailySupportXp.count : 0;
+  if (currentCount >= 3) {
+    return { awarded: false, xpAwarded: 0, remainingToday: 0 };
+  }
+
+  const xpAwarded = 5;
+  const nextCount = currentCount + 1;
+  userState.lifetimeXp = (userState.lifetimeXp || userState.points || 0) + xpAwarded;
+  userState.dailySupportXp = { date: todayStr, count: nextCount };
+
+  await addXPLog(userProfile.id, xpAwarded, 'quest', `social_support_${sourceId}_${todayStr}`);
+  await saveGamificationState(userProfile, userState);
+
+  return {
+    awarded: true,
+    xpAwarded,
+    remainingToday: Math.max(0, 3 - nextCount)
+  };
+};
+
+/**
+ * Feature 6: Level-Up Bonus (+15 Pts when crossing a 500 XP level boundary)
+ */
+export const awardLevelUpBonus = async (
+  userProfile: UserProfile,
+  newLevel: number
+): Promise<{ pointsAwarded: number }> => {
+  const allState = await getGamificationState(userProfile.tribeId);
+  const userState: UserGamificationState = allState[userProfile.displayName] || createDefaultUserState();
+
+  const pointsAwarded = 15;
+  userState.points = (userState.points || 0) + pointsAwarded;
+  await addPointLog(userProfile.id, pointsAwarded, 'earned', 'quest', `level_up_${newLevel}`);
+  await saveGamificationState(userProfile, userState);
+
+  return { pointsAwarded };
 };

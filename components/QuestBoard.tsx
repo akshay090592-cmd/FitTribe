@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Quest, UserProfile, UserGamificationState } from '../types';
-import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Lock, User as UserIcon, Users, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Sun, Clock, Lock, User as UserIcon, Users, Sparkles } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
-import { claimDailyQuestChest } from '../utils/gamification';
+import { claimDailyQuestChest, getTimeWindowChestStatus, claimTimeWindowChest } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
-import { JungleChestSVG, ChestTier, ChestState } from './JungleChestSVG';
+import { JungleChestSVG, JungleChestTier as ChestTier, JungleChestState as ChestState } from './JungleChestSVG';
+import { TimeWindowEmblemSVG } from './AnimatedIconsSVG';
 
 interface Props {
   quests: Quest[];
@@ -143,9 +144,30 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
  */
 export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false, userProfile, userState, onStateUpdated }) => {
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
+  const [claimingWindowChest, setClaimingWindowChest] = useState(false);
   const [chestToast, setChestToast] = useState<{ text: string; tier: ChestTier } | null>(null);
 
   if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
+
+  const timeWindowStatus = getTimeWindowChestStatus(userState);
+
+  const handleClaimTimeWindowChest = async () => {
+    if (!userProfile || claimingWindowChest || !timeWindowStatus?.isUnlocked) return;
+    setClaimingWindowChest(true);
+    const chestTier: ChestTier = timeWindowStatus.type === 'night_owl' ? 'silver' : 'bronze';
+    try {
+      const res = await claimTimeWindowChest(userProfile);
+      if (res.success) {
+        playChestOpenSound();
+        triggerHaptic([30, 50, 80]);
+        setChestToast({ text: res.rewardText, tier: chestTier });
+        setTimeout(() => setChestToast(null), 4000);
+        onStateUpdated?.();
+      }
+    } finally {
+      setClaimingWindowChest(false);
+    }
+  };
 
   // BOLT: Single-pass counting loops eliminate array allocations from .filter().length
   let completedCount = 0;
@@ -313,6 +335,61 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
             <QuestItem key={quest.id} quest={quest} onManualComplete={onManualComplete} theme="emerald" />
           ))}
         </div>
+
+        {/* Early Bird & Night Owl Time-Window Bonus Chest */}
+        {timeWindowStatus && (
+          <div className="mt-3.5 pt-3.5 border-t border-emerald-100/80 relative z-10">
+            <div
+              className={`flex items-center justify-between gap-3 p-3 rounded-2xl border transition-all ${
+                timeWindowStatus.isUnlocked
+                  ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-300 shadow-sm'
+                  : 'bg-indigo-50/70 border-indigo-200/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <JungleChestSVG
+                  tier={timeWindowStatus.type === 'night_owl' ? 'silver' : 'bronze'}
+                  state={claimingWindowChest ? 'opening' : timeWindowStatus.isUnlocked ? 'ready' : 'locked'}
+                  className="w-10 h-10 shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <TimeWindowEmblemSVG
+                      mode={timeWindowStatus.type === 'night_owl' ? 'night_owl' : 'early_bird'}
+                      className="w-5 h-5 shrink-0 block"
+                    />
+                    <span className="text-xs font-black text-slate-900 truncate">
+                      {timeWindowStatus.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 mt-0.5">
+                    <Clock size={10} className="shrink-0" />
+                    <span className="truncate">
+                      {timeWindowStatus.isUnlocked
+                        ? 'Ready to Claim! +30 XP & +10 Pts'
+                        : `Unlocks ${timeWindowStatus.windowLabel}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {timeWindowStatus.isUnlocked ? (
+                <button
+                  type="button"
+                  disabled={claimingWindowChest}
+                  onClick={handleClaimTimeWindowChest}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-105 text-white text-xs font-black px-3 py-2 rounded-xl shadow-xs shrink-0 active:scale-95 transition-all cursor-pointer"
+                >
+                  {claimingWindowChest ? 'Opening...' : 'Claim +30 XP'}
+                </button>
+              ) : (
+                <span className="text-[10px] font-extrabold text-indigo-700 bg-white/80 border border-indigo-200/80 px-2.5 py-1 rounded-xl shrink-0">
+                  Time-Locked
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

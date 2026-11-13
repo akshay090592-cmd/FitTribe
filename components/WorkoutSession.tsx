@@ -4,13 +4,27 @@ import { User, WorkoutPlan, ExerciseRecord, WorkoutLog, ExerciseSet, Badge, User
 import { ExerciseCard } from './ExerciseCard';
 import { Timer } from './Timer';
 import { Confetti } from './Confetti';
-import { saveLog, getUserLogs, saveWorkoutFeedback, getUserPlans, saveUserPlan } from '../utils/storage';
+import { saveLog, getUserLogs, saveWorkoutFeedback, getUserPlans, saveUserPlan, getGamificationState } from '../utils/storage';
 import { STARTER_PLANS } from '../constants';
 import { AICoachService } from '../services/aiCoach';
 import { FeedbackModal } from './FeedbackModal';
 import { WorkoutFeedback } from '../types';
 import { getLastLogForExercise, getLastLogForExerciseByType, parseDurationToSeconds } from '../utils/workoutUtils';
-import { checkAchievements, getStreakRisk, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT } from '../utils/gamification';
+import {
+  checkAchievements,
+  getStreakRisk,
+  XP_PER_WORKOUT,
+  XP_PER_HARD_WORKOUT,
+  calculateLevel,
+  getRankDetails,
+  awardHonorPledgeBonus,
+  unlockTimeWindowChest,
+  claimWeeklyMuscleMasteryBonusIfEligible,
+  awardLevelUpBonus,
+  calculateWeeklyMuscleMastery,
+  WeeklyMuscleMastery,
+  RankDetails,
+} from '../utils/gamification';
 import { getProgressionSuggestion } from '../utils/progression';
 import { calculateCalories } from '../utils/calorieUtils';
 import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera, Plus, RefreshCw, Search, Volume2, VolumeX } from 'lucide-react';
@@ -26,7 +40,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
 import { ConfirmPopup } from './ConfirmPopup';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
-import { StreakFlameSVG, AnimatedTrophyMedalSVG } from './AnimatedIconsSVG';
+import { StreakFlameSVG, AnimatedTrophyMedalSVG, RankCrestSVG, HonorPledgeSealSVG, TimeWindowEmblemSVG, MuscleMasterySealSVG } from './AnimatedIconsSVG';
 
 interface Props {
   user: User;
@@ -294,6 +308,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
   const [earnedXp, setEarnedXp] = useState(0);
+  const [honorPledgeXp, setHonorPledgeXp] = useState(0);
+  const [unlockedWindowChest, setUnlockedWindowChest] = useState<'early_bird' | 'night_owl' | null>(null);
+  const [weeklyMasterySummary, setWeeklyMasterySummary] = useState<{ mastery: WeeklyMuscleMastery; bonusAwarded: boolean } | null>(null);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ oldLevel: number; newLevel: number; rank: RankDetails; pointsAwarded: number } | null>(null);
   const [modifiedNextPlan, setModifiedNextPlan] = useState<WorkoutPlan | null>(null);
   const [revertedPlan, setRevertedPlan] = useState(false);
 
@@ -904,13 +922,50 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // Critical: Only clear session if save was successful
       clearAllWorkoutSessions();
 
+      const preState = await getGamificationState(userProfile.tribeId);
+      const oldXp = preState[user]?.lifetimeXp ?? preState[user]?.points ?? 0;
+      const oldLevel = calculateLevel(oldXp);
+
       const newBadges = await checkAchievements(currentLog, userProfile);
 
       // Update Quests
       const questRes = await updateQuestProgress(user, userProfile, 'workout', 1);
 
+      // Phase 2: Honor Pledge, Time-Window Chest, Weekly 6-Element Mastery, Level-Up Detection
+      const pledgeRes = commitLog
+        ? await awardHonorPledgeBonus(userProfile, String(finalLogId))
+        : { xpAwarded: 0, pointsAwarded: 0 };
+      const windowRes = await unlockTimeWindowChest(userProfile);
+      const masteryLogs: WorkoutLog[] = [
+        { ...currentLog, id: String(finalLogId || currentLog.id) },
+        ...allLogs.filter(l => l.id !== finalLogId),
+      ];
+      const masteryRes = await claimWeeklyMuscleMasteryBonusIfEligible(userProfile, masteryLogs);
+      const masteryProgress = calculateWeeklyMuscleMastery(masteryLogs);
+
+      const postState = await getGamificationState(userProfile.tribeId);
+      const newXp = postState[user]?.lifetimeXp ?? postState[user]?.points ?? 0;
+      const newLevel = calculateLevel(newXp);
+      if (newLevel > oldLevel) {
+        const lvlRes = await awardLevelUpBonus(userProfile, newLevel);
+        setLevelUpInfo({
+          oldLevel,
+          newLevel,
+          rank: getRankDetails(newLevel),
+          pointsAwarded: lvlRes.pointsAwarded,
+        });
+      }
+
       setEarnedBadges(newBadges);
-      const totalEarnedXp = (currentLog.type === 'B' ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT) + questRes.earnedXp;
+      setHonorPledgeXp(pledgeRes.xpAwarded);
+      setUnlockedWindowChest(windowRes.unlockedType);
+      setWeeklyMasterySummary({ mastery: masteryProgress, bonusAwarded: masteryRes.awarded });
+
+      const totalEarnedXp =
+        (currentLog.type === 'B' ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT) +
+        questRes.earnedXp +
+        pledgeRes.xpAwarded +
+        masteryRes.xpAwarded;
       setEarnedXp(totalEarnedXp);
       setShowCelebration(true);
       playLevelUpSound();
@@ -1732,7 +1787,63 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                   </div>
                 </div>
               )}
+
+              {(honorPledgeXp > 0 || unlockedWindowChest || weeklyMasterySummary) && (
+                <div className="relative z-10 mt-3 pt-3 border-t border-white/15 flex flex-wrap gap-1.5">
+                  {honorPledgeXp > 0 && (
+                    <span className="inline-flex items-center gap-1.5 bg-lime-400/20 border border-lime-300/40 text-lime-200 text-[11px] font-bold px-2.5 py-1 rounded-xl">
+                      <HonorPledgeSealSVG className="w-4 h-4 shrink-0 block" />
+                      <span>Honor Pledge Fulfilled! +{honorPledgeXp} XP</span>
+                    </span>
+                  )}
+                  {unlockedWindowChest && (
+                    <span className="inline-flex items-center gap-1.5 bg-indigo-400/25 border border-indigo-300/40 text-indigo-100 text-[11px] font-bold px-2.5 py-1 rounded-xl">
+                      <TimeWindowEmblemSVG mode={unlockedWindowChest === 'night_owl' ? 'night_owl' : 'early_bird'} className="w-4 h-4 shrink-0 block" />
+                      <span>{unlockedWindowChest === 'night_owl' ? 'Night Owl Chest Unlocked!' : 'Early Bird Chest Unlocked!'}</span>
+                    </span>
+                  )}
+                  {weeklyMasterySummary && (
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-xl border ${
+                      weeklyMasterySummary.bonusAwarded
+                        ? 'bg-amber-400/25 border-amber-300/40 text-amber-100'
+                        : 'bg-white/10 border-white/15 text-emerald-100'
+                    }`}>
+                      <MuscleMasterySealSVG count={weeklyMasterySummary.mastery.count} className="w-4 h-4 shrink-0 block" />
+                      <span>
+                        {weeklyMasterySummary.mastery.count}/6 Weekly Muscles
+                        {weeklyMasterySummary.bonusAwarded ? ' • +100 XP Mastery Seal!' : ''}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+
+            {levelUpInfo && (
+              <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/90 rounded-[28px] border-2 border-amber-300 p-4 shadow-md relative overflow-hidden animate-squash-bounce">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-14 h-14 shrink-0">
+                      <RankCrestSVG tierIndex={levelUpInfo.rank.tierIndex} icon={levelUpInfo.rank.icon} className="w-full h-full block" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1">
+                        <Sparkles size={10} /> Level Up!
+                      </div>
+                      <h3 className="text-lg font-bold text-amber-950 font-['Fredoka'] leading-tight">
+                        Lv.{levelUpInfo.oldLevel} → Lv.{levelUpInfo.newLevel} • {levelUpInfo.rank.title}
+                      </h3>
+                      <p className="text-xs font-bold text-amber-800/90">
+                        +{levelUpInfo.pointsAwarded} Bonus Tribe Points awarded!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-14 h-14 shrink-0 pointer-events-none hidden sm:block">
+                    <PandaSenseiSVG compact framing="bust" context="coach" mode="victory" className="w-full h-full block" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 2. Unified Sensei Panda's Report Card (Matches Home & Loot white card aesthetic) */}
             <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs space-y-3.5">

@@ -187,7 +187,13 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
       {/* Team Stats Card - Mobile Only (Desktop uses sidebar) */}
       <div className="md:hidden">
-        <TribeStatusCard teamStats={teamStats} />
+        <TribeStatusCard
+          teamStats={teamStats}
+          userProfile={profile}
+          userState={gameState?.[currentUser]}
+          currentUser={currentUser}
+          onStateUpdated={() => loadData(true)}
+        />
       </div>
 
       {/* My Stats Rows */}

@@ -142,7 +142,11 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                                     <div className="w-full h-full rounded-full overflow-hidden border border-slate-100">
                                         <img src={getAvatarPath(avatarMap[user])} alt={user} className="w-full h-full object-cover" onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40'} />
                                     </div>
-                                    {idx === 0 && <div className="absolute -top-2 -right-1 text-base animate-bounce">👑</div>}
+                                    {idx === 0 && (
+                                        <div className="absolute -top-2.5 -right-1.5 drop-shadow-sm">
+                                            <LeaderboardCrownSVG size={20} className="w-5 h-5 block" />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="min-w-0 flex-1 pr-2">

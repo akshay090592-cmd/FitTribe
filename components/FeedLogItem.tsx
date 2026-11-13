@@ -6,6 +6,8 @@ import { ImageModal } from './ImageModal';
 import { getAvatarPath } from '../utils/avatar';
 import { formatTimeAgo } from '../utils/dateUtils';
 import { RankBadge } from './RankBadge';
+import { awardSocialSupportXP } from '../utils/gamification';
+import { RivalrySwordsSVG } from './AnimatedIconsSVG';
 
 interface Props {
     log: WorkoutLog;
@@ -36,6 +38,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     } = props;
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [burst, setBurst] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
+    const [supportXpToast, setSupportXpToast] = useState(false);
     const burstIdRef = useRef(0);
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
@@ -50,6 +53,17 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
         setBurst(prev => [...prev, { id, x, y, emoji }]);
         setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 950);
         onReaction(log.id);
+
+        if (!hasReacted && log.user !== currentUser) {
+            awardSocialSupportXP(profile, log.id)
+                .then(res => {
+                    if (res.awarded) {
+                        setSupportXpToast(true);
+                        setTimeout(() => setSupportXpToast(false), 1800);
+                    }
+                })
+                .catch(err => console.error('Failed to award support XP:', err));
+        }
     };
 
     // BOLT: Memoize total volume calculation to prevent redundant $O(E*S)$ reduction on every render
@@ -153,8 +167,17 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                         ) : log.calories ? (
                             <span className="flex items-center bg-white/80 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm border border-emerald-100/50"><Flame size={10} className="mr-1 text-orange-500" /> {log.calories} kcal</span>
                         ) : null}
-                        {log.type !== 'Custom' && (
-                            <span className="flex items-center bg-white/80 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm border border-emerald-100/50"><TrendingUp size={10} className="mr-1 text-emerald-600" /> {Math.round(totalVolume)}kg</span>
+                        {log.type !== 'Custom' && log.type !== 'COMMITMENT' && log.type?.toUpperCase() !== 'COMMITMENT' && totalVolume > 0 && (
+                            <span className="flex items-center gap-1 bg-white/90 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm border border-emerald-200/70 text-emerald-800">
+                                {log.user !== currentUser ? (
+                                    <>
+                                        <RivalrySwordsSVG className="w-3.5 h-3.5 shrink-0 block" />
+                                        <span>Beat {Math.round(totalVolume).toLocaleString()} kg</span>
+                                    </>
+                                ) : (
+                                    `💪 ${Math.round(totalVolume).toLocaleString()} kg`
+                                )}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -222,7 +245,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 relative">
                 <button
                     onClick={handleBoost}
                     className={`flex items-center px-4 py-2.5 rounded-xl active:scale-95 spring-transition tactile-press ${
@@ -235,6 +258,11 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     <Flame size={15} className={`mr-1.5 ${hasReacted ? 'fill-current text-orange-500' : ''}`} />
                     <span className="font-bold text-xs">{reactionCount > 0 ? reactionCount : 'Boost'}</span>
                 </button>
+                {supportXpToast && (
+                    <span className="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[11px] font-black animate-bounce shadow-xs">
+                        +5 XP Support!
+                    </span>
+                )}
                 <button
                     onClick={() => onToggleComments(log.id)}
                     className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center spring-transition tactile-press ${isCommentsOpen ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'text-slate-500 bg-slate-50/90 hover:bg-emerald-50/60 hover:text-emerald-700 border border-slate-200/70'}`}

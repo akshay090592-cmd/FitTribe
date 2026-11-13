@@ -1,1 +1,6 @@
+/about/ /about 301!
+/contact/ /contact 301!
+/privacy/ /privacy 301!
+/terms/ /terms 301!
+/blog/:slug/ /blog/:slug 301!
 /* /index.html 200

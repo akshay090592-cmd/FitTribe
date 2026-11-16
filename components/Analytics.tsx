@@ -5,12 +5,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Filter, Trophy, Dumbbell, Activity, Sparkles } from 'lucide-react';
 import { calculateAge, calculateBMI } from '../utils/profileUtils';
 import { getMuscleGroups, MUSCLE_GROUPS } from '../utils/muscleMapping';
-import { calculateWeeklyMuscleMastery, CORE_MUSCLE_GROUPS } from '../utils/gamification';
 import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache } from '../utils/dateUtils';
 import { AICoachService } from '../services/aiCoach';
 
 import { Calendar } from './Calendar';
-import { AnimatedTrophyMedalSVG, MuscleMasterySealSVG, PRBellGongSVG, EmptyStateHammockSenseiSVG } from './AnimatedIconsSVG';
+import { AnimatedTrophyMedalSVG, PRBellGongSVG, EmptyStateHammockSenseiSVG } from './AnimatedIconsSVG';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 // BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
@@ -47,7 +46,6 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   const [aiAdvice, setAiAdvice] = React.useState<string | null>(null);
   const [loadingAi, setLoadingAi] = React.useState(false);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
-  const [sealBurst, setSealBurst] = useState(false);
   const [bellRinging, setBellRinging] = useState(false);
   const [hammockAwake, setHammockAwake] = useState(false);
   const [versusUser, setVersusUser] = useState<User | null>(null);
@@ -222,11 +220,6 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   // This prevents unnecessary re-calculations of the bar chart data when the user switches exercise filters.
   // BOLT: Set isFrequencyOnly to true to skip expensive calculations.
   const freqChartData = useMemo(() => getChartData(freqViewMode, freqVersusUser, freqVersusUser ? rivalLogsCache[freqVersusUser] || [] : [], undefined, true), [logs, rivalLogsCache, freqViewMode, freqVersusUser]);
-
-  const weeklyMastery = useMemo(
-    () => calculateWeeklyMuscleMastery(logs as WorkoutLog[]),
-    [logs]
-  );
 
   const muscleData = useMemo(() => {
     if (!logs.length) return [];
@@ -466,65 +459,6 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
               </span>
             </button>
           )}
-        </div>
-
-        {/* Weekly 6-Element Muscle Mastery Seal (Duolingo-Scale 2-Column Hero Stage) */}
-        <div className={`mt-4 pt-4 border-t border-emerald-100/80 relative z-10`}>
-          <div className="flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/50 p-3.5 rounded-2xl border border-emerald-100/90">
-            <button
-              type="button"
-              onClick={() => {
-                setSealBurst(true);
-                setTimeout(() => setSealBurst(false), 2200);
-              }}
-              title="Tap to pulse your 6-Element Muscle Mastery Seal!"
-              className="shrink-0 p-1.5 rounded-2xl bg-white/90 border border-emerald-200/70 shadow-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-            >
-              <MuscleMasterySealSVG count={weeklyMastery.count} burst={sealBurst} className="w-22 h-22 shrink-0 block" />
-            </button>
-            <div className="flex-1 w-full min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                <div>
-                  <span className="text-xs font-black uppercase tracking-wider text-emerald-950 block">
-                    Weekly Muscle Mastery Seal
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500">
-                    {sealBurst
-                      ? weeklyMastery.count >= 5
-                        ? '✨ Mastery Seal Blazing! +100 XP Earned!'
-                        : `🎯 Train ${Math.max(0, 5 - weeklyMastery.count)} more muscle group(s) this week for +100 XP!`
-                      : 'Tap seal to inspect elemental muscle conduits'}
-                  </span>
-                </div>
-                <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
-                  weeklyMastery.isEligibleForBonus
-                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                    : 'bg-emerald-100/80 text-emerald-800 border border-emerald-200'
-                }`}>
-                  {weeklyMastery.count}/6 Groups {weeklyMastery.isEligibleForBonus ? '• +100 XP Unlocked!' : '• 5/6 for +100 XP'}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                {CORE_MUSCLE_GROUPS.map((group) => {
-                  const isLit = weeklyMastery.trainedGroups.includes(group);
-                  return (
-                    <div
-                      key={group}
-                      className={`text-center py-1.5 px-1 rounded-xl text-[10px] font-bold border transition-all ${
-                        isLit
-                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
-                          : sealBurst
-                          ? 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
-                          : 'bg-slate-50 text-slate-400 border-slate-200/80'
-                      }`}
-                    >
-                      {isLit ? '✓ ' : ''}{group}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

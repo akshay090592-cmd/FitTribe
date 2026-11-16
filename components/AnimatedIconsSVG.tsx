@@ -1419,8 +1419,9 @@ export const HabitVesselSVG: React.FC<{
 });
 
 /**
- * NEW #6: Panoramic Co-Op Tribe Campfire Scene SVG (100% x 92px) for TribePulse.tsx.
- * Scales flame height, sparks, and jungle glow based on activeCount / totalCount.
+ * NEW #6: Theme-Agnostic Co-Op Tribe Campfire SVG for TribePulse.tsx.
+ * Transparent background with warm radial hearth glow, stone ring, crossed logs,
+ * dynamic flickering flame scaled by activeCount / totalCount, and rising embers.
  */
 export const TribeCampfireSceneSVG: React.FC<{
   activeCount: number;
@@ -1431,103 +1432,76 @@ export const TribeCampfireSceneSVG: React.FC<{
   const rawId = useId().replace(/[^a-zA-Z0-9]/g, '');
   const uid = `tcf_${rawId}`;
   const ratio = totalCount > 0 ? Math.min(1, activeCount / totalCount) : 0;
-  const flameScale = stoked ? 1.24 : 0.68 + ratio * 0.5;
+  const flameScale = stoked ? 1.22 : 0.72 + ratio * 0.45;
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 400 92"
+      viewBox="0 0 120 120"
       width="100%"
-      height="88"
+      height="100%"
       role="img"
       aria-label="Tribe Pulse Campfire Scene"
-      className={`select-none overflow-hidden rounded-2xl ${className}`}
+      className={`select-none overflow-visible ${className}`}
       data-testid="tribe-campfire-scene-svg"
     >
       <defs>
-        <linearGradient id={`${uid}_bg`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#022c22" />
-          <stop offset="55%" stopColor="#064e3b" />
-          <stop offset="100%" stopColor="#022c22" />
-        </linearGradient>
-        <radialGradient id={`${uid}_glow`} cx="50%" cy="78%" r="52%">
-          <stop offset="0%" stopColor={activeCount > 0 ? '#f59e0b' : '#34d399'} stopOpacity={activeCount > 0 ? '0.62' : '0.22'} />
-          <stop offset="55%" stopColor={activeCount > 0 ? '#ea580c' : '#10b981'} stopOpacity={activeCount > 0 ? '0.22' : '0.08'} />
-          <stop offset="100%" stopColor="#022c22" stopOpacity="0" />
+        <radialGradient id={`${uid}_glow`} cx="50%" cy="68%" r="50%">
+          <stop offset="0%" stopColor={activeCount > 0 ? '#f59e0b' : '#94a3b8'} stopOpacity={activeCount > 0 ? '0.55' : '0.2'} />
+          <stop offset="55%" stopColor={activeCount > 0 ? '#ea580c' : '#64748b'} stopOpacity={activeCount > 0 ? '0.2' : '0.06'} />
+          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
         </radialGradient>
       </defs>
       <style>{`
         .${uid}_flame {
-          transform-origin: 200px 76px;
-          animation: ${uid}_flicker ${stoked ? '0.85s' : '3.6s'} ease-in-out infinite;
+          transform-origin: 60px 92px;
+          animation: ${uid}_flicker ${stoked ? '0.85s' : '3.4s'} ease-in-out infinite;
         }
         @keyframes ${uid}_flicker {
           0%, 100% { transform: scale(${flameScale}, ${flameScale}) rotate(0deg); }
           50% { transform: scale(${(flameScale * 1.07).toFixed(2)}, ${(flameScale * 1.1).toFixed(2)}) rotate(-2deg); }
         }
         .${uid}_ember {
-          animation: ${uid}_rise ${stoked ? '1.4s' : '3.8s'} ease-out infinite;
+          animation: ${uid}_rise ${stoked ? '1.4s' : '3.6s'} ease-out infinite;
         }
-        .${uid}_ember.e2 { animation-delay: 1.2s; }
-        .${uid}_ember.e3 { animation-delay: 2.3s; }
+        .${uid}_ember.e2 { animation-delay: 1.1s; }
+        .${uid}_ember.e3 { animation-delay: 2.2s; }
         @keyframes ${uid}_rise {
           0% { opacity: 0; transform: translateY(4px) scale(0.6); }
-          40% { opacity: 0.95; transform: translateY(-10px) scale(1.1); }
-          100% { opacity: 0; transform: translateY(-28px) scale(0.4); }
+          40% { opacity: 0.95; transform: translateY(-12px) scale(1.1); }
+          100% { opacity: 0; transform: translateY(-30px) scale(0.4); }
         }
         @media (prefers-reduced-motion: reduce) {
           .${uid}_flame, .${uid}_ember { animation: none !important; }
         }
       `}</style>
-      <rect width="400" height="92" fill={`url(#${uid}_bg)`} />
-      <rect width="400" height="92" fill={`url(#${uid}_glow)`} />
-      {/* Crescent Moon & Distant Jungle Ridges */}
-      <path d="M324 14 A11 11 0 1 0 334 28 A8.5 8.5 0 1 1 324 14 Z" fill="#fef08a" opacity="0.75" />
-      <path d="M0 68 Q75 46 165 64 T330 56 T400 66 L400 92 L0 92 Z" fill="#065f46" opacity="0.55" />
-      <path d="M0 76 Q110 62 200 74 T400 72 L400 92 L0 92 Z" fill="#047857" opacity="0.55" />
-      {/* Left & Right Segmented Bamboo Groves with Leaves */}
-      <g stroke="#022c22" strokeWidth="1.5">
-        <rect x="26" y="0" width="8" height="92" fill="#059669" />
-        <line x1="26" y1="28" x2="34" y2="28" stroke="#022c22" strokeWidth="2" />
-        <line x1="26" y1="58" x2="34" y2="58" stroke="#022c22" strokeWidth="2" />
-        <path d="M34 32 Q50 24 54 32 Q44 38 34 34 Z" fill="#10b981" />
-        <rect x="44" y="10" width="6" height="82" fill="#047857" />
-        <rect x="364" y="0" width="8" height="92" fill="#059669" />
-        <line x1="364" y1="30" x2="372" y2="30" stroke="#022c22" strokeWidth="2" />
-        <line x1="364" y1="60" x2="372" y2="60" stroke="#022c22" strokeWidth="2" />
-        <path d="M364 36 Q348 28 344 36 Q354 42 364 38 Z" fill="#10b981" />
-        <rect x="348" y="12" width="6" height="80" fill="#047857" />
+      {/* Soft Warm Radial Hearth Glow (No Opaque Background) */}
+      <circle cx="60" cy="76" r="56" fill={`url(#${uid}_glow)`} />
+      {/* Stone Ring & Crossed Hearth Logs */}
+      <ellipse cx="60" cy="98" rx="44" ry="8" fill="#475569" opacity="0.22" />
+      <g fill="#64748b" stroke="#334155" strokeWidth="2">
+        <ellipse cx="24" cy="96" rx="7.5" ry="4.5" />
+        <ellipse cx="39" cy="100" rx="8.5" ry="4.5" />
+        <ellipse cx="60" cy="101" rx="9.5" ry="4.5" />
+        <ellipse cx="81" cy="100" rx="8.5" ry="4.5" />
+        <ellipse cx="96" cy="96" rx="7.5" ry="4.5" />
       </g>
-      {/* Fireflies */}
-      <circle cx="92" cy="34" r="2.2" fill="#fde047" opacity="0.85" />
-      <circle cx="136" cy="48" r="1.8" fill="#6ee7b7" opacity="0.8" />
-      <circle cx="268" cy="42" r="2" fill="#fde047" opacity="0.85" />
-      <circle cx="304" cy="32" r="2.2" fill="#6ee7b7" opacity="0.8" />
-      {/* Stone Ring & Crossed Bamboo Logs */}
-      <ellipse cx="200" cy="82" rx="48" ry="8" fill="#022c22" opacity="0.8" />
-      <g fill="#475569" stroke="#1e293b" strokeWidth="2">
-        <ellipse cx="160" cy="80" rx="8" ry="4.5" />
-        <ellipse cx="176" cy="84" rx="9" ry="4.5" />
-        <ellipse cx="200" cy="85" rx="10" ry="4.5" />
-        <ellipse cx="224" cy="84" rx="9" ry="4.5" />
-        <ellipse cx="240" cy="80" rx="8" ry="4.5" />
-      </g>
-      <rect x="166" y="70" width="68" height="10" rx="5" transform="rotate(-11 200 75)" fill="#92400e" stroke="#23272e" strokeWidth="2.5" />
-      <rect x="166" y="70" width="68" height="10" rx="5" transform="rotate(11 200 75)" fill="#b45309" stroke="#23272e" strokeWidth="2.5" />
+      <rect x="28" y="86" width="64" height="10" rx="5" transform="rotate(-12 60 91)" fill="#92400e" stroke="#23272e" strokeWidth="2.5" />
+      <rect x="28" y="86" width="64" height="10" rx="5" transform="rotate(12 60 91)" fill="#b45309" stroke="#23272e" strokeWidth="2.5" />
       {/* Dynamic Campfire Flame */}
       <g className={`${uid}_flame`}>
         <path
-          d="M200 14 C200 14 230 38 228 62 C226 75 214 80 200 80 C186 80 174 75 172 62 C170 38 200 14 200 14 Z"
+          d="M60 22 C60 22 92 48 89 74 C87 88 75 94 60 94 C45 94 33 88 31 74 C28 48 60 22 60 22 Z"
           fill={activeCount === 0 ? '#64748b' : '#ea580c'}
           stroke="#23272e"
           strokeWidth="2.5"
         />
         <path
-          d="M200 28 C200 28 220 46 218 64 C216 73 209 77 200 77 C191 77 184 73 182 64 C180 46 200 28 200 28 Z"
+          d="M60 38 C60 38 82 57 79 76 C77 86 70 91 60 91 C50 91 43 86 41 76 C38 57 60 38 60 38 Z"
           fill={activeCount === 0 ? '#94a3b8' : '#facc15'}
         />
         <path
-          d="M200 46 C200 46 211 57 210 68 C209 73 204 76 200 76 C196 76 191 73 190 68 C189 57 200 46 200 46 Z"
+          d="M60 56 C60 56 72 68 71 80 C70 86 65 89 60 89 C55 89 50 86 49 80 C48 68 60 56 60 56 Z"
           fill="#ffffff"
           opacity="0.92"
         />
@@ -1535,9 +1509,9 @@ export const TribeCampfireSceneSVG: React.FC<{
       {/* Rising Ember Sparks */}
       {activeCount > 0 && (
         <g>
-          <circle className={`${uid}_ember e1`} cx="186" cy="42" r="2.8" fill="#fde047" />
-          <circle className={`${uid}_ember e2`} cx="214" cy="38" r="2.4" fill="#fb923c" />
-          <circle className={`${uid}_ember e3`} cx="200" cy="30" r="2.2" fill="#fef08a" />
+          <circle className={`${uid}_ember e1`} cx="45" cy="52" r="3" fill="#fde047" />
+          <circle className={`${uid}_ember e2`} cx="75" cy="48" r="2.6" fill="#fb923c" />
+          <circle className={`${uid}_ember e3`} cx="60" cy="38" r="2.4" fill="#fef08a" />
         </g>
       )}
     </svg>

@@ -40,7 +40,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
 import { ConfirmPopup } from './ConfirmPopup';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
-import { StreakFlameSVG, AnimatedTrophyMedalSVG, RankCrestSVG, HonorPledgeSealSVG, TimeWindowEmblemSVG, MuscleMasterySealSVG, PRBellGongSVG } from './AnimatedIconsSVG';
+import { StreakFlameSVG, AnimatedTrophyMedalSVG, RankCrestSVG, HonorPledgeSealSVG, TimeWindowEmblemSVG, PRBellGongSVG } from './AnimatedIconsSVG';
 
 interface Props {
   user: User;
@@ -1793,7 +1793,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </div>
               )}
 
-              {(honorPledgeXp > 0 || unlockedWindowChest || weeklyMasterySummary || totalSessionVolume > 0) && (
+              {(honorPledgeXp > 0 || unlockedWindowChest || totalSessionVolume > 0) && (
                 <div className="relative z-10 mt-3.5 pt-3.5 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {honorPledgeXp > 0 && (
                     <div className="flex items-center gap-2.5 bg-lime-400/20 border border-lime-300/40 text-lime-100 text-xs font-bold p-2.5 rounded-2xl">
@@ -1805,19 +1805,6 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                     <div className="flex items-center gap-2.5 bg-indigo-400/25 border border-indigo-300/40 text-indigo-100 text-xs font-bold p-2.5 rounded-2xl">
                       <TimeWindowEmblemSVG mode={unlockedWindowChest === 'night_owl' ? 'night_owl' : 'early_bird'} className="w-13 h-13 shrink-0 block" />
                       <span>{unlockedWindowChest === 'night_owl' ? 'Night Owl Chest Unlocked!' : 'Early Bird Chest Unlocked!'}</span>
-                    </div>
-                  )}
-                  {weeklyMasterySummary && (
-                    <div className={`flex items-center gap-2.5 text-xs font-bold p-2.5 rounded-2xl border ${
-                      weeklyMasterySummary.bonusAwarded
-                        ? 'bg-amber-400/25 border-amber-300/40 text-amber-100'
-                        : 'bg-white/10 border-white/15 text-emerald-100'
-                    }`}>
-                      <MuscleMasterySealSVG count={weeklyMasterySummary.mastery.count} className="w-13 h-13 shrink-0 block" />
-                      <span>
-                        {weeklyMasterySummary.mastery.count}/6 Weekly Muscles
-                        {weeklyMasterySummary.bonusAwarded ? ' • +100 XP Mastery Seal!' : ''}
-                      </span>
                     </div>
                   )}
                   {totalSessionVolume > 0 && (

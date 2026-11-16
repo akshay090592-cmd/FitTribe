@@ -117,27 +117,36 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
     const activeTodayCount = members.filter(u => statuses[u] === 'done' || statuses[u] === 'committing').length;
 
     return (
-        <div className="mx-3.5 sm:mx-4 mt-3.5 bg-white/85 backdrop-blur-md rounded-[24px] p-4 shadow-sm border border-emerald-100/80">
+        <div className="relative overflow-hidden mx-3.5 sm:mx-4 mt-3.5 bg-white/85 backdrop-blur-md rounded-[24px] p-4 shadow-sm border border-emerald-100/80">
+            {/* Soft top-edge wash that fades smoothly into the card */}
+            <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-emerald-50/55 to-transparent pointer-events-none" />
+
+            {/* Semi-transparent background campfire in bottom-right corner */}
             <div
-                onClick={handleStokeCampfire}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStokeCampfire(); }}
-                title="Tap to stoke the Tribe Campfire!"
-                className="relative mb-3 rounded-2xl overflow-hidden cursor-pointer group border border-emerald-800/30 shadow-inner"
+                className={`absolute -bottom-3 -right-1 w-22 h-22 pointer-events-none transition-opacity duration-300 ${
+                    stoked ? 'opacity-50' : 'opacity-25'
+                }`}
             >
                 <TribeCampfireSceneSVG activeCount={activeTodayCount} totalCount={members.length} stoked={stoked} />
-                <div className="absolute inset-x-3 top-2.5 flex items-center justify-between pointer-events-none">
-                    <div className="flex items-center gap-2 bg-black/35 backdrop-blur-xs px-2.5 py-1 rounded-full border border-white/15">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-[11px] font-black text-white uppercase tracking-widest">Tribe Pulse</span>
-                    </div>
-                    <span className="text-[10px] font-black text-amber-200 bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-full border border-amber-300/30">
-                        {stoked ? '🔥 Campfire Stoked!' : `${activeTodayCount}/${members.length} Active Today`}
-                    </span>
-                </div>
             </div>
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pt-2.5 pb-1.5 px-1.5 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
+
+            {/* Compact Header Row */}
+            <div className="relative z-10 flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] font-black text-emerald-900 uppercase tracking-widest">Tribe Pulse</span>
+                </div>
+                <button
+                    type="button"
+                    onClick={handleStokeCampfire}
+                    title="Tap to stoke the Tribe Campfire!"
+                    className="text-[10px] font-black text-emerald-800 bg-emerald-50/90 hover:bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200/80 transition-colors cursor-pointer active:scale-95"
+                >
+                    {stoked ? '🔥 Campfire Stoked!' : `${activeTodayCount}/${members.length} Active Today`}
+                </button>
+            </div>
+
+            <div className="relative z-10 flex items-center gap-3 overflow-x-auto no-scrollbar pt-2 pb-1 px-1.5 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
                 {members.map(user => (
                     <button
                         key={user}

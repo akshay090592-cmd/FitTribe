@@ -10,7 +10,8 @@ import { monthDayFormatter, monthYearFormatter, compareISODates, formatWithCache
 import { AICoachService } from '../services/aiCoach';
 
 import { Calendar } from './Calendar';
-import { AnimatedTrophyMedalSVG, MuscleMasterySealSVG } from './AnimatedIconsSVG';
+import { AnimatedTrophyMedalSVG, MuscleMasterySealSVG, PRBellGongSVG, EmptyStateHammockSenseiSVG } from './AnimatedIconsSVG';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 
 // BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
 // redundant Date object instantiations and expensive formatting calls on hot rendering paths.
@@ -46,6 +47,9 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
   const [aiAdvice, setAiAdvice] = React.useState<string | null>(null);
   const [loadingAi, setLoadingAi] = React.useState(false);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
+  const [sealBurst, setSealBurst] = useState(false);
+  const [bellRinging, setBellRinging] = useState(false);
+  const [hammockAwake, setHammockAwake] = useState(false);
   const [versusUser, setVersusUser] = useState<User | null>(null);
   const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
   const [freqViewMode, setFreqViewMode] = useState<'weekly' | 'monthly'>('weekly'); // New state for Frequency
@@ -353,9 +357,14 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
       {/* Sensei's Jungle Insights Card */}
       <div className="glass-panel p-4 sm:p-5 rounded-[28px] border border-emerald-100/90 shadow-sm md:col-span-2" style={{ background: 'hsla(var(--hue-jungle),50%,99%,0.92)' }}>
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-lg shrink-0 shadow-2xs">
-              🐼
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center p-1 shrink-0 shadow-2xs">
+              <PandaSenseiSVG
+                compact
+                framing="bust"
+                mode={loadingAi ? 'thinking' : aiAdvice ? 'victory' : 'coaching'}
+                className="w-full h-full block"
+              />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-emerald-950 text-base font-['Fredoka'] leading-tight">
@@ -446,45 +455,75 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
               </RadarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80 ml-2">
-              <Activity className="mr-2 opacity-50 text-emerald-500" size={18} /> No muscle data yet
-            </div>
+            <button
+              type="button"
+              onClick={() => setHammockAwake((prev) => !prev)}
+              className="h-full w-full flex flex-col items-center justify-center text-slate-500 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80 ml-2 p-2 hover:bg-emerald-50/40 transition-colors cursor-pointer"
+            >
+              <EmptyStateHammockSenseiSVG awake={hammockAwake} size={108} className="w-27 h-20 block -my-1" />
+              <span className="mt-1 text-[11px] font-black text-emerald-800">
+                {hammockAwake ? '🐼 Sensei is awake! Log a workout to light up your radar!' : 'No muscle data yet • Tap Sensei to wake!'}
+              </span>
+            </button>
           )}
         </div>
 
-        {/* Weekly 6-Element Muscle Mastery Seal */}
-        <div className={`mt-4 pt-3.5 border-t border-emerald-100/80 relative z-10`}>
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div className="flex items-center gap-2">
-              <MuscleMasterySealSVG count={weeklyMastery.count} className="w-10 h-10 shrink-0 block" />
-              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-900">
-                Weekly Muscle Mastery Seal
-              </span>
-            </div>
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-              weeklyMastery.isEligibleForBonus
-                ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-            }`}>
-              {weeklyMastery.count}/6 Groups {weeklyMastery.isEligibleForBonus ? '• +100 XP Unlocked!' : '• 5/6 for +100 XP'}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-            {CORE_MUSCLE_GROUPS.map((group) => {
-              const isLit = weeklyMastery.trainedGroups.includes(group);
-              return (
-                <div
-                  key={group}
-                  className={`text-center py-1.5 px-1 rounded-xl text-[10px] font-bold border transition-all ${
-                    isLit
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-400 border-slate-200/80'
-                  }`}
-                >
-                  {isLit ? '✓ ' : ''}{group}
+        {/* Weekly 6-Element Muscle Mastery Seal (Duolingo-Scale 2-Column Hero Stage) */}
+        <div className={`mt-4 pt-4 border-t border-emerald-100/80 relative z-10`}>
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/50 p-3.5 rounded-2xl border border-emerald-100/90">
+            <button
+              type="button"
+              onClick={() => {
+                setSealBurst(true);
+                setTimeout(() => setSealBurst(false), 2200);
+              }}
+              title="Tap to pulse your 6-Element Muscle Mastery Seal!"
+              className="shrink-0 p-1.5 rounded-2xl bg-white/90 border border-emerald-200/70 shadow-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            >
+              <MuscleMasterySealSVG count={weeklyMastery.count} burst={sealBurst} className="w-22 h-22 shrink-0 block" />
+            </button>
+            <div className="flex-1 w-full min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-950 block">
+                    Weekly Muscle Mastery Seal
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-500">
+                    {sealBurst
+                      ? weeklyMastery.count >= 5
+                        ? '✨ Mastery Seal Blazing! +100 XP Earned!'
+                        : `🎯 Train ${Math.max(0, 5 - weeklyMastery.count)} more muscle group(s) this week for +100 XP!`
+                      : 'Tap seal to inspect elemental muscle conduits'}
+                  </span>
                 </div>
-              );
-            })}
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
+                  weeklyMastery.isEligibleForBonus
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : 'bg-emerald-100/80 text-emerald-800 border border-emerald-200'
+                }`}>
+                  {weeklyMastery.count}/6 Groups {weeklyMastery.isEligibleForBonus ? '• +100 XP Unlocked!' : '• 5/6 for +100 XP'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {CORE_MUSCLE_GROUPS.map((group) => {
+                  const isLit = weeklyMastery.trainedGroups.includes(group);
+                  return (
+                    <div
+                      key={group}
+                      className={`text-center py-1.5 px-1 rounded-xl text-[10px] font-bold border transition-all ${
+                        isLit
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
+                          : sealBurst
+                          ? 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
+                          : 'bg-slate-50 text-slate-400 border-slate-200/80'
+                      }`}
+                    >
+                      {isLit ? '✓ ' : ''}{group}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -634,18 +673,38 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
         </div>
       </div>
 
-      <div className="flex items-center justify-between md:col-span-2 pt-1">
-        <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center">
-          <span className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200/70 flex items-center justify-center mr-2.5 text-amber-600 shadow-sm pointer-events-none">
-            <AnimatedTrophyMedalSVG className="w-8 h-8 block" />
-          </span>
-          Personal Records
-        </h3>
-        {Object.keys(stats).length > 0 && (
-          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full uppercase tracking-wider">
-            {Object.keys(stats).length} Moves
-          </span>
-        )}
+      <div className="flex items-center justify-between md:col-span-2 pt-2">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-amber-100/90 border border-amber-200 flex items-center justify-center text-amber-600 shadow-sm shrink-0">
+            <AnimatedTrophyMedalSVG className="w-12 h-12 block" />
+          </div>
+          <div>
+            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] leading-tight">
+              Personal Records
+            </h3>
+            <p className="text-[10px] font-bold text-amber-700">
+              {bellRinging ? '🔔 PR Gong Ringing! New iron milestones!' : 'Tap the Golden PR Bell to celebrate your lifts!'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setBellRinging(true);
+              setTimeout(() => setBellRinging(false), 2200);
+            }}
+            title="Ring the Personal Record Golden Bell!"
+            className="p-1 rounded-2xl bg-amber-50 border border-amber-200/80 hover:scale-105 active:scale-95 transition-transform cursor-pointer shadow-2xs"
+          >
+            <PRBellGongSVG ringing={bellRinging} className="w-16 h-16 block" />
+          </button>
+          {Object.keys(stats).length > 0 && (
+            <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              {Object.keys(stats).length} Moves
+            </span>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:col-span-2">
         {Object.entries(stats).map(([name, stat]: [string, any]) => (

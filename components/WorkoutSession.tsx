@@ -40,7 +40,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { useTimer } from '../hooks/useTimer';
 import { ConfirmPopup } from './ConfirmPopup';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
-import { StreakFlameSVG, AnimatedTrophyMedalSVG, RankCrestSVG, HonorPledgeSealSVG, TimeWindowEmblemSVG, MuscleMasterySealSVG } from './AnimatedIconsSVG';
+import { StreakFlameSVG, AnimatedTrophyMedalSVG, RankCrestSVG, HonorPledgeSealSVG, TimeWindowEmblemSVG, MuscleMasterySealSVG, PRBellGongSVG } from './AnimatedIconsSVG';
 
 interface Props {
   user: User;
@@ -1639,9 +1639,14 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           )}
           {comboToast && (
             <div className="max-w-xl mx-auto px-3 pb-2 animate-squash-bounce">
-              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-md flex items-center justify-center gap-1.5">
-                <Sparkles size={14} />
-                <span>{comboToast}</span>
+              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-white text-xs font-black px-4 py-2.5 rounded-2xl shadow-lg flex items-center justify-between gap-3 border border-yellow-200/60">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-yellow-200 shrink-0" />
+                  <span className="text-sm font-black">{comboToast}</span>
+                </div>
+                <div className="w-16 h-16 shrink-0 -my-2">
+                  <PandaSenseiSVG compact framing="bust" mode="cheering" className="w-full h-full block" />
+                </div>
               </div>
             </div>
           )}
@@ -1788,32 +1793,38 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                 </div>
               )}
 
-              {(honorPledgeXp > 0 || unlockedWindowChest || weeklyMasterySummary) && (
-                <div className="relative z-10 mt-3 pt-3 border-t border-white/15 flex flex-wrap gap-1.5">
+              {(honorPledgeXp > 0 || unlockedWindowChest || weeklyMasterySummary || totalSessionVolume > 0) && (
+                <div className="relative z-10 mt-3.5 pt-3.5 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {honorPledgeXp > 0 && (
-                    <span className="inline-flex items-center gap-1.5 bg-lime-400/20 border border-lime-300/40 text-lime-200 text-[11px] font-bold px-2.5 py-1 rounded-xl">
-                      <HonorPledgeSealSVG className="w-4 h-4 shrink-0 block" />
+                    <div className="flex items-center gap-2.5 bg-lime-400/20 border border-lime-300/40 text-lime-100 text-xs font-bold p-2.5 rounded-2xl">
+                      <HonorPledgeSealSVG stamped className="w-13 h-13 shrink-0 block" />
                       <span>Honor Pledge Fulfilled! +{honorPledgeXp} XP</span>
-                    </span>
+                    </div>
                   )}
                   {unlockedWindowChest && (
-                    <span className="inline-flex items-center gap-1.5 bg-indigo-400/25 border border-indigo-300/40 text-indigo-100 text-[11px] font-bold px-2.5 py-1 rounded-xl">
-                      <TimeWindowEmblemSVG mode={unlockedWindowChest === 'night_owl' ? 'night_owl' : 'early_bird'} className="w-4 h-4 shrink-0 block" />
+                    <div className="flex items-center gap-2.5 bg-indigo-400/25 border border-indigo-300/40 text-indigo-100 text-xs font-bold p-2.5 rounded-2xl">
+                      <TimeWindowEmblemSVG mode={unlockedWindowChest === 'night_owl' ? 'night_owl' : 'early_bird'} className="w-13 h-13 shrink-0 block" />
                       <span>{unlockedWindowChest === 'night_owl' ? 'Night Owl Chest Unlocked!' : 'Early Bird Chest Unlocked!'}</span>
-                    </span>
+                    </div>
                   )}
                   {weeklyMasterySummary && (
-                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-xl border ${
+                    <div className={`flex items-center gap-2.5 text-xs font-bold p-2.5 rounded-2xl border ${
                       weeklyMasterySummary.bonusAwarded
                         ? 'bg-amber-400/25 border-amber-300/40 text-amber-100'
                         : 'bg-white/10 border-white/15 text-emerald-100'
                     }`}>
-                      <MuscleMasterySealSVG count={weeklyMasterySummary.mastery.count} className="w-4 h-4 shrink-0 block" />
+                      <MuscleMasterySealSVG count={weeklyMasterySummary.mastery.count} className="w-13 h-13 shrink-0 block" />
                       <span>
                         {weeklyMasterySummary.mastery.count}/6 Weekly Muscles
                         {weeklyMasterySummary.bonusAwarded ? ' • +100 XP Mastery Seal!' : ''}
                       </span>
-                    </span>
+                    </div>
+                  )}
+                  {totalSessionVolume > 0 && (
+                    <div className="flex items-center gap-2.5 bg-amber-400/25 border border-amber-300/40 text-amber-100 text-xs font-bold p-2.5 rounded-2xl">
+                      <PRBellGongSVG ringing className="w-13 h-13 shrink-0 block" />
+                      <span>🔔 {totalSessionVolume.toLocaleString()} kg Iron Gong!</span>
+                    </div>
                   )}
                 </div>
               )}

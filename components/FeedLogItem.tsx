@@ -7,7 +7,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { formatTimeAgo } from '../utils/dateUtils';
 import { RankBadge } from './RankBadge';
 import { awardSocialSupportXP } from '../utils/gamification';
-import { RivalrySwordsSVG } from './AnimatedIconsSVG';
+import { RivalrySwordsSVG, SocialBoostBurstSVG } from './AnimatedIconsSVG';
 
 interface Props {
     log: WorkoutLog;
@@ -39,6 +39,8 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [burst, setBurst] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
     const [supportXpToast, setSupportXpToast] = useState(false);
+    const [boostBurst, setBoostBurst] = useState(false);
+    const [rivalryAccepted, setRivalryAccepted] = useState(false);
     const burstIdRef = useRef(0);
     const reactionCount = reactions.length;
     const hasReacted = reactions.includes(currentUser);
@@ -52,6 +54,8 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
         const id = burstIdRef.current++;
         setBurst(prev => [...prev, { id, x, y, emoji }]);
         setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 950);
+        setBoostBurst(true);
+        setTimeout(() => setBoostBurst(false), 1800);
         onReaction(log.id);
 
         if (!hasReacted && log.user !== currentUser) {
@@ -167,20 +171,37 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                         ) : log.calories ? (
                             <span className="flex items-center bg-white/80 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm border border-emerald-100/50"><Flame size={10} className="mr-1 text-orange-500" /> {log.calories} kcal</span>
                         ) : null}
-                        {log.type !== 'Custom' && log.type !== 'COMMITMENT' && log.type?.toUpperCase() !== 'COMMITMENT' && totalVolume > 0 && (
+                        {log.type !== 'Custom' && log.type !== 'COMMITMENT' && log.type?.toUpperCase() !== 'COMMITMENT' && totalVolume > 0 && log.user === currentUser && (
                             <span className="flex items-center gap-1 bg-white/90 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm border border-emerald-200/70 text-emerald-800">
-                                {log.user !== currentUser ? (
-                                    <>
-                                        <RivalrySwordsSVG className="w-3.5 h-3.5 shrink-0 block" />
-                                        <span>Beat {Math.round(totalVolume).toLocaleString()} kg</span>
-                                    </>
-                                ) : (
-                                    `💪 ${Math.round(totalVolume).toLocaleString()} kg`
-                                )}
+                                {`💪 ${Math.round(totalVolume).toLocaleString()} kg`}
                             </span>
                         )}
                     </div>
                 </div>
+
+                {/* Dedicated Volume Rivalry Challenge Strip for Teammate Strength Logs */}
+                {log.type !== 'Custom' && log.type !== 'COMMITMENT' && log.type?.toUpperCase() !== 'COMMITMENT' && totalVolume > 0 && log.user !== currentUser && (
+                    <button
+                        type="button"
+                        onClick={() => setRivalryAccepted((prev) => !prev)}
+                        className="w-full mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50/90 to-emerald-50 border border-amber-200/80 flex items-center justify-between gap-3 text-left hover:brightness-98 active:scale-[0.99] transition-all cursor-pointer relative z-10 shadow-2xs"
+                    >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <RivalrySwordsSVG clashing={rivalryAccepted} className="w-12 h-12 shrink-0 block" />
+                            <div className="min-w-0">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+                                    {rivalryAccepted ? '⚔️ Rivalry Challenge Accepted!' : 'Tribe Volume Rivalry • Tap to Clash'}
+                                </div>
+                                <div className="text-xs font-black text-emerald-950 truncate">
+                                    Beat {Math.round(totalVolume).toLocaleString()} kg
+                                </div>
+                            </div>
+                        </div>
+                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl shrink-0 ${rivalryAccepted ? 'bg-emerald-600 text-white' : 'bg-amber-200/70 text-amber-900'}`}>
+                            {rivalryAccepted ? 'Locked In 🔥' : 'Accept'}
+                        </span>
+                    </button>
+                )}
 
                 <div className="space-y-2 relative z-10">
                     {log.image_data && (
@@ -258,10 +279,11 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     <Flame size={15} className={`mr-1.5 ${hasReacted ? 'fill-current text-orange-500' : ''}`} />
                     <span className="font-bold text-xs">{reactionCount > 0 ? reactionCount : 'Boost'}</span>
                 </button>
-                {supportXpToast && (
-                    <span className="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[11px] font-black animate-bounce shadow-xs">
-                        +5 XP Support!
-                    </span>
+                {(supportXpToast || boostBurst) && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-black animate-squash-bounce shadow-sm">
+                        <SocialBoostBurstSVG size={48} className="w-12 h-12 shrink-0 block -my-2" />
+                        <span>{supportXpToast ? '+5 XP Support!' : 'Fist Bump! 🔥'}</span>
+                    </div>
                 )}
                 <button
                     onClick={() => onToggleComments(log.id)}

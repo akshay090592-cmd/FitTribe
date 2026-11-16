@@ -11,6 +11,7 @@ import { Leaderboard } from './Leaderboard';
 import { InfoTooltip } from './InfoTooltip';
 import { FeedGiftItem } from './FeedGiftItem';
 import { FeedLogItem } from './FeedLogItem';
+import { EmptyStateHammockSenseiSVG } from './AnimatedIconsSVG';
 import { StatsDetailPopup } from './StatsDetailPopup';
 import { TribeVictoryPhoto } from './TribeVictoryPhoto';
 import { getAvatarPath } from '../utils/avatar';
@@ -628,8 +629,11 @@ export const SocialFeed: React.FC<Props> = React.memo(({ currentUser, profile, i
                 )}
 
                 {displayedItems.length === 0 && (
-                    <div className="text-center py-10 text-slate-400 font-bold bg-white/70 rounded-3xl border-2 border-dashed border-emerald-100">
-                        No logs found. Time to make some history! 🚀
+                    <div className="text-center py-8 px-4 text-slate-500 font-bold bg-white/80 rounded-3xl border-2 border-dashed border-emerald-200 flex flex-col items-center justify-center gap-2">
+                        <EmptyStateHammockSenseiSVG size={128} className="w-32 h-24 block" />
+                        <div className="text-sm font-black text-emerald-900">
+                            No logs found. Time to make some history! 🚀
+                        </div>
                     </div>
                 )}
             </div>

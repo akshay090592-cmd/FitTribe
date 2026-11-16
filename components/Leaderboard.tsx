@@ -19,6 +19,12 @@ type Timeframe = 'weekly' | 'monthly' | 'lifetime';
 
 export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationState, members, avatarMap = {}, onUserClick }) => {
     const [timeframe, setTimeframe] = useState<Timeframe>('weekly');
+    const [crownFanfare, setCrownFanfare] = useState(false);
+
+    const handleCrownTap = () => {
+        setCrownFanfare(true);
+        setTimeout(() => setCrownFanfare(false), 2400);
+    };
 
     const filteredStats = useMemo(() => {
         // BOLT: Optimize lifetime view by completely skipping sub-array allocations,
@@ -101,10 +107,26 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
         <div className="glass-panel overflow-hidden mb-6 font-sans" style={{ background: 'hsla(var(--hue-jungle),50%,98%,0.80)' }}>
             <div className="p-5 text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--hue-jungle),60%,28%), hsl(var(--hue-canopy),65%,22%))' }}>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-white font-bold text-xl flex items-center font-['Fredoka'] gap-2">
-                        <LeaderboardCrownSVG className="w-9 h-9 shrink-0 block" /> Leaderboard
-                    </h3>
-
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleCrownTap}
+                            title="Tap the Royal Crown!"
+                            className={`relative p-1.5 rounded-2xl bg-white/10 border border-white/15 hover:bg-white/20 active:scale-95 transition-transform cursor-pointer ${crownFanfare ? 'scale-110 ring-2 ring-amber-300' : ''}`}
+                        >
+                            <LeaderboardCrownSVG size={60} className="w-15 h-15 shrink-0 block" />
+                        </button>
+                        <div>
+                            <h3 className="text-white font-bold text-xl font-['Fredoka'] leading-tight">
+                                Leaderboard
+                            </h3>
+                            <p className="text-[11px] font-bold text-emerald-100/90 mt-0.5">
+                                {crownFanfare && sortedUsers[0]
+                                    ? `👑 All hail ${sortedUsers[0]}, reigning Tribe Champion!`
+                                    : 'Tap crown for champion fanfare'}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex rounded-xl p-1 border border-white/10" style={{ background: 'hsla(0,0%,0%,0.25)' }}>
@@ -138,13 +160,13 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
                                     {idx + 1}
                                 </div>
 
-                                <div className="relative w-10 h-10 mr-3 shrink-0">
-                                    <div className="w-full h-full rounded-full overflow-hidden border border-slate-100">
+                                <div className={`relative ${idx === 0 ? 'w-12 h-12 mt-2' : 'w-10 h-10'} mr-3 shrink-0`}>
+                                    <div className={`w-full h-full rounded-full overflow-hidden border-2 ${idx === 0 ? 'border-amber-400 shadow-md' : 'border-slate-100'}`}>
                                         <img src={getAvatarPath(avatarMap[user])} alt={user} className="w-full h-full object-cover" onError={(e) => e.currentTarget.src = 'https://placehold.co/40x40'} />
                                     </div>
                                     {idx === 0 && (
-                                        <div className="absolute -top-2.5 -right-1.5 drop-shadow-sm">
-                                            <LeaderboardCrownSVG size={20} className="w-5 h-5 block" />
+                                        <div className="absolute -top-6 -right-3 drop-shadow-md pointer-events-none">
+                                            <LeaderboardCrownSVG size={44} className="w-11 h-11 block" />
                                         </div>
                                     )}
                                 </div>

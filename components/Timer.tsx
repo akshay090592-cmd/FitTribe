@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Pause, RotateCcw, X, Clock } from 'lucide-react';
+import { RestTimerZenLotusSVG } from './AnimatedIconsSVG';
 
 interface TimerProps {
   seconds: number;
@@ -63,9 +64,10 @@ export const Timer: React.FC<TimerProps> = ({
             </svg>
             <span className="text-[11px] font-black font-mono text-lime-300">{Math.floor(seconds)}s</span>
           </div>
+          <RestTimerZenLotusSVG className="w-12 h-12 shrink-0 block -my-1" />
           <div className="min-w-0">
             <div className="text-[9px] text-emerald-300 uppercase font-black tracking-widest truncate">
-              {nextUpLabel ? `Next: ${nextUpLabel}` : 'Rest Timer'}
+              {nextUpLabel ? `Next: ${nextUpLabel}` : 'Rest Timer • Box Breathe'}
             </div>
             <div className="font-mono text-base font-extrabold tracking-tight leading-tight">{formatTime(Math.floor(seconds))}</div>
           </div>

@@ -4,6 +4,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { User, UserGamificationState, UserProfile } from '../types';
 import { JungleChestSVG, JungleChestState as ChestState } from './JungleChestSVG';
 import { RallyDrumSVG } from './AnimatedIconsSVG';
+import { PandaSenseiSVG } from './PandaSenseiSVG';
 import { claimWeeklyTribeChest, awardSocialSupportXP } from '../utils/gamification';
 import { notifyNudge } from '../services/notificationService';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
@@ -37,6 +38,13 @@ export const TribeStatusCard: React.FC<Props> = memo(({
   const [claiming, setClaiming] = useState(false);
   const [claimBanner, setClaimBanner] = useState<string | null>(null);
   const [nudgedUsers, setNudgedUsers] = useState<Record<string, boolean>>({});
+  const [drumBeating, setDrumBeating] = useState(false);
+
+  const triggerDrumBeat = () => {
+    setDrumBeating(true);
+    triggerHaptic([20, 40, 20]);
+    setTimeout(() => setDrumBeating(false), 1800);
+  };
 
   if (!teamStats) return null;
 
@@ -77,7 +85,7 @@ export const TribeStatusCard: React.FC<Props> = memo(({
   const handleRallyMember = async (memberName: string) => {
     if (nudgedUsers[memberName] || !currentUser) return;
     setNudgedUsers(prev => ({ ...prev, [memberName]: true }));
-    triggerHaptic([15, 30]);
+    triggerDrumBeat();
     try {
       await notifyNudge(currentUser as User, memberName as User);
       if (userProfile) {
@@ -160,15 +168,15 @@ export const TribeStatusCard: React.FC<Props> = memo(({
                     ? 'Tap to claim +150 XP & +25 Pts!'
                     : 'Reach 100% Weekly Bamboo to unlock +150 XP!'
                 }
-                className={`shrink-0 rounded-2xl p-1 border transition-all flex flex-col items-center justify-center ${
+                className={`shrink-0 rounded-2xl p-1.5 border transition-all flex flex-col items-center justify-center ${
                   chestState === 'ready' || chestState === 'opening'
                     ? 'bg-amber-400/25 border-amber-300 shadow-lg cursor-pointer hover:scale-105 active:scale-95'
                     : chestState === 'claimed'
                     ? 'bg-emerald-500/20 border-emerald-300/40 cursor-default'
-                    : 'bg-black/20 border-white/10 cursor-default opacity-80'
+                    : 'bg-black/20 border-white/10 cursor-default opacity-85'
                 }`}
               >
-                <JungleChestSVG tier="gold" state={chestState} className="w-10 h-10" />
+                <JungleChestSVG tier="gold" state={chestState} className="w-16 h-16" />
               </button>
             </div>
 
@@ -183,51 +191,77 @@ export const TribeStatusCard: React.FC<Props> = memo(({
             </div>
           </div>
 
-          {/* Per-Member Contribution Pills + 1-Tap Rally Nudge */}
+          {/* Dedicated Tribe Rally Station + Per-Member Contribution Pills */}
           {memberNames.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {memberNames.map((name, idx) => {
-                const count = userStatsMap[name] || 0;
-                const isSelf = currentUser && name === currentUser;
-                const isNudged = !!nudgedUsers[name];
-                const dotColor = SEGMENT_COLORS[idx % SEGMENT_COLORS.length];
-                return (
-                  <div
-                    key={name}
-                    className="inline-flex items-center gap-1.5 bg-black/25 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-50"
-                  >
-                    <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${dotColor} shrink-0`} />
-                    <span className="truncate max-w-[90px]">{name}</span>
-                    <span className="text-lime-300 font-black">{count}</span>
-                    {count === 0 && !isSelf && currentUser && (
-                      <button
-                        type="button"
-                        disabled={isNudged}
-                        onClick={() => handleRallyMember(name)}
-                        className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black transition-all ${
-                          isNudged
-                            ? 'bg-emerald-500/30 text-emerald-200 cursor-default'
-                            : 'bg-amber-400/25 hover:bg-amber-400/40 text-amber-200 border border-amber-300/30 cursor-pointer active:scale-95'
-                        }`}
+            <div className="mt-2 p-3 rounded-2xl bg-black/25 border border-white/10 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerDrumBeat();
+                  const firstInactive = memberNames.find(
+                    n => (userStatsMap[n] || 0) === 0 && n !== currentUser && !nudgedUsers[n]
+                  );
+                  if (firstInactive && currentUser) {
+                    handleRallyMember(firstInactive);
+                  }
+                }}
+                title="Tap the War Drum to rally your Tribe!"
+                className="shrink-0 p-1 rounded-2xl bg-amber-400/15 border border-amber-300/30 hover:bg-amber-400/25 active:scale-95 transition-transform cursor-pointer"
+              >
+                <RallyDrumSVG beating={drumBeating} className="w-14 h-14 block" />
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-200 mb-1.5">
+                  {drumBeating ? '🥁 War Drum Sounding! Calling Tribe...' : 'Tribe War Drum • Tap Drum or Member'}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {memberNames.map((name, idx) => {
+                    const count = userStatsMap[name] || 0;
+                    const isSelf = currentUser && name === currentUser;
+                    const isNudged = !!nudgedUsers[name];
+                    const dotColor = SEGMENT_COLORS[idx % SEGMENT_COLORS.length];
+                    return (
+                      <div
+                        key={name}
+                        className="inline-flex items-center gap-1.5 bg-black/30 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-50"
                       >
-                        {isNudged ? 'Rallied ✓' : (
-                          <span className="inline-flex items-center gap-1">
-                            <RallyDrumSVG className="w-3.5 h-3.5 shrink-0 block" />
-                            <span>Rally</span>
-                          </span>
+                        <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${dotColor} shrink-0`} />
+                        <span className="truncate max-w-[90px]">{name}</span>
+                        <span className="text-lime-300 font-black">{count}</span>
+                        {count === 0 && !isSelf && currentUser && (
+                          <button
+                            type="button"
+                            disabled={isNudged}
+                            onClick={() => handleRallyMember(name)}
+                            className={`ml-0.5 px-2 py-0.5 rounded-full text-[9px] font-black transition-all ${
+                              isNudged
+                                ? 'bg-emerald-500/30 text-emerald-200 cursor-default'
+                                : 'bg-amber-400/25 hover:bg-amber-400/40 text-amber-200 border border-amber-300/30 cursor-pointer active:scale-95'
+                            }`}
+                          >
+                            {isNudged ? 'Rallied ✓' : '🥁 Rally'}
+                          </button>
                         )}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
           {claimBanner && (
-            <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-md animate-squash-bounce">
-              <Sparkles size={14} className="text-yellow-200 shrink-0" />
-              <span>{claimBanner}</span>
+            <div className="p-3.5 rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white text-xs font-black flex items-center justify-between gap-3 shadow-xl border-2 border-yellow-200/70 animate-squash-bounce">
+              <JungleChestSVG tier="gold" state="opening" className="w-20 h-20 shrink-0" />
+              <div className="flex-1 text-left">
+                <div className="text-[10px] uppercase tracking-widest text-yellow-100 font-black flex items-center gap-1">
+                  <Sparkles size={12} className="text-yellow-200 shrink-0" /> Tribe Celebration!
+                </div>
+                <div className="text-sm font-black mt-0.5">{claimBanner}</div>
+              </div>
+              <div className="w-16 h-16 shrink-0">
+                <PandaSenseiSVG compact framing="bust" mode="victory" className="w-full h-full block" />
+              </div>
             </div>
           )}
         </div>

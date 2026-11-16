@@ -1797,18 +1797,25 @@ const App: React.FC = () => {
                   <button
                     onClick={handleCommit}
                     disabled={isCommitting || hasTomorrowCommitment}
-                    className="w-full mt-2.5 bg-black/25 text-white/90 py-3 px-4 rounded-2xl font-bold text-xs hover:bg-black/35 transition-all flex items-center justify-center gap-2 backdrop-blur-md border border-white/10 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full mt-3 bg-black/30 text-white/95 p-3 rounded-2xl font-bold text-xs hover:bg-black/40 transition-all flex items-center justify-between gap-3 backdrop-blur-md border border-white/15 active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed text-left"
                   >
-                    <HonorPledgeSealSVG className="w-5 h-5 shrink-0 block" />
-                    <span>
-                      {isCommitting
-                        ? 'Committing...'
-                        : hasTomorrowCommitment
-                        ? '✅ Honor Pledge Locked (+40 XP Tomorrow)'
-                        : 'Honor Pledge: Commit to Tomorrow'}
-                    </span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <HonorPledgeSealSVG stamped={hasTomorrowCommitment || isCommitting} className="w-15 h-15 shrink-0 block drop-shadow-md" />
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-amber-200">
+                          {hasTomorrowCommitment ? 'Pledge Stamped & Sealed' : 'Honor Pledge Contract'}
+                        </div>
+                        <div className="text-xs sm:text-sm font-black truncate mt-0.5">
+                          {isCommitting
+                            ? 'Committing...'
+                            : hasTomorrowCommitment
+                            ? '✅ Honor Pledge Locked (+40 XP Tomorrow)'
+                            : 'Honor Pledge: Commit to Tomorrow'}
+                        </div>
+                      </div>
+                    </div>
                     {!isCommitting && !hasTomorrowCommitment && (
-                      <span className="bg-amber-400/25 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full text-[10px] font-black">
+                      <span className="bg-amber-400/25 text-amber-200 border border-amber-300/30 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0">
                         +40 XP
                       </span>
                     )}

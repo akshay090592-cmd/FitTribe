@@ -4,6 +4,7 @@ import { getLogs } from '../utils/storage';
 import { CheckCircle2, BedDouble, Flame, Hand, AlertTriangle, CalendarDays } from 'lucide-react';
 import { getAvatarPath } from '../utils/avatar';
 import { calculateLevel, getRankDetails } from '../utils/gamification';
+import { TribeCampfireSceneSVG } from './AnimatedIconsSVG';
 
 interface Props {
     currentUser: string | null;
@@ -19,6 +20,12 @@ interface Props {
 export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, members = [], avatarMap = {}, gamificationState = {}, refreshTrigger = 0, onUserClick }) => {
     const [statuses, setStatuses] = useState<Record<string, 'done' | 'resting' | 'committing' | 'tomorrow' | 'failed'>>({});
     const [loading, setLoading] = useState(true);
+    const [stoked, setStoked] = useState(false);
+
+    const handleStokeCampfire = () => {
+        setStoked(true);
+        setTimeout(() => setStoked(false), 2000);
+    };
 
     useEffect(() => {
         loadStatus();
@@ -111,14 +118,24 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
 
     return (
         <div className="mx-3.5 sm:mx-4 mt-3.5 bg-white/85 backdrop-blur-md rounded-[24px] p-4 shadow-sm border border-emerald-100/80">
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-emerald-900 uppercase tracking-widest">Tribe Pulse</span>
+            <div
+                onClick={handleStokeCampfire}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStokeCampfire(); }}
+                title="Tap to stoke the Tribe Campfire!"
+                className="relative mb-3 rounded-2xl overflow-hidden cursor-pointer group border border-emerald-800/30 shadow-inner"
+            >
+                <TribeCampfireSceneSVG activeCount={activeTodayCount} totalCount={members.length} stoked={stoked} />
+                <div className="absolute inset-x-3 top-2.5 flex items-center justify-between pointer-events-none">
+                    <div className="flex items-center gap-2 bg-black/35 backdrop-blur-xs px-2.5 py-1 rounded-full border border-white/15">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[11px] font-black text-white uppercase tracking-widest">Tribe Pulse</span>
+                    </div>
+                    <span className="text-[10px] font-black text-amber-200 bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-full border border-amber-300/30">
+                        {stoked ? '🔥 Campfire Stoked!' : `${activeTodayCount}/${members.length} Active Today`}
+                    </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                    {activeTodayCount}/{members.length} Active Today
-                </span>
             </div>
             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pt-2.5 pb-1.5 px-1.5 sm:grid sm:grid-cols-3 sm:gap-y-4 sm:gap-x-2 sm:justify-items-center">
                 {members.map(user => (

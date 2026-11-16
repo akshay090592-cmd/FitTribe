@@ -21,7 +21,7 @@ import { getAvatarPath } from '../utils/avatar';
 import { BadgeIcon } from './BadgeIcon';
 import { getThemePalette } from '../utils/themeConfig';
 import { JungleChestSVG } from './JungleChestSVG';
-import { PowerUpIconSVG, StreakFlameSVG, AnimatedTrophyMedalSVG } from './AnimatedIconsSVG';
+import { PowerUpIconSVG, StreakFlameSVG, AnimatedTrophyMedalSVG, ShopPowerUpDeploySVG } from './AnimatedIconsSVG';
 
 
 interface Props {
@@ -202,8 +202,8 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
           <div className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Days in a row you've worked out." iconSize={12} color="text-orange-400" />
           </div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 text-orange-500 shadow-inner border border-orange-200/50" style={{ background: 'linear-gradient(135deg, hsl(38,95%,92%), hsl(25,95%,88%))' }}>
-            <Zap size={24} className="fill-current" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2 text-orange-500 shadow-inner border border-orange-200/50 p-1" style={{ background: 'linear-gradient(135deg, hsl(38,95%,92%), hsl(25,95%,88%))' }}>
+            <StreakFlameSVG state={streaks >= 7 ? 'super' : 'active'} className="w-12 h-12 block" />
           </div>
           <span className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{streaks}</span>
           <span className="text-[10px] font-extrabold text-orange-700/70 uppercase tracking-widest">Streak</span>
@@ -212,8 +212,8 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
           <div className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity">
             <InfoTooltip text="Special awards for hitting milestones." iconSize={12} color="text-purple-400" />
           </div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5 text-purple-500 shadow-inner border border-purple-200/50" style={{ background: 'linear-gradient(135deg, hsl(270,65%,94%), hsl(285,60%,90%))' }}>
-            <Trophy size={24} className="fill-current" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2 text-purple-500 shadow-inner border border-purple-200/50 p-1" style={{ background: 'linear-gradient(135deg, hsl(270,65%,94%), hsl(285,60%,90%))' }}>
+            <AnimatedTrophyMedalSVG className="w-12 h-12 block" />
           </div>
           <span className="text-2xl font-bold text-slate-800 font-['Fredoka'] leading-none mb-1">{myState.badges.length}</span>
           <span className="text-[10px] font-extrabold text-purple-700/70 uppercase tracking-widest">Badges</span>
@@ -417,16 +417,16 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
                   key={p.id}
                   className="p-3.5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/30 flex items-center justify-between gap-3 shadow-xs"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0 overflow-hidden pointer-events-none">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-100/70 border border-indigo-200/70 flex items-center justify-center text-2xl shrink-0 overflow-hidden pointer-events-none p-1">
                       {p.id === 'mystery_crate' || (p.id as string) === 'mystery_box' ? (
                         <JungleChestSVG
                           tier="mystery"
                           state={buyingPowerUpId === p.id ? 'opening' : canAfford ? 'ready' : 'locked'}
-                          className="w-11 h-11"
+                          className="w-14 h-14"
                         />
                       ) : p.id === 'streak_freeze' || p.id === 'double_xp' || p.id === 'streak_wager' ? (
-                        <PowerUpIconSVG id={p.id} className="w-11 h-11 block" />
+                        <ShopPowerUpDeploySVG id={p.id} size={56} className="w-14 h-14 block" />
                       ) : (
                         <span>{p.emoji || (p as any).icon}</span>
                       )}

@@ -3,7 +3,7 @@ import { X, Flame, Shield, Sparkles, Check, Calendar, AlertTriangle, Dumbbell } 
 import { UserProfile, UserGamificationState, WorkoutLog } from '../types';
 import { purchasePowerUp } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
-import { StreakFlameSVG } from './AnimatedIconsSVG';
+import { StreakFlameSVG, PowerUpIconSVG } from './AnimatedIconsSVG';
 
 interface StreakModalProps {
   isOpen: boolean;
@@ -283,8 +283,8 @@ export const StreakModal: React.FC<StreakModalProps> = ({
           <div className="bg-gradient-to-br from-cyan-50 to-sky-50 p-4 rounded-2xl border border-cyan-200/80 shadow-xs">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-cyan-500/15 border border-cyan-300 flex items-center justify-center text-2xl shrink-0">
-                  🧊
+                <div className="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-300 flex items-center justify-center p-1 shrink-0">
+                  <PowerUpIconSVG id="streak_freeze" className="w-12 h-12 block" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -326,8 +326,8 @@ export const StreakModal: React.FC<StreakModalProps> = ({
           {/* 7-Day Streak Wager Card */}
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-2xl border border-amber-200/80 shadow-xs">
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-300 flex items-center justify-center text-2xl shrink-0">
-                🎲
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-300 flex items-center justify-center p-1 shrink-0">
+                <PowerUpIconSVG id="streak_wager" className="w-12 h-12 block" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">

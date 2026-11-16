@@ -16,6 +16,15 @@ import {
 import { TribeStatusCard } from '../components/TribeStatusCard';
 import { QuestBoard } from '../components/QuestBoard';
 import { FeedLogItem } from '../components/FeedLogItem';
+import {
+  PRBellGongSVG,
+  HabitVesselSVG,
+  TribeCampfireSceneSVG,
+  SocialBoostBurstSVG,
+  RestTimerZenLotusSVG,
+  ShopPowerUpDeploySVG,
+  EmptyStateHammockSenseiSVG,
+} from '../components/AnimatedIconsSVG';
 import { User, UserProfile, UserGamificationState, WorkoutLog, WorkoutType } from '../types';
 
 vi.mock('../utils/supabaseClient', () => ({
@@ -395,5 +404,27 @@ describe('Phase 2 UI Components Smoke Tests', () => {
     await waitFor(() => {
       expect(screen.getByText(/\+5 XP Support!/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders Duolingo-scale animated SVG components and interactive Sensei QuestBoard stage', () => {
+    render(
+      <div>
+        <PRBellGongSVG ringing />
+        <HabitVesselSVG variant="hydration" completed />
+        <TribeCampfireSceneSVG activeCount={2} totalCount={3} stoked />
+        <SocialBoostBurstSVG />
+        <RestTimerZenLotusSVG />
+        <ShopPowerUpDeploySVG id="streak_freeze" />
+        <EmptyStateHammockSenseiSVG awake />
+      </div>
+    );
+
+    expect(screen.getByTestId('pr-bell-gong-svg')).toBeInTheDocument();
+    expect(screen.getByTestId('habit-vessel-svg-hydration')).toBeInTheDocument();
+    expect(screen.getByTestId('tribe-campfire-scene-svg')).toBeInTheDocument();
+    expect(screen.getByTestId('social-boost-burst-svg')).toBeInTheDocument();
+    expect(screen.getByTestId('rest-timer-zen-lotus-svg')).toBeInTheDocument();
+    expect(screen.getByTestId('shop-powerup-deploy-streak_freeze')).toBeInTheDocument();
+    expect(screen.getByTestId('empty-state-hammock-sensei-svg')).toBeInTheDocument();
   });
 });

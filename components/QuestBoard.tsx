@@ -5,7 +5,8 @@ import { InfoTooltip } from './InfoTooltip';
 import { claimDailyQuestChest, getTimeWindowChestStatus, claimTimeWindowChest } from '../utils/gamification';
 import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
 import { JungleChestSVG, JungleChestTier as ChestTier, JungleChestState as ChestState } from './JungleChestSVG';
-import { TimeWindowEmblemSVG } from './AnimatedIconsSVG';
+import { TimeWindowEmblemSVG, HabitVesselSVG } from './AnimatedIconsSVG';
+import { PandaSenseiSVG, PandaSenseiMode } from './PandaSenseiSVG';
 
 interface Props {
   quests: Quest[];
@@ -27,9 +28,20 @@ const DailyChestSvg: React.FC<{
     <JungleChestSVG
       tier={chestTier}
       state={state}
-      className="w-11 h-11 shrink-0"
+      className="w-14 h-14 shrink-0"
     />
   );
+};
+
+const getHabitVariant = (iconName: string): 'hydration' | 'nutrition' | 'steps' | 'workout' | 'social' | 'sleep' | 'stretch' | 'profile' => {
+  if (iconName === 'GlassWater') return 'hydration';
+  if (iconName === 'Apple') return 'nutrition';
+  if (iconName === 'Footprints') return 'steps';
+  if (iconName === 'Moon') return 'sleep';
+  if (iconName === 'Activity') return 'stretch';
+  if (iconName === 'User') return 'profile';
+  if (iconName === 'Heart' || iconName === 'Users' || iconName === 'Gift') return 'social';
+  return 'workout';
 };
 
 /**
@@ -97,9 +109,8 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
         ></div>
       )}
 
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center mr-3.5 shrink-0 transition-transform duration-300 group-hover:scale-105 ${quest.completed ? colors.iconCompletedBg : 'bg-emerald-50/80 text-emerald-600 border border-emerald-100/60'
-        }`}>
-        <QuestIcon name={quest.icon} />
+      <div className="w-14 h-14 mr-3.5 shrink-0 transition-transform duration-300 group-hover:scale-110">
+        <HabitVesselSVG variant={getHabitVariant(quest.icon)} completed={quest.completed} className="w-full h-full block" />
       </div>
 
       <div className="flex-1 min-w-0 mr-2.5 relative z-10">
@@ -146,6 +157,20 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
   const [claimingWindowChest, setClaimingWindowChest] = useState(false);
   const [chestToast, setChestToast] = useState<{ text: string; tier: ChestTier } | null>(null);
+  const [senseiPoseIdx, setSenseiPoseIdx] = useState(0);
+
+  const SENSEI_POSES: { mode: PandaSenseiMode; tip: string }[] = [
+    { mode: 'coaching', tip: 'Tap me for a dojo tip! Complete 3 quests for your Gold Chest!' },
+    { mode: 'lifting', tip: 'Heavy sets build iron discipline — log your workout today!' },
+    { mode: 'fire', tip: 'Keep your streak flame blazing! Every single rep counts!' },
+    { mode: 'shaker_gulp', tip: 'Hydrate & hit your protein target to recover faster!' },
+    { mode: 'victory', tip: 'Your Tribe is counting on you — let’s crush today’s mission!' },
+  ];
+
+  const handleTapSensei = () => {
+    triggerHaptic([15, 25]);
+    setSenseiPoseIdx((prev) => (prev + 1) % SENSEI_POSES.length);
+  };
 
   if (loading) return <div className="animate-pulse h-32 bg-emerald-50 rounded-[24px] w-full"></div>;
 
@@ -236,17 +261,37 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
         {/* Background Decor */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-lime-100/60 rounded-full blur-3xl -mr-10 -mt-10 opacity-60 pointer-events-none"></div>
 
-        <div className="flex justify-between items-center mb-3 relative z-10 pr-24 md:pr-0">
-          <div>
-            <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
-              Daily Quest
-            </h3>
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-              {allComplete ? 'All missions complete!' : `${completedCount}/${quests.length} Completed`}
-            </p>
+        <div className="flex justify-between items-center gap-3 mb-3.5 relative z-10">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={handleTapSensei}
+              title="Tap Sensei Panda for live coaching!"
+              className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl bg-emerald-100/70 border-2 border-emerald-200/80 p-1 hover:scale-105 active:scale-95 transition-transform cursor-pointer shadow-xs"
+            >
+              <PandaSenseiSVG
+                compact
+                framing="bust"
+                mode={allComplete ? 'victory' : SENSEI_POSES[senseiPoseIdx].mode}
+                className="w-full h-full block"
+              />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
+                  Daily Quest
+                </h3>
+                <span className="text-[10px] text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                  {allComplete ? 'All Complete!' : `${completedCount}/${quests.length} Done`}
+                </span>
+              </div>
+              <div className="mt-1 bg-white/90 border border-emerald-200/80 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-emerald-900 shadow-2xs">
+                💬 {allComplete ? 'Sensei says: Flawless victory! Claim all your chests!' : SENSEI_POSES[senseiPoseIdx].tip}
+              </div>
+            </div>
           </div>
           {allComplete && (
-            <div className="bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-2xs">
+            <div className="bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-2xs shrink-0">
               🎉 Bonus Unlocked!
             </div>
           )}
@@ -319,11 +364,18 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
             </div>
 
             {chestToast && (
-              <div className="mt-2.5 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white text-xs font-black flex items-center justify-center gap-2.5 shadow-md animate-squash-bounce">
-                <JungleChestSVG tier={chestToast.tier} state="opening" className="w-11 h-11 shrink-0" />
-                <div className="flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-yellow-200 shrink-0" />
-                  <span>Chest Opened: {chestToast.text}!</span>
+              <div className="mt-3 p-4 rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white shadow-xl border-2 border-yellow-200 flex items-center justify-between gap-3 animate-squash-bounce">
+                <JungleChestSVG tier={chestToast.tier} state="opening" className="w-24 h-24 shrink-0" />
+                <div className="flex-1 text-left">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-yellow-100 flex items-center gap-1">
+                    <Sparkles size={13} className="text-yellow-200 shrink-0" /> Loot Unboxed!
+                  </div>
+                  <div className="text-sm sm:text-base font-black mt-0.5">
+                    Chest Opened: {chestToast.text}!
+                  </div>
+                </div>
+                <div className="w-20 h-20 shrink-0">
+                  <PandaSenseiSVG compact framing="bust" mode="victory" className="w-full h-full block" />
                 </div>
               </div>
             )}
@@ -346,19 +398,21 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
                   : 'bg-indigo-50/70 border-indigo-200/70'
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <JungleChestSVG
-                  tier={timeWindowStatus.type === 'night_owl' ? 'silver' : 'bronze'}
-                  state={claimingWindowChest ? 'opening' : timeWindowStatus.isUnlocked ? 'ready' : 'locked'}
-                  className="w-10 h-10 shrink-0"
-                />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center -space-x-2 shrink-0">
+                  <TimeWindowEmblemSVG
+                    mode={timeWindowStatus.type === 'night_owl' ? 'night_owl' : 'early_bird'}
+                    className="w-14 h-14 shrink-0 block drop-shadow-xs"
+                  />
+                  <JungleChestSVG
+                    tier={timeWindowStatus.type === 'night_owl' ? 'silver' : 'bronze'}
+                    state={claimingWindowChest ? 'opening' : timeWindowStatus.isUnlocked ? 'ready' : 'locked'}
+                    className="w-15 h-15 shrink-0 block"
+                  />
+                </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <TimeWindowEmblemSVG
-                      mode={timeWindowStatus.type === 'night_owl' ? 'night_owl' : 'early_bird'}
-                      className="w-5 h-5 shrink-0 block"
-                    />
-                    <span className="text-xs font-black text-slate-900 truncate">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
                       {timeWindowStatus.label}
                     </span>
                   </div>

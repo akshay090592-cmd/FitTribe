@@ -297,8 +297,8 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                     {(() => {
                                         const rankDetails = getRankDetails(xpData?.level || 1);
                                         return (
-                                            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 pl-1.5 pr-2.5 py-0.5 rounded-full border border-emerald-200/60 uppercase tracking-widest">
-                                                <RankCrestSVG tierIndex={rankDetails.tierIndex} icon={rankDetails.icon} className="w-6 h-6 shrink-0 block" />
+                                            <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 pl-2 pr-3.5 py-1 rounded-2xl border border-emerald-200/80 uppercase tracking-widest shadow-2xs">
+                                                <RankCrestSVG tierIndex={rankDetails.tierIndex} icon={rankDetails.icon} className="w-12 h-12 shrink-0 block" />
                                                 <span>{getRank(xpData?.level || 1)}</span>
                                             </div>
                                         );
@@ -329,8 +329,9 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
                                     <div className="text-[9px] font-bold text-emerald-700/80 uppercase tracking-wider mt-0.5">Workouts</div>
                                 </div>
                                 <div className="glass-panel p-3.5 spring-transition flex flex-col items-center justify-center cursor-default shadow-2xs" style={{ background: 'hsla(25,95%,96%,0.75)', border: '1px solid hsl(25,90%,88%)', borderRadius: '22px' }}>
-                                    <div className="text-2xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center leading-tight gap-1">
-                                        {streaks} <StreakFlameSVG state={streaks >= 7 ? 'super' : 'active'} className="w-6 h-6 shrink-0 block" />
+                                    <div className="text-2xl font-bold text-orange-600 font-['Fredoka'] flex items-center justify-center leading-tight gap-1.5">
+                                        <span>{streaks}</span>
+                                        <StreakFlameSVG state={streaks >= 7 ? 'super' : 'active'} className="w-11 h-11 shrink-0 block -my-1" />
                                     </div>
                                     <div className="text-[9px] font-bold text-orange-600/80 uppercase tracking-wider mt-0.5">Streak</div>
                                 </div>

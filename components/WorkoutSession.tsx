@@ -28,7 +28,7 @@ import {
 import { getProgressionSuggestion } from '../utils/progression';
 import { calculateCalories } from '../utils/calorieUtils';
 import { CheckCircle, ChevronLeft, X, TrendingUp, Lightbulb, Trophy, Leaf, Sparkles, AlertTriangle, Zap, Camera, Plus, RefreshCw, Search, Volume2, VolumeX } from 'lucide-react';
-import { isSoundMuted, toggleSoundMuted, playSetCompleteChime, playComboFanfare, playLevelUpSound } from '../utils/soundEffects';
+import { isSoundMuted, toggleSoundMuted, playSetCompleteChime, playComboFanfare, playLevelUpSound, playPRGongSound, playBambooClackSound, playZenChimeSound } from '../utils/soundEffects';
 import { EXERCISE_MUSCLE_MAP, MUSCLE_GROUPS, getMuscleGroup } from '../utils/muscleMapping';
 import { resolveExerciseVisualMeta, KNOWN_EXERCISE_BLUEPRINTS } from '../utils/exerciseVisuals';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
@@ -304,6 +304,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const prevMaxWeightRef = useRef<Record<string, number>>({});
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
@@ -408,6 +409,13 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       // Initialize from plan (Async)
       const initializedRecords = await Promise.all(plan.exercises.map(async ex => {
         const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id);
+        if (lastSets && lastSets.length > 0) {
+          let maxW = 0;
+          for (let i = 0; i < lastSets.length; i++) {
+            if (lastSets[i].weight > maxW) maxW = lastSets[i].weight;
+          }
+          prevMaxWeightRef.current[ex.name] = maxW;
+        }
         const visualMeta = resolveExerciseVisualMeta(ex.name, {
           customImage: ex.image,
           visualArchetype: ex.visualArchetype,
@@ -562,15 +570,28 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     const currentEx = currentRecord ? getExerciseMeta(currentRecord, exerciseIndex) : plan.exercises[exerciseIndex];
     let nextRest = currentEx?.restSeconds || 60;
 
-    // Micro-dopamine audio + floating XP arc
-    playSetCompleteChime(setIndex);
+    // Micro-dopamine audio + PR gong detection + floating XP arc
+    const completedSet = currentRecord?.sets?.[setIndex];
+    const prevBest = currentRecord ? (prevMaxWeightRef.current[currentRecord.name] || 0) : 0;
+    const isNewPR = Boolean(currentRecord && completedSet && prevBest > 0 && completedSet.weight > prevBest);
+
+    if (isNewPR && currentRecord && completedSet) {
+      prevMaxWeightRef.current[currentRecord.name] = completedSet.weight;
+      playPRGongSound();
+      setComboToast(`🔔 NEW PR on ${currentRecord.name}: ${completedSet.weight}kg!`);
+      setTimeout(() => setComboToast(null), 3500);
+    } else {
+      playSetCompleteChime(setIndex);
+    }
     setFloatingXpBurst(Date.now());
     if (currentRecord) {
       const allSetsDone = currentRecord.sets.every((s, idx) => idx === setIndex || s.completed);
       if (allSetsDone) {
         setTimeout(() => playComboFanfare(), 160);
-        setComboToast(`🔥 ${currentRecord.name} Crushed! All sets complete!`);
-        setTimeout(() => setComboToast(null), 3200);
+        if (!isNewPR) {
+          setComboToast(`🔥 ${currentRecord.name} Crushed! All sets complete!`);
+          setTimeout(() => setComboToast(null), 3200);
+        }
       }
     }
 
@@ -1256,7 +1277,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               {plan.warmup.length > 0 && !allWarmupDone ? (
                 <button
                   type="button"
-                  onClick={() => setWarmupDone(new Array(plan.warmup.length).fill(true))}
+                  onClick={() => {
+                    playComboFanfare();
+                    setWarmupDone(new Array(plan.warmup.length).fill(true));
+                  }}
                   className="mb-3 text-xs font-extrabold text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 active:scale-95 transition-all shrink-0 shadow-2xs"
                 >
                   Check All
@@ -1292,6 +1316,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                         onChange={() => {
                           const n = [...warmupDone];
                           n[idx] = !n[idx];
+                          if (n[idx]) {
+                            if (n.every(Boolean)) playComboFanfare();
+                            else playBambooClackSound();
+                          }
                           setWarmupDone(n);
                         }}
                         className="hidden"
@@ -2138,7 +2166,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
             {plan.cooldown.length > 0 && cooldownCompletedCount < plan.cooldown.length && (
               <button
                 type="button"
-                onClick={() => setCooldownDone(new Array(plan.cooldown.length).fill(true))}
+                onClick={() => {
+                  playComboFanfare();
+                  setCooldownDone(new Array(plan.cooldown.length).fill(true));
+                }}
                 className="mb-3 text-xs font-extrabold text-teal-800 bg-white hover:bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/80 active:scale-95 transition-all shrink-0 shadow-2xs"
               >
                 Check All
@@ -2169,6 +2200,10 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                       onChange={() => {
                         const n = [...cooldownDone];
                         n[idx] = !n[idx];
+                        if (n[idx]) {
+                          if (n.every(Boolean)) playComboFanfare();
+                          else playZenChimeSound();
+                        }
                         setCooldownDone(n);
                       }}
                       className="hidden"

@@ -5,6 +5,7 @@ import { CheckCircle2, BedDouble, Flame, Hand, AlertTriangle, CalendarDays } fro
 import { getAvatarPath } from '../utils/avatar';
 import { calculateLevel, getRankDetails } from '../utils/gamification';
 import { TribeCampfireSceneSVG } from './AnimatedIconsSVG';
+import { playCampfireStokeSound } from '../utils/soundEffects';
 
 interface Props {
     currentUser: string | null;
@@ -23,6 +24,7 @@ export const TribePulse: React.FC<Props> = React.memo(({ currentUser, tribeId, m
     const [stoked, setStoked] = useState(false);
 
     const handleStokeCampfire = () => {
+        playCampfireStokeSound();
         setStoked(true);
         setTimeout(() => setStoked(false), 2000);
     };

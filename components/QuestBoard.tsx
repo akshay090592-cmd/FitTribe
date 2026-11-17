@@ -3,7 +3,7 @@ import { Quest, UserProfile, UserGamificationState } from '../types';
 import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Sun, Clock, Lock, User as UserIcon, Users, Sparkles } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { claimDailyQuestChest, getTimeWindowChestStatus, claimTimeWindowChest } from '../utils/gamification';
-import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
+import { playChestOpenSound, playBambooClackSound, triggerHaptic } from '../utils/soundEffects';
 import { JungleChestSVG, JungleChestTier as ChestTier, JungleChestState as ChestState } from './JungleChestSVG';
 import { TimeWindowEmblemSVG, HabitVesselSVG } from './AnimatedIconsSVG';
 import { PandaSenseiSVG, PandaSenseiMode } from './PandaSenseiSVG';
@@ -92,7 +92,12 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
 
   return (
     <div
-      onClick={() => isManual && !quest.completed ? onManualComplete(quest.id) : null}
+      onClick={() => {
+        if (isManual && !quest.completed) {
+          playBambooClackSound();
+          onManualComplete(quest.id);
+        }
+      }}
       className={`group flex items-center p-3.5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${quest.completed
         ? `${colors.bgCompleted} opacity-85`
         : isManual
@@ -168,7 +173,7 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
   ];
 
   const handleTapSensei = () => {
-    triggerHaptic([15, 25]);
+    playBambooClackSound();
     setSenseiPoseIdx((prev) => (prev + 1) % SENSEI_POSES.length);
   };
 

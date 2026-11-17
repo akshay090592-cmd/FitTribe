@@ -11,6 +11,7 @@ import { AICoachService } from '../services/aiCoach';
 import { Calendar } from './Calendar';
 import { AnimatedTrophyMedalSVG, PRBellGongSVG, EmptyStateHammockSenseiSVG } from './AnimatedIconsSVG';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
+import { playPRGongSound, playBambooClackSound } from '../utils/soundEffects';
 
 // BOLT: Cache computed weekly/monthly keys and labels per log date string to completely eliminate
 // redundant Date object instantiations and expensive formatting calls on hot rendering paths.
@@ -450,7 +451,10 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           ) : (
             <button
               type="button"
-              onClick={() => setHammockAwake((prev) => !prev)}
+              onClick={() => {
+                playBambooClackSound();
+                setHammockAwake((prev) => !prev);
+              }}
               className="h-full w-full flex flex-col items-center justify-center text-slate-500 text-xs font-bold bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200/80 ml-2 p-2 hover:bg-emerald-50/40 transition-colors cursor-pointer"
             >
               <EmptyStateHammockSenseiSVG awake={hammockAwake} size={108} className="w-27 h-20 block -my-1" />
@@ -625,6 +629,7 @@ export const Analytics: React.FC<Props> = React.memo(({ user, userProfile, isVis
           <button
             type="button"
             onClick={() => {
+              playPRGongSound();
               setBellRinging(true);
               setTimeout(() => setBellRinging(false), 2200);
             }}

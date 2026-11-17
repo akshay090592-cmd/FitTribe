@@ -56,7 +56,21 @@ vi.mock('../services/notificationService', () => ({
 
 vi.mock('../utils/soundEffects', () => ({
   playChestOpenSound: vi.fn(),
+  playSetCompleteChime: vi.fn(),
+  playComboFanfare: vi.fn(),
+  playPRGongSound: vi.fn(),
+  playWarDrumSound: vi.fn(),
+  playBambooClackSound: vi.fn(),
+  playCampfireStokeSound: vi.fn(),
+  playWaxSealStampSound: vi.fn(),
+  playSocialBoostSound: vi.fn(),
+  playRoyalCrownFanfare: vi.fn(),
+  playZenChimeSound: vi.fn(),
+  playLevelUpSound: vi.fn(),
   triggerHaptic: vi.fn(),
+  isSoundMuted: vi.fn(() => false),
+  setSoundMuted: vi.fn(),
+  toggleSoundMuted: vi.fn(() => false),
 }));
 
 import { getGamificationState, saveGamificationState, addXPLog, addPointLog, getTribeMembers, getLogs } from '../utils/storage';
@@ -396,7 +410,7 @@ describe('Phase 2 UI Components Smoke Tests', () => {
       />
     );
 
-    expect(screen.getByText(/Beat 600 kg/i)).toBeInTheDocument();
+    expect(screen.getByText(/Match Sam's 1 Set/i)).toBeInTheDocument();
     const boostBtn = screen.getByRole('button', { name: /Boost/i });
     fireEvent.click(boostBtn);
 

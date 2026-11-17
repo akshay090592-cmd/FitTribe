@@ -5,7 +5,7 @@ import { getGamificationState, saveGamificationState, sendGift, getTribeMembers,
 import { notifyOnGiftReceived } from '../services/notificationService';
 import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES, SHOP_POWERUPS, calculateMasteryProgress, purchasePowerUp, MasteryCategoryProgress } from '../utils/gamification';
 import { Trophy, Lock, Gift, Zap, Crown, Star, Send, Target, MessageCircle, Store, Palette, CheckCircle, LogOut, X, Sparkles } from 'lucide-react';
-import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
+import { playChestOpenSound, playRoyalCrownFanfare, triggerHaptic } from '../utils/soundEffects';
 
 // BOLT: Pre-compute module-scoped map for O(1) gift image lookups to avoid O(N) array .find() calls during renders
 export const GIFT_IMAGE_MAP = new Map<string, string | undefined>(
@@ -267,7 +267,10 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
               <div
                 key={badge.id}
                 className="flex flex-col items-center text-center group cursor-pointer transition-all active:scale-95"
-                onClick={() => setSelectedBadge(badge)}
+                onClick={() => {
+                  playRoyalCrownFanfare();
+                  setSelectedBadge(badge);
+                }}
               >
                 <div className={`w-15 h-15 md:w-16 md:h-16 rounded-[20px] flex items-center justify-center mb-2 transition-all transform duration-300 ${
                   isUnlocked

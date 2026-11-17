@@ -7,7 +7,7 @@ import { RallyDrumSVG } from './AnimatedIconsSVG';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
 import { claimWeeklyTribeChest, awardSocialSupportXP } from '../utils/gamification';
 import { notifyNudge } from '../services/notificationService';
-import { playChestOpenSound, triggerHaptic } from '../utils/soundEffects';
+import { playChestOpenSound, playWarDrumSound, triggerHaptic } from '../utils/soundEffects';
 import { getWeekKey } from '../utils/dateUtils';
 
 interface Props {
@@ -42,7 +42,7 @@ export const TribeStatusCard: React.FC<Props> = memo(({
 
   const triggerDrumBeat = () => {
     setDrumBeating(true);
-    triggerHaptic([20, 40, 20]);
+    playWarDrumSound();
     setTimeout(() => setDrumBeating(false), 1800);
   };
 

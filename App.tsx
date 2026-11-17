@@ -29,6 +29,7 @@ import { DesktopNavigation } from './components/DesktopNavigation';
 import { TribeVictoryPhoto } from './components/TribeVictoryPhoto';
 import { getThemePalette, AppThemePalette } from './utils/themeConfig';
 import { StreakFlameSVG, HonorPledgeSealSVG } from './components/AnimatedIconsSVG';
+import { playWaxSealStampSound, playCampfireStokeSound } from './utils/soundEffects';
 // Dynamic imports for code splitting
 const WorkoutSession = React.lazy(() => import('./components/WorkoutSession').then(module => ({ default: module.WorkoutSession })));
 const Analytics = React.lazy(() => import('./components/Analytics').then(module => ({ default: module.Analytics })));
@@ -1007,6 +1008,7 @@ const App: React.FC = () => {
   const handleCommit = async () => {
     if (!userProfile) return;
     setIsCommitting(true);
+    playWaxSealStampSound();
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1489,7 +1491,10 @@ const App: React.FC = () => {
                   <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md font-['Fredoka'] tracking-wide truncate">Hi, {currentUser}!</h1>
                   <button
                     type="button"
-                    onClick={() => setIsStreakModalOpen(true)}
+                    onClick={() => {
+                      playCampfireStokeSound();
+                      setIsStreakModalOpen(true);
+                    }}
                     className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-sm shadow-2xs transition-all active:scale-95 ${
                       streakRisk
                         ? 'bg-red-500/35 border border-red-300/60 text-amber-100 animate-pulse'
@@ -1838,7 +1843,10 @@ const App: React.FC = () => {
               <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
                 {/* Streak Card */}
                 <button
-                  onClick={() => setIsStreakModalOpen(true)}
+                  onClick={() => {
+                    playCampfireStokeSound();
+                    setIsStreakModalOpen(true);
+                  }}
                   className="card-streak spring-transition tactile-press p-3.5 rounded-[24px] shadow-md flex flex-col justify-between group h-32 relative overflow-hidden foliage-pattern text-left"
                 >
                   <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-30 transition-opacity duration-300">

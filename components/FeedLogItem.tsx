@@ -8,6 +8,7 @@ import { formatTimeAgo } from '../utils/dateUtils';
 import { RankBadge } from './RankBadge';
 import { awardSocialSupportXP } from '../utils/gamification';
 import { RivalrySwordsSVG, SocialBoostBurstSVG } from './AnimatedIconsSVG';
+import { playBambooClackSound, playSocialBoostSound } from '../utils/soundEffects';
 
 interface Props {
     log: WorkoutLog;
@@ -56,6 +57,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
         setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 950);
         setBoostBurst(true);
         setTimeout(() => setBoostBurst(false), 1800);
+        playSocialBoostSound();
         onReaction(log.id);
 
         if (!hasReacted && log.user !== currentUser) {
@@ -70,21 +72,22 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
         }
     };
 
-    // BOLT: Memoize total volume calculation to prevent redundant $O(E*S)$ reduction on every render
-    // Optimized using nested allocation-free manual standard for loops instead of dual .reduce().
-    const totalVolume = useMemo(() => {
+    // BOLT: Memoize total volume and completed sets count to prevent redundant $O(E*S)$ reduction on every render
+    const { totalVolume, completedSetsCount } = useMemo(() => {
         let vol = 0;
+        let setsDone = 0;
         const exercises = log.exercises || [];
         for (let i = 0; i < exercises.length; i++) {
             const sets = exercises[i]?.sets || [];
             for (let j = 0; j < sets.length; j++) {
                 const s = sets[j];
                 if (s?.completed) {
+                    setsDone++;
                     vol += s.weight * s.reps;
                 }
             }
         }
-        return vol;
+        return { totalVolume: vol, completedSetsCount: setsDone };
     }, [log.exercises]);
 
     // BOLT: Memoize displayed exercises to avoid $O(1)$ or $O(N)$ slicing on every render
@@ -179,26 +182,31 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                     </div>
                 </div>
 
-                {/* Dedicated Volume Rivalry Challenge Strip for Teammate Strength Logs */}
-                {log.type !== 'Custom' && log.type !== 'COMMITMENT' && log.type?.toUpperCase() !== 'COMMITMENT' && totalVolume > 0 && log.user !== currentUser && (
+                {/* Inclusive Friendly Dojo Sparring Strip (Effort, Sets & Consistency — Fair for all weights, genders & levels) */}
+                {log.type !== 'COMMITMENT' && log.type !== 'Commitment' && log.type?.toUpperCase() !== 'COMMITMENT' && (completedSetsCount > 0 || log.durationMinutes > 0) && log.user !== currentUser && (
                     <button
                         type="button"
-                        onClick={() => setRivalryAccepted((prev) => !prev)}
+                        onClick={() => {
+                            playBambooClackSound();
+                            setRivalryAccepted((prev) => !prev);
+                        }}
                         className="w-full mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50/90 to-emerald-50 border border-amber-200/80 flex items-center justify-between gap-3 text-left hover:brightness-98 active:scale-[0.99] transition-all cursor-pointer relative z-10 shadow-2xs"
                     >
                         <div className="flex items-center gap-2.5 min-w-0">
                             <RivalrySwordsSVG clashing={rivalryAccepted} className="w-12 h-12 shrink-0 block" />
                             <div className="min-w-0">
                                 <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">
-                                    {rivalryAccepted ? '⚔️ Rivalry Challenge Accepted!' : 'Tribe Volume Rivalry • Tap to Clash'}
+                                    {rivalryAccepted ? '🥋 Dojo Sparring Pact Locked In!' : 'Friendly Dojo Sparring • Tap to Answer'}
                                 </div>
                                 <div className="text-xs font-black text-emerald-950 truncate">
-                                    Beat {Math.round(totalVolume).toLocaleString()} kg
+                                    {completedSetsCount > 0
+                                        ? `Match ${log.user}'s ${completedSetsCount} ${completedSetsCount === 1 ? 'Set' : 'Sets'} (${log.durationMinutes}m) at your pace`
+                                        : `Match ${log.user}'s ${log.durationMinutes}-min ${log.customActivity || 'session'} today`}
                                 </div>
                             </div>
                         </div>
                         <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl shrink-0 ${rivalryAccepted ? 'bg-emerald-600 text-white' : 'bg-amber-200/70 text-amber-900'}`}>
-                            {rivalryAccepted ? 'Locked In 🔥' : 'Accept'}
+                            {rivalryAccepted ? 'Locked In 🔥' : 'Match Effort'}
                         </span>
                     </button>
                 )}

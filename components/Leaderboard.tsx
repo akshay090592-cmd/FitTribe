@@ -6,6 +6,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { getAvatarPath } from '../utils/avatar';
 import { RankBadge } from './RankBadge';
 import { LeaderboardCrownSVG } from './AnimatedIconsSVG';
+import { playRoyalCrownFanfare } from '../utils/soundEffects';
 
 interface Props {
     logs: WorkoutLog[];
@@ -22,6 +23,7 @@ export const Leaderboard: React.FC<Props> = React.memo(({ logs, gamificationStat
     const [crownFanfare, setCrownFanfare] = useState(false);
 
     const handleCrownTap = () => {
+        playRoyalCrownFanfare();
         setCrownFanfare(true);
         setTimeout(() => setCrownFanfare(false), 2400);
     };

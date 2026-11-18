@@ -288,4 +288,29 @@ describe('InfoTooltip mobile-friendly explanation popover', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
+
+  it('clamps tooltip horizontally within viewport when trigger is near right edge and supports legacy text prop', () => {
+    const origInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 375 });
+
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.getAttribute('role') === 'tooltip') {
+        return { top: 0, left: 0, bottom: 60, right: 224, width: 224, height: 60, x: 0, y: 0, toJSON: () => ({}) };
+      }
+      return { top: 300, left: 320, bottom: 320, right: 340, width: 20, height: 20, x: 320, y: 300, toJSON: () => ({}) };
+    });
+
+    try {
+      render(<InfoTooltip label="Legacy Info" text="Legacy tooltip content" align="left" color="text-amber-500" iconSize={12} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Legacy Info' }));
+      const tip = screen.getByRole('tooltip');
+      expect(tip).toHaveTextContent('Legacy tooltip content');
+      const leftPx = parseFloat(tip.style.left);
+      expect(leftPx + 224).toBeLessThanOrEqual(375 - 12);
+      expect(leftPx).toBeGreaterThanOrEqual(12);
+    } finally {
+      rectSpy.mockRestore();
+      Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: origInnerWidth });
+    }
+  });
 });

@@ -71,6 +71,13 @@ export interface WorkoutSequenceSlot {
   defaultIntensity?: number;
 }
 
+export interface SavedWorkoutSequence {
+  id: string;
+  name: string;
+  slots: WorkoutSequenceSlot[];
+  currentIndex?: number;
+}
+
 export interface UserGoals {
   primary_goal?: string;
   stress_level?: string;
@@ -79,6 +86,8 @@ export interface UserGoals {
   weekly_frequency?: number;
   workoutSequence?: WorkoutSequenceSlot[];
   sequenceIndex?: number;
+  savedSequences?: SavedWorkoutSequence[];
+  activeSequenceId?: string;
 }
 
 export interface CustomChallenge {

@@ -248,6 +248,73 @@ describe('WorkoutLibraryModal manual Mission Sequence planner', () => {
       expect(onUpdateProfile).toHaveBeenCalled();
     });
   });
+
+  it('provides Period-phase templates and allows switching or creating multiple named sequences', async () => {
+    const onUpdateProfile = vi.fn();
+    const periodProfile = {
+      ...mockProfile,
+      workoutTemplates: [
+        ...mockProfile.workoutTemplates!,
+        {
+          id: 'tpl-period-focus',
+          name: 'Gentle Full Body Strength (Period Focus)',
+          exercises: [{ name: 'Seated Cable Row', sets: 2, reps: '12' }],
+        },
+      ],
+    };
+
+    render(
+      <WorkoutLibraryModal
+        isOpen={true}
+        onClose={vi.fn()}
+        userProfile={periodProfile}
+        onStartTemplate={vi.fn()}
+        onUpdateProfile={onUpdateProfile}
+        initialTab="templates"
+      />
+    );
+
+    // Period Days 1-2 and Days 3-5 templates are automatically available
+    expect(screen.getByText('Period Days 1-2: Cramp Relief & Pelvic Decompression')).toBeInTheDocument();
+    expect(screen.getByText('Period Days 3-5: Low-RPE Joint-Safe Sculpt')).toBeInTheDocument();
+
+    // Switch to Mission Sequence tab and verify Saved Sequences switcher
+    fireEvent.click(screen.getByRole('button', { name: /Mission Sequence/i }));
+    expect(screen.getByText('Saved Sequences')).toBeInTheDocument();
+    const periodSeqBtn = screen.getByRole('button', { name: /Period Week \(Days 1-5\)/i });
+    expect(periodSeqBtn).toBeInTheDocument();
+
+    // Switch active sequence to Period Week (Days 1-5)
+    fireEvent.click(periodSeqBtn);
+    await waitFor(() => {
+      expect(onUpdateProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          goals: expect.objectContaining({
+            activeSequenceId: 'seq_period_week',
+          }),
+        })
+      );
+    });
+
+    // Create a new named sequence for any user
+    fireEvent.click(screen.getByRole('button', { name: /New Sequence/i }));
+    fireEvent.change(screen.getByLabelText('New sequence name'), {
+      target: { value: 'Travel Week' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(onUpdateProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          goals: expect.objectContaining({
+            savedSequences: expect.arrayContaining([
+              expect.objectContaining({ name: 'Travel Week' }),
+            ]),
+          }),
+        })
+      );
+    });
+  });
 });
 
 describe('ActivityTrackerModal initialActivity & initialDuration pre-fill', () => {

@@ -1,11 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { WorkoutTemplate, UserProfile, WorkoutSequenceSlot } from '../types';
+import { WorkoutTemplate, UserProfile, WorkoutSequenceSlot, SavedWorkoutSequence } from '../types';
 import { TemplateEditor } from './TemplateEditor';
 import { updateProfile } from '../utils/storage';
 import { ACTIVITIES_LIST } from '../constants';
-import { getActiveSequenceSlot, normalizeWorkoutTemplate } from '../utils/templateUtils';
-import { X, Plus, Play, Edit, Trash2, Library, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Flame, Wind, Activity, CheckCircle2 } from 'lucide-react';
+import {
+  getActiveSequenceSlot,
+  normalizeWorkoutTemplate,
+  ensurePeriodSupportTemplates,
+  getSavedSequences,
+  buildUpdatedSequenceGoals,
+} from '../utils/templateUtils';
+import {
+  X,
+  Plus,
+  Play,
+  Edit,
+  Trash2,
+  Library,
+  ListOrdered,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
+  Flame,
+  Wind,
+  Activity,
+  CheckCircle2,
+  Layers,
+  Check,
+} from 'lucide-react';
 import { ConfirmPopup } from './ConfirmPopup';
 import { InfoTooltip } from './InfoTooltip';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
@@ -46,6 +69,10 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | undefined>(undefined);
   const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
 
+  // Multi-Sequence Creation State
+  const [isCreatingSequence, setIsCreatingSequence] = useState<boolean>(false);
+  const [newSequenceName, setNewSequenceName] = useState<string>('');
+
   // Manual Activity Slotting State
   const [selectedActivity, setSelectedActivity] = useState<string>('Treadmill');
   const [activityDuration, setActivityDuration] = useState<number>(40);
@@ -54,28 +81,103 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
     if (isOpen) {
       setActiveTab(initialTab);
       setView('list');
+      setIsCreatingSequence(false);
+      setNewSequenceName('');
     }
   }, [isOpen, initialTab]);
 
   if (!isOpen || !userProfile) return null;
 
-  const templates = (userProfile.workoutTemplates || []).map(normalizeWorkoutTemplate);
-  const sequenceState = getActiveSequenceSlot(userProfile.goals);
+  const templates = ensurePeriodSupportTemplates(
+    userProfile.workoutTemplates || [],
+    userProfile.displayName
+  );
+  const savedSequences = getSavedSequences(userProfile.goals, templates, userProfile.displayName);
+  const sequenceState = getActiveSequenceSlot({
+    ...(userProfile.goals || {}),
+    savedSequences,
+  });
+  const activeSequenceId =
+    sequenceState?.sequenceId ||
+    userProfile.goals?.activeSequenceId ||
+    savedSequences[0]?.id ||
+    'seq_standard';
+  const activeSequenceObj = savedSequences.find(s => s.id === activeSequenceId);
+  const activeSequenceName = activeSequenceObj?.name || sequenceState?.sequenceName || 'Standard Cycle';
   const sequence = sequenceState?.sequence || [];
   const activeSequenceIndex = sequenceState?.index ?? 0;
 
-  const persistSequence = async (nextSequence: WorkoutSequenceSlot[], nextIndex: number) => {
-    const safeIndex = nextSequence.length > 0 ? ((nextIndex % nextSequence.length) + nextSequence.length) % nextSequence.length : 0;
+  const persistSequence = async (
+    nextSequence: WorkoutSequenceSlot[],
+    nextIndex: number,
+    overrideOptions?: {
+      sequenceId?: string;
+      sequenceName?: string;
+      savedSequences?: SavedWorkoutSequence[];
+    }
+  ) => {
+    const nextGoals = buildUpdatedSequenceGoals(
+      userProfile.goals,
+      nextSequence,
+      nextIndex,
+      {
+        sequenceId: overrideOptions?.sequenceId || activeSequenceId,
+        sequenceName: overrideOptions?.sequenceName || activeSequenceName,
+        savedSequences: overrideOptions?.savedSequences || savedSequences,
+      }
+    );
+
     const updatedProfile: UserProfile = {
       ...userProfile,
-      goals: {
-        ...(userProfile.goals || {}),
-        workoutSequence: nextSequence,
-        sequenceIndex: safeIndex,
-      },
+      workoutTemplates: templates,
+      goals: nextGoals,
     };
     onUpdateProfile(updatedProfile);
     await updateProfile(updatedProfile);
+  };
+
+  const handleSwitchSavedSequence = async (targetSeq: SavedWorkoutSequence) => {
+    const safeIdx =
+      targetSeq.slots.length > 0
+        ? ((targetSeq.currentIndex || 0) % targetSeq.slots.length + targetSeq.slots.length) %
+          targetSeq.slots.length
+        : 0;
+    await persistSequence(targetSeq.slots, safeIdx, {
+      sequenceId: targetSeq.id,
+      sequenceName: targetSeq.name,
+      savedSequences,
+    });
+  };
+
+  const handleCreateNamedSequence = async () => {
+    const trimmed = newSequenceName.trim();
+    if (!trimmed) return;
+    const newId = `seq_${crypto.randomUUID().slice(0, 8)}`;
+    const newSeq: SavedWorkoutSequence = {
+      id: newId,
+      name: trimmed,
+      slots: [],
+      currentIndex: 0,
+    };
+    const nextSaved = [...savedSequences, newSeq];
+    setNewSequenceName('');
+    setIsCreatingSequence(false);
+    await persistSequence([], 0, {
+      sequenceId: newId,
+      sequenceName: trimmed,
+      savedSequences: nextSaved,
+    });
+  };
+
+  const handleDeleteSavedSequence = async (seqId: string) => {
+    if (savedSequences.length <= 1) return;
+    const remaining = savedSequences.filter(s => s.id !== seqId);
+    const fallback = remaining[0];
+    await persistSequence(fallback.slots, fallback.currentIndex || 0, {
+      sequenceId: fallback.id,
+      sequenceName: fallback.name,
+      savedSequences: remaining,
+    });
   };
 
   const handleAddTemplateToSequence = async (template: WorkoutTemplate) => {
@@ -142,7 +244,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
     const normalized = normalizeWorkoutTemplate(template);
     let updatedTemplates = [...templates];
     if (view === 'edit') {
-      updatedTemplates = updatedTemplates.map(t => t.id === normalized.id ? normalized : t);
+      updatedTemplates = updatedTemplates.map(t => (t.id === normalized.id ? normalized : t));
     } else {
       updatedTemplates.push(normalized);
     }
@@ -163,7 +265,10 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
         <div className="bg-white w-full max-w-md h-[85vh] rounded-[32px] overflow-hidden shadow-2xl">
           <TemplateEditor
             onSave={handleSaveTemplate}
-            onCancel={() => { setView('list'); setEditingTemplate(undefined); }}
+            onCancel={() => {
+              setView('list');
+              setEditingTemplate(undefined);
+            }}
             initialTemplate={editingTemplate}
           />
         </div>
@@ -180,7 +285,11 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
           <div className="absolute inset-0 bg-[url('/assets/jungle_bg_pattern.webp')] opacity-10"></div>
           <div className="flex justify-between items-center relative z-10 mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-white font-['Fredoka'] flex items-center">
-              {activeTab === 'templates' ? <Library className="mr-2" size={22} /> : <ListOrdered className="mr-2" size={22} />}
+              {activeTab === 'templates' ? (
+                <Library className="mr-2" size={22} />
+              ) : (
+                <ListOrdered className="mr-2" size={22} />
+              )}
               {activeTab === 'templates' ? 'Workout Library' : 'Mission Sequence'}
             </h2>
             <button
@@ -215,9 +324,13 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
             >
               <ListOrdered size={14} /> Mission Sequence
               {sequence.length > 0 && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                  activeTab === 'sequence' ? 'bg-indigo-100 text-indigo-700' : 'bg-white/20 text-white'
-                }`}>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    activeTab === 'sequence'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'bg-white/20 text-white'
+                  }`}
+                >
                   {sequence.length}
                 </span>
               )}
@@ -229,7 +342,10 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
         {activeTab === 'templates' ? (
           <div className="p-4 space-y-4 overflow-y-auto flex-1 bg-slate-50">
             <button
-              onClick={() => { setEditingTemplate(undefined); setView('create'); }}
+              onClick={() => {
+                setEditingTemplate(undefined);
+                setView('create');
+              }}
               className="w-full bg-white border-2 border-dashed border-indigo-200 rounded-2xl p-4 flex items-center justify-center text-indigo-500 font-bold hover:bg-indigo-50 hover:border-indigo-300 transition-all active:scale-95 group"
             >
               <div className="bg-indigo-100 p-2 rounded-full mr-2 group-hover:scale-110 transition-transform">
@@ -245,17 +361,27 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
               </div>
             ) : (
               templates.map(template => (
-                <div key={template.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition-shadow">
+                <div
+                  key={template.id}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition-shadow"
+                >
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-slate-800 text-base sm:text-lg leading-snug break-words">{template.name}</h3>
+                      <h3 className="font-bold text-slate-800 text-base sm:text-lg leading-snug break-words">
+                        {template.name}
+                      </h3>
                       {template.focus && (
-                        <p className="text-[11px] font-semibold text-indigo-600/80 mt-0.5 leading-snug break-words">{template.focus}</p>
+                        <p className="text-[11px] font-semibold text-indigo-600/80 mt-0.5 leading-snug break-words">
+                          {template.focus}
+                        </p>
                       )}
                     </div>
                     <div className="flex space-x-1 shrink-0">
                       <button
-                        onClick={() => { setEditingTemplate(template); setView('edit'); }}
+                        onClick={() => {
+                          setEditingTemplate(template);
+                          setView('edit');
+                        }}
                         aria-label={`Edit ${template.name}`}
                         className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
                       >
@@ -283,7 +409,10 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
 
                   <div className="mb-4 space-y-2">
                     {template.exercises.slice(0, 3).map((ex, idx) => (
-                      <div key={idx} className="text-xs text-slate-600 flex items-center justify-between gap-2">
+                      <div
+                        key={idx}
+                        className="text-xs text-slate-600 flex items-center justify-between gap-2"
+                      >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <ExerciseThumbnail
                             name={ex.name}
@@ -293,7 +422,9 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                             size="xs"
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="font-bold text-slate-800 leading-snug break-words">{ex.name}</div>
+                            <div className="font-bold text-slate-800 leading-snug break-words">
+                              {ex.name}
+                            </div>
                             <ExerciseBadgeRow
                               name={ex.name}
                               customImage={ex.image}
@@ -303,7 +434,9 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                             />
                           </div>
                         </div>
-                        <span className="font-mono font-bold text-slate-500 shrink-0">{ex.sets} × {ex.reps}</span>
+                        <span className="font-mono font-bold text-slate-500 shrink-0">
+                          {ex.sets} × {ex.reps}
+                        </span>
                       </div>
                     ))}
                     {template.exercises.length > 3 && (
@@ -325,11 +458,96 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
           </div>
         ) : (
           <div className="p-4 space-y-5 overflow-y-auto flex-1 bg-slate-50">
+            {/* Multi-Sequence Switcher & Creator */}
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers size={13} className="text-indigo-600" />
+                  <span>Saved Sequences</span>
+                  <InfoTooltip
+                    label="About Saved Sequences"
+                    content="Create and save multiple workout schedules (e.g., Standard Cycle, Period Week, Travel/Deload) and switch between them anytime with one tap."
+                    iconClassName="text-slate-400"
+                  />
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingSequence(prev => !prev)}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                >
+                  <Plus size={13} /> New Sequence
+                </button>
+              </div>
+
+              {isCreatingSequence && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    aria-label="New sequence name"
+                    placeholder="e.g. Period Week, Travel Cycle..."
+                    value={newSequenceName}
+                    onChange={e => setNewSequenceName(e.target.value)}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateNamedSequence}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+
+              {savedSequences.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {savedSequences.map(seq => {
+                    const isSelected = seq.id === activeSequenceId;
+                    return (
+                      <div key={seq.id} className="inline-flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchSavedSequence(seq)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all active:scale-95 ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {isSelected && <Check size={12} />}
+                          <span>{seq.name}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                              isSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-slate-200/80 text-slate-600'
+                            }`}
+                          >
+                            {seq.slots.length}
+                          </span>
+                        </button>
+                        {!isSelected && savedSequences.length > 1 && seq.id !== 'seq_standard' && seq.id !== 'seq_period_week' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSavedSequence(seq.id)}
+                            aria-label={`Delete sequence ${seq.name}`}
+                            className="ml-0.5 p-1 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Current Sequence Queue */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>Your Rotating Schedule</span>
+                  <span>{activeSequenceName}</span>
                   <InfoTooltip
                     label="About your rotating schedule"
                     content="Saved to your profile in the database so it persists across app updates. Automatically advances when you finish a workout or log a scheduled activity."
@@ -351,7 +569,10 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
               {sequence.length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center space-y-1">
                   <p className="text-sm font-bold text-slate-700">Default Mode: Plan A ↔ Plan B</p>
-                  <p className="text-xs text-slate-500">Add custom templates, base plans, or cardio activities below to build your own repeating Next Mission sequence.</p>
+                  <p className="text-xs text-slate-500">
+                    Add custom templates, base plans, or cardio activities below to build your own
+                    repeating Next Mission sequence.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -367,14 +588,20 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                          }`}>
+                          <span
+                            className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                              isActive
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
                             {idx + 1}
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-slate-800 text-sm leading-snug break-words">{slot.label}</span>
+                              <span className="font-bold text-slate-800 text-sm leading-snug break-words">
+                                {slot.label}
+                              </span>
                               {isActive && (
                                 <span className="bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0">
                                   Up Next
@@ -439,9 +666,13 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
 
             {/* Add Custom Templates */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/80 space-y-2.5">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Add Workout Template</h4>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Add Workout Template
+              </h4>
               {templates.length === 0 ? (
-                <p className="text-xs text-slate-400">Create a template in &ldquo;My Templates&rdquo; first, or add Base Plans below.</p>
+                <p className="text-xs text-slate-400">
+                  Create a template in &ldquo;My Templates&rdquo; first, or add Base Plans below.
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {templates.map(tpl => (
@@ -485,11 +716,13 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                 <select
                   aria-label="Select activity"
                   value={selectedActivity}
-                  onChange={(e) => setSelectedActivity(e.target.value)}
+                  onChange={e => setSelectedActivity(e.target.value)}
                   className="col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 >
                   {SEQUENCE_ACTIVITIES.map(act => (
-                    <option key={act} value={act}>{act}</option>
+                    <option key={act} value={act}>
+                      {act}
+                    </option>
                   ))}
                 </select>
                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5">
@@ -499,7 +732,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                     min={5}
                     max={240}
                     value={activityDuration}
-                    onChange={(e) => setActivityDuration(parseInt(e.target.value, 10) || 30)}
+                    onChange={e => setActivityDuration(parseInt(e.target.value, 10) || 30)}
                     className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none"
                   />
                   <span className="text-[11px] font-bold text-slate-400 ml-1">m</span>
@@ -530,10 +763,14 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
             const updatedProfile = {
               ...userProfile,
               workoutTemplates: updatedTemplates,
-              goals: {
-                ...(userProfile.goals || {}),
-                ...(updatedSequence.length !== sequence.length ? { workoutSequence: updatedSequence, sequenceIndex: 0 } : {}),
-              },
+              goals:
+                updatedSequence.length !== sequence.length
+                  ? buildUpdatedSequenceGoals(userProfile.goals, updatedSequence, 0, {
+                      sequenceId: activeSequenceId,
+                      sequenceName: activeSequenceName,
+                      savedSequences,
+                    })
+                  : userProfile.goals,
             };
             onUpdateProfile(updatedProfile);
             await updateProfile(updatedProfile);

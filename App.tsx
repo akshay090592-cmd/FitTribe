@@ -16,7 +16,7 @@ import { RankBadge } from './components/RankBadge';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, getOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
 import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart, SkipForward, ListOrdered } from 'lucide-react';
-import { templateToWorkoutPlan, getActiveSequenceSlot, getNextSequenceIndex } from './utils/templateUtils';
+import { templateToWorkoutPlan, getActiveSequenceSlot, getNextSequenceIndex, ensurePeriodSupportTemplates, buildUpdatedSequenceGoals } from './utils/templateUtils';
 import { TribePulse } from './components/TribePulse';
 import { QuestBoard } from './components/QuestBoard';
 import { getDailyQuests, getOnboardingQuests, completeManualQuest } from './utils/questUtils';
@@ -1081,7 +1081,13 @@ const App: React.FC = () => {
   const resolveSequenceSlotPlan = React.useCallback((slot: import('./types').WorkoutSequenceSlot | undefined): WorkoutPlan | null => {
     if (!slot || !userProfile) return null;
     if (slot.type === 'custom_template') {
-      const tpl = (userProfile.workoutTemplates || []).find(t => t.id === slot.templateId);
+      const availableTemplates = ensurePeriodSupportTemplates(
+        userProfile.workoutTemplates || [],
+        userProfile.displayName
+      );
+      const tpl = availableTemplates.find(
+        t => t.id === slot.templateId || t.name.toLowerCase() === (slot.label || '').toLowerCase()
+      );
       return tpl ? templateToWorkoutPlan(tpl) : null;
     }
     if (slot.type === 'plan_a') {
@@ -1095,17 +1101,17 @@ const App: React.FC = () => {
 
   const advanceSequenceSlot = React.useCallback(async (explicitIndex?: number, toastMsg?: string) => {
     if (!userProfile || !activeSequenceState) return;
-    const { sequence, index } = activeSequenceState;
+    const { sequence, index, sequenceId, sequenceName, savedSequences } = activeSequenceState;
     const nextIdx = explicitIndex !== undefined
       ? ((explicitIndex % sequence.length) + sequence.length) % sequence.length
       : getNextSequenceIndex(index, sequence.length);
     const updatedProfile: UserProfile = {
       ...userProfile,
-      goals: {
-        ...(userProfile.goals || {}),
-        workoutSequence: sequence,
-        sequenceIndex: nextIdx,
-      },
+      goals: buildUpdatedSequenceGoals(userProfile.goals, sequence, nextIdx, {
+        sequenceId,
+        sequenceName,
+        savedSequences,
+      }),
     };
     setUserProfile(updatedProfile);
     await updateProfile(updatedProfile);

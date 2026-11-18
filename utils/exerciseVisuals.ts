@@ -289,6 +289,46 @@ export const KNOWN_EXERCISE_BLUEPRINTS: Record<string, KnownExerciseBlueprint> =
     muscleGroup: MUSCLE_GROUPS.CHEST,
     secondaryMuscles: ['Front Delts', 'Triceps']
   },
+  'Incline DB Press (Neutral/45° Grip)': {
+    archetype: 'horizontal_push',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/incline_db_press_composite.webp',
+    primaryMuscle: 'Upper Chest',
+    muscleGroup: MUSCLE_GROUPS.CHEST,
+    secondaryMuscles: ['Front Delts', 'Triceps']
+  },
+  'Incline Dumbbell Press': {
+    archetype: 'horizontal_push',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/incline_db_press_composite.webp',
+    primaryMuscle: 'Upper Chest',
+    muscleGroup: MUSCLE_GROUPS.CHEST,
+    secondaryMuscles: ['Front Delts', 'Triceps']
+  },
+  'Face Pulls (External Rotation Focus)': {
+    archetype: 'horizontal_pull',
+    equipment: 'cable',
+    image: '/assets/exercises/face_pull_composite.webp',
+    primaryMuscle: 'Rear Delts',
+    muscleGroup: MUSCLE_GROUPS.SHOULDERS,
+    secondaryMuscles: ['Upper Back', 'Rotator Cuff']
+  },
+  'Face Pulls': {
+    archetype: 'horizontal_pull',
+    equipment: 'cable',
+    image: '/assets/exercises/face_pull_composite.webp',
+    primaryMuscle: 'Rear Delts',
+    muscleGroup: MUSCLE_GROUPS.SHOULDERS,
+    secondaryMuscles: ['Upper Back', 'Rotator Cuff']
+  },
+  'Incline Dumbbell Curl': {
+    archetype: 'isolation_arms',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/incline_dumbbell_curl_composite.webp',
+    primaryMuscle: 'Biceps',
+    muscleGroup: MUSCLE_GROUPS.ARMS,
+    secondaryMuscles: ['Forearms']
+  },
   'Wall Pushups': {
     archetype: 'horizontal_push',
     equipment: 'bodyweight',
@@ -911,6 +951,15 @@ export const resolveExerciseCompositeImage = (
   }
   if (n.includes('hammer') || n.includes('crossbody') || n.includes('concentration')) {
     return '/assets/exercises/crossbody_hammer_curl_composite.webp';
+  }
+  if (n.includes('face pull') || n.includes('face-pull')) {
+    return '/assets/exercises/face_pull_composite.webp';
+  }
+  if (n.includes('incline') && (n.includes('press') || n.includes('bench'))) {
+    return '/assets/exercises/incline_db_press_composite.webp';
+  }
+  if (n.includes('incline') && n.includes('curl')) {
+    return '/assets/exercises/incline_dumbbell_curl_composite.webp';
   }
   if (n.includes('curl')) {
     return '/assets/exercises/preacher_curl_composite.webp';

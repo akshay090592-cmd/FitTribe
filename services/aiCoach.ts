@@ -2,6 +2,7 @@ import { WorkoutPlan, UserProfile, WorkoutLog, WeeklyPlan, WorkoutFeedback, Work
 import { geminiClient } from "./geminiClient";
 import { monthLongFormatter, weekdayLongFormatter, shortDateFormatter } from "../utils/dateUtils";
 import { resolveExerciseVisualMeta } from "../utils/exerciseVisuals";
+import { DEFAULT_CUSTOM_WARMUP, DEFAULT_CUSTOM_COOLDOWN } from "../utils/templateUtils";
 
 const GEMINI_MODEL = 'gemini-flash-lite-latest'; // or 'gemini-1.5-flash' depending on access
 
@@ -145,7 +146,8 @@ export const AICoachService = {
          - 'equipment': MUST be one of 'dumbbell' | 'barbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'cardio' | 'mobility'
       8. Determine if an exercise uses reps or time duration (like static holds, planks, yoga). You MUST add a 'trackingType' field with value 'reps' or 'duration'.
       9. For 'duration' exercises, provide default time in 'defaultReps' (e.g. '60s', '45s').
-      10. Include a top-level "changesSummary" array of 1 to 3 short, friendly strings explaining the exact adjustments you made for their next session (e.g. ["Swapped Barbell Row for Chest-Supported Dumbbell Row to protect your lower back", "Trimmed Lateral Raise to 2 sets for faster session pacing"]).
+      10. Adapt "warmup" (3-4 workout-specific mobility/activation drills) and "cooldown" (2-3 workout-specific decompression stretches/breathing) to match the updated exercises and any reported pain points.
+      11. Include a top-level "changesSummary" array of 1 to 3 short, friendly strings explaining the exact adjustments you made for their next session (e.g. ["Swapped Barbell Row for Chest-Supported Dumbbell Row to protect your lower back", "Trimmed Lateral Raise to 2 sets for faster session pacing"]).
       
       OUTPUT:
       Return ONLY the valid JSON of the modified WorkoutPlan object (including "changesSummary"). Do not explain outside JSON.
@@ -161,8 +163,12 @@ export const AICoachService = {
                 parsed.id = parsed.id || currentPlan.id;
                 parsed.title = parsed.title || currentPlan.title;
                 parsed.focus = parsed.focus || currentPlan.focus;
-                parsed.warmup = Array.isArray(parsed.warmup) && parsed.warmup.length > 0 ? parsed.warmup : currentPlan.warmup;
-                parsed.cooldown = Array.isArray(parsed.cooldown) && parsed.cooldown.length > 0 ? parsed.cooldown : currentPlan.cooldown;
+                parsed.warmup = Array.isArray(parsed.warmup) && parsed.warmup.length > 0
+                    ? parsed.warmup
+                    : (Array.isArray(currentPlan.warmup) && currentPlan.warmup.length > 0 ? currentPlan.warmup : [...DEFAULT_CUSTOM_WARMUP]);
+                parsed.cooldown = Array.isArray(parsed.cooldown) && parsed.cooldown.length > 0
+                    ? parsed.cooldown
+                    : (Array.isArray(currentPlan.cooldown) && currentPlan.cooldown.length > 0 ? currentPlan.cooldown : [...DEFAULT_CUSTOM_COOLDOWN]);
                 parsed.exercises = parsed.exercises.map(ex => {
                     const meta = resolveExerciseVisualMeta(ex.name, {
                         customImage: ex.image,
@@ -339,7 +345,7 @@ ${lastLogs.map(l => {
     - Tomorrow is: ${tomorrowWeekday}, ${tomorrowStr} (${getISODate(tomorrow)})
 
     CAPABILITIES (SKILLS):
-    1. **Create Custom Workout**: If user asks for a specific workout (e.g., "Leg day", "20-min hotel workout", "Full body"), generate it using references from Plan A/B effectively.
+    1. **Create Custom Workout**: If user asks for a specific workout or theme (e.g., "Leg day", "20-min hotel workout", "Knee-friendly sculpt", "Full body"), generate it with a workout-specific "warmup" (3-4 tailored mobility/activation drills) and "cooldown" (2-3 tailored stretches/breathing drills) matching the exact muscles and joints trained.
     2. **Create Diet Plan**: If user asks for a diet plan or macro adjustment.
     3. **Create Schedule**: If user asks to plan or adjust their week.
        - Generate a 7-day schedule starting from TODAY (${todayWeekday}, ${getISODate(now)}) or TOMORROW.
@@ -350,7 +356,7 @@ ${lastLogs.map(l => {
     - If you create a plan, you MUST wrap the FULL JSON payload in specific XML tags.
     - **Diet**: <ACTION_SAVE_DIET> { "weekly_summary": "High protein bamboo fuel", "days": [ { "day": "Monday", "meals": [ { "name": "Breakfast", "food": "Oats...", "calories": 400, "macros": "30g P • 45g C • 10g F" } ] } ] } </ACTION_SAVE_DIET>
     - **Schedule**: <ACTION_SAVE_SCHEDULE> { "summary": "Balanced 4-day split", "schedule": [ { "date": "${getISODate(now)}", "day": "${todayWeekday}", "activity": "Plan A", "type": "A", "notes": "Focus on controlled tempo" } ] } </ACTION_SAVE_SCHEDULE>
-    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Express Jungle Pump", "focus": "Full Body", "exercises": [ { "name": "Goblet Squat", "defaultSets": 3, "defaultReps": "10-12", "trackingType": "reps", "visualArchetype": "knee_dominant", "equipment": "dumbbell", "notes": "Keep chest tall" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration", "visualArchetype": "core_floor", "equipment": "bodyweight", "notes": "Brace core" } ] } </ACTION_SAVE_WORKOUT>
+    - **Workout**: <ACTION_SAVE_WORKOUT> { "id": "Custom", "title": "Express Jungle Pump", "focus": "Full Body", "warmup": ["Thoracic Openers: 6/side", "Glute Bridges: 12 reps", "Bodyweight Squat Hold: 30s"], "exercises": [ { "name": "Goblet Squat", "defaultSets": 3, "defaultReps": "10-12", "trackingType": "reps", "visualArchetype": "knee_dominant", "equipment": "dumbbell", "notes": "Keep chest tall" }, { "name": "Plank", "defaultSets": 3, "defaultReps": "60s", "trackingType": "duration", "visualArchetype": "core_floor", "equipment": "bodyweight", "notes": "Brace core" } ], "cooldown": ["Couch Hip Flexor Stretch (45s/side)", "Supine Nasal Breathing (60s)"] } </ACTION_SAVE_WORKOUT>
     - **EXERCISE VISUAL ARCHETYPE & EQUIPMENT RULES**:
       Whenever creating or updating exercises in a workout, include:
       * "visualArchetype": one of 'horizontal_push' | 'vertical_push' | 'horizontal_pull' | 'vertical_pull' | 'knee_dominant' | 'lunge_unilateral' | 'hip_dominant' | 'glute_bridge' | 'isolation_arms' | 'isolation_shoulders' | 'core_floor' | 'cardio_conditioning' | 'mobility_stretch'

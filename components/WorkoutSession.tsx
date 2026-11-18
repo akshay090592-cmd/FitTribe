@@ -207,10 +207,12 @@ const WorkoutExerciseItem = React.memo(({
 });
 
 export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFinish, onCancel }) => {
+  const sessionKey = plan.id === WorkoutType.CUSTOM_TEMPLATE ? `${plan.id}_${plan.title}` : plan.id;
+
   // --- Synchronous State Initialization Helpers ---
   const getSavedSession = () => {
     try {
-      const saved = localStorage.getItem(`workout_session_${plan.id}`);
+      const saved = localStorage.getItem(`workout_session_${sessionKey}`);
       return saved ? JSON.parse(saved) : null;
     } catch (e) {
       console.error("Failed to parse saved session", e);
@@ -297,7 +299,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     if (savedSession?.step) return savedSession.step;
 
     // Fallback to sessionStorage if not in localStorage (legacy support or specific flow)
-    const sessionStep = sessionStorage.getItem(`workoutStep_${plan.id}`);
+    const sessionStep = sessionStorage.getItem(`workoutStep_${sessionKey}`);
     if (sessionStep === 'analysis') return 'warmup';
     return (sessionStep || 'warmup') as 'warmup' | 'workout' | 'cooldown' | 'analysis';
   });
@@ -408,7 +410,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
       // Initialize from plan (Async)
       const initializedRecords = await Promise.all(plan.exercises.map(async ex => {
-        const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id);
+        const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
         if (lastSets && lastSets.length > 0) {
           let maxW = 0;
           for (let i = 0; i < lastSets.length; i++) {
@@ -506,22 +508,22 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         expandedExerciseId,
         lastUpdated: Date.now()
       };
-      localStorage.setItem(`workout_session_${plan.id}`, JSON.stringify(stateToSave));
+      localStorage.setItem(`workout_session_${sessionKey}`, JSON.stringify(stateToSave));
     }
-  }, [records, step, warmupDone, cooldownDone, loading, plan.id, showRestTimer, restDuration, expandedExerciseId, isFinishing]);
+  }, [records, step, warmupDone, cooldownDone, loading, sessionKey, showRestTimer, restDuration, expandedExerciseId, isFinishing]);
 
   useEffect(() => {
     if (step !== 'analysis') {
-      sessionStorage.setItem(`workoutStep_${plan.id}`, step);
+      sessionStorage.setItem(`workoutStep_${sessionKey}`, step);
     } else {
-      sessionStorage.removeItem(`workoutStep_${plan.id}`);
+      sessionStorage.removeItem(`workoutStep_${sessionKey}`);
     }
-  }, [step, plan.id]);
+  }, [step, sessionKey]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const savedStep = sessionStorage.getItem(`workoutStep_${plan.id}`);
+        const savedStep = sessionStorage.getItem(`workoutStep_${sessionKey}`);
         if (savedStep && savedStep !== step && savedStep !== 'analysis') {
           setStep(savedStep as 'warmup' | 'workout' | 'cooldown' | 'analysis');
         }
@@ -531,7 +533,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [step, plan.id]);
+  }, [step, sessionKey]);
 
   // Preload Workout Images during Warmup
   useEffect(() => {
@@ -765,8 +767,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
     });
     localStorage.removeItem('active_custom_plan');
     // Also clear by current plan ID just in case it differs from type
-    localStorage.removeItem(`workout_session_${plan.id}`);
-    sessionStorage.removeItem(`workoutStep_${plan.id}`);
+    localStorage.removeItem(`workout_session_${sessionKey}`);
+    sessionStorage.removeItem(`workoutStep_${sessionKey}`);
   }, [plan.id]);
 
   const handleExit = async (action: 'end' | 'pause') => {
@@ -825,8 +827,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
 
   const handleWarmupCancel = () => {
     // Clear the saved session immediately since we are cancelling from warmup (effectively never started)
-    localStorage.removeItem(`workout_session_${plan.id}`);
-    sessionStorage.removeItem(`workoutStep_${plan.id}`);
+    localStorage.removeItem(`workout_session_${sessionKey}`);
+    sessionStorage.removeItem(`workoutStep_${sessionKey}`);
     onCancel();
   };
 

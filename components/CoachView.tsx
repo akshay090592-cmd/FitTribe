@@ -5,6 +5,7 @@ import { getUserDiet, saveUserDiet, getUserPlans, saveUserPlan, getUserLogsById,
 import { MessageSquare, Calendar, Sparkles, Send, ChefHat, RefreshCw, CheckCircle2, Circle, Shuffle, MinusCircle, XCircle, TrendingUp, Info, Play, RotateCcw } from 'lucide-react';
 import { monthDayFormatter, weekdayShortFormatter, formatWithCache } from '../utils/dateUtils';
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
+import { DEFAULT_CUSTOM_WARMUP, DEFAULT_CUSTOM_COOLDOWN } from '../utils/templateUtils';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 import { STARTER_PLANS } from '../constants';
 import { PandaSenseiSVG } from './PandaSenseiSVG';
@@ -418,8 +419,14 @@ export const CoachView: React.FC<Props> = React.memo(({ userProfile, lastWorkout
                 exercises = action.payload.workout.exercises;
             }
 
-            const warmup = action.payload.warmup || action.payload.workout?.warmup || [];
-            const cooldown = action.payload.cooldown || action.payload.workout?.cooldown || [];
+            const rawWarmup = action.payload.warmup || action.payload.workout?.warmup;
+            const rawCooldown = action.payload.cooldown || action.payload.workout?.cooldown;
+            const warmup = Array.isArray(rawWarmup) && rawWarmup.filter(Boolean).length > 0
+                ? rawWarmup.filter(Boolean)
+                : [...DEFAULT_CUSTOM_WARMUP];
+            const cooldown = Array.isArray(rawCooldown) && rawCooldown.filter(Boolean).length > 0
+                ? rawCooldown.filter(Boolean)
+                : [...DEFAULT_CUSTOM_COOLDOWN];
 
             if (exercises && Array.isArray(exercises)) {
                 const normalizedExercises = exercises.map((ex: any) => {

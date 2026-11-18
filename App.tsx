@@ -15,7 +15,8 @@ import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, ge
 import { RankBadge } from './components/RankBadge';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, getOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
-import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart } from 'lucide-react';
+import { Activity, BarChart3, Dumbbell, User as UserIcon, TrendingUp, Users, Trophy, Map, LogOut, Mail, Lock, ArrowRight, AlertCircle, WifiOff, Flame, Clock, History, Sparkles, Loader2, Heart, SkipForward, ListOrdered } from 'lucide-react';
+import { templateToWorkoutPlan, getActiveSequenceSlot, getNextSequenceIndex } from './utils/templateUtils';
 import { TribePulse } from './components/TribePulse';
 import { QuestBoard } from './components/QuestBoard';
 import { getDailyQuests, getOnboardingQuests, completeManualQuest } from './utils/questUtils';
@@ -351,6 +352,8 @@ const App: React.FC = () => {
     }
   }, [activeCustomPlan]);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [libraryInitialTab, setLibraryInitialTab] = useState<'templates' | 'sequence'>('templates');
+  const [activityInitialData, setActivityInitialData] = useState<{ activity?: string; duration?: number; fromSequence?: boolean }>({});
 
   /**
    * BOLT: Stabilize fetching notifications by tracking concurrent requests with a ref.
@@ -1070,6 +1073,47 @@ const App: React.FC = () => {
 
   const lastWorkout = React.useMemo(() => allLogs.find(l => l.type !== WorkoutType.COMMITMENT), [allLogs]);
 
+  const activeSequenceState = React.useMemo(
+    () => getActiveSequenceSlot(userProfile?.goals),
+    [userProfile?.goals]
+  );
+
+  const resolveSequenceSlotPlan = React.useCallback((slot: import('./types').WorkoutSequenceSlot | undefined): WorkoutPlan | null => {
+    if (!slot || !userProfile) return null;
+    if (slot.type === 'custom_template') {
+      const tpl = (userProfile.workoutTemplates || []).find(t => t.id === slot.templateId);
+      return tpl ? templateToWorkoutPlan(tpl) : null;
+    }
+    if (slot.type === 'plan_a') {
+      return allUserPlans[currentUser]?.[WorkoutType.A] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][WorkoutType.A];
+    }
+    if (slot.type === 'plan_b') {
+      return allUserPlans[currentUser]?.[WorkoutType.B] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][WorkoutType.B];
+    }
+    return null;
+  }, [userProfile, allUserPlans, currentUser]);
+
+  const advanceSequenceSlot = React.useCallback(async (explicitIndex?: number, toastMsg?: string) => {
+    if (!userProfile || !activeSequenceState) return;
+    const { sequence, index } = activeSequenceState;
+    const nextIdx = explicitIndex !== undefined
+      ? ((explicitIndex % sequence.length) + sequence.length) % sequence.length
+      : getNextSequenceIndex(index, sequence.length);
+    const updatedProfile: UserProfile = {
+      ...userProfile,
+      goals: {
+        ...(userProfile.goals || {}),
+        workoutSequence: sequence,
+        sequenceIndex: nextIdx,
+      },
+    };
+    setUserProfile(updatedProfile);
+    await updateProfile(updatedProfile);
+    if (toastMsg) {
+      showToast(toastMsg, 'info');
+    }
+  }, [userProfile, activeSequenceState, showToast]);
+
   if (loading) {
     return <LoadingSpinner fullScreen />;
   }
@@ -1392,7 +1436,11 @@ const App: React.FC = () => {
   }
 
   // 3. Main App
-  const currentPlan = activeCustomPlan || allUserPlans[currentUser]?.[selectedWorkoutType] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][selectedWorkoutType];
+  const activeSequencePlan = activeSequenceState && activeSequenceState.slot.type !== 'activity'
+    ? resolveSequenceSlotPlan(activeSequenceState.slot)
+    : null;
+
+  const currentPlan = activeCustomPlan || activeSequencePlan || allUserPlans[currentUser]?.[selectedWorkoutType] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][selectedWorkoutType];
 
   const themeObj = SHOP_THEMES.find(t => t.id === activeTheme);
   const headerStyle = themeObj
@@ -1438,7 +1486,9 @@ const App: React.FC = () => {
             setView('rewards');
 
             // Update state after view change to avoid flashing the warmup page
-            if (!activeCustomPlan) {
+            if (activeSequenceState) {
+              advanceSequenceSlot();
+            } else if (!activeCustomPlan) {
               if (currentPlan.id === WorkoutType.A) {
                 setSelectedWorkoutType(WorkoutType.B);
               } else if (currentPlan.id === WorkoutType.B) {
@@ -1726,78 +1776,188 @@ const App: React.FC = () => {
                 <div className={`absolute -bottom-10 -left-10 w-36 h-36 ${themePalette.heroOrbSecondary} rounded-full blur-3xl pointer-events-none`}></div>
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border uppercase tracking-widest flex items-center gap-1.5 ${themePalette.heroBadgeClass}`}>
                       <span className={`w-1.5 h-1.5 rounded-full animate-ping ${themePalette.navActiveDotClass}`} />
                       Next Mission
                     </span>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
                       <button
-                        onClick={() => setIsLibraryOpen(true)}
-                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                        onClick={() => {
+                          setLibraryInitialTab('templates');
+                          setIsLibraryOpen(true);
+                        }}
+                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
                       >
                         Library <Sparkles size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
                       </button>
                       <button
                         onClick={() => {
-                          const next = selectedWorkoutType === WorkoutType.A ? WorkoutType.B : WorkoutType.A;
-                          setSelectedWorkoutType(next);
-                          localStorage.setItem('next_workout_type', next); // Manual override persists
-                          localStorage.setItem('preferred_workout_type', next);
+                          setLibraryInitialTab('sequence');
+                          setIsLibraryOpen(true);
                         }}
-                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                      >
+                        Sequence <ListOrdered size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
+                      </button>
+                      {activeSequenceState && (
+                        <button
+                          onClick={() => {
+                            const { sequence, index } = activeSequenceState;
+                            const nextIdx = getNextSequenceIndex(index, sequence.length);
+                            const skippedLabel = sequence[index]?.label || 'Mission';
+                            const nextLabel = sequence[nextIdx]?.label || 'Next';
+                            advanceSequenceSlot(nextIdx, `Skipped ${skippedLabel} → Up Next: ${nextLabel}`);
+                          }}
+                          className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
+                        >
+                          Skip <SkipForward size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (activeSequenceState) {
+                            advanceSequenceSlot();
+                          } else {
+                            const next = selectedWorkoutType === WorkoutType.A ? WorkoutType.B : WorkoutType.A;
+                            setSelectedWorkoutType(next);
+                            localStorage.setItem('next_workout_type', next); // Manual override persists
+                            localStorage.setItem('preferred_workout_type', next);
+                          }
+                        }}
+                        className="text-[11px] font-bold text-white/90 hover:text-white transition-all flex items-center bg-white/10 hover:bg-white/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-white/10 active:scale-95"
                       >
                         Switch <TrendingUp size={12} className={`ml-1.5 ${themePalette.navActiveTextClass}`} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="mb-5">
-                    <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
-                      {activeCustomPlan ? activeCustomPlan.title : `Plan ${selectedWorkoutType}`}
-                    </h2>
-                    <p className="text-white/85 text-xs sm:text-sm font-semibold">
-                      {activeCustomPlan ? `Sensei Custom Focus • ${activeCustomPlan.focus}` : currentPlan.title}
-                    </p>
-                    {(() => {
-                      const scheduleList = (allUserPlans[currentUser] as any)?.schedule;
-                      if (!Array.isArray(scheduleList)) return null;
-                      const todayIso = new Date().toISOString().split('T')[0];
-                      const todayItem = scheduleList.find((item: any) => item?.date === todayIso);
-                      if (!todayItem) return null;
-                      return (
-                        <div className="mt-2.5 inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md border border-white/15 px-3 py-1 rounded-xl text-[11px] font-bold text-emerald-100">
-                          <span>🐼</span>
-                          <span>Today&apos;s Coach Schedule: <strong className="text-white">{todayItem.activity}</strong></span>
-                          {todayItem.status === 'done' && (
-                            <span className="ml-1 px-1.5 py-0.5 rounded-md bg-emerald-500/30 text-lime-200 text-[9px] font-black uppercase">
-                              Done ✓
-                            </span>
-                          )}
+                  {/* Interactive Sequence Progress Strip */}
+                  {activeSequenceState && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                      {activeSequenceState.sequence.map((slot, idx) => {
+                        const isCurrent = idx === activeSequenceState.index;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => advanceSequenceSlot(idx)}
+                            className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all active:scale-95 flex items-center gap-1 ${
+                              isCurrent
+                                ? 'bg-white text-slate-900 border-white shadow-sm'
+                                : 'bg-black/25 text-white/80 border-white/15 hover:bg-black/35'
+                            }`}
+                          >
+                            <span className="opacity-70">{idx + 1}.</span>
+                            <span className="max-w-[130px] truncate">{slot.label}</span>
+                            {slot.type === 'activity' && slot.defaultDuration ? (
+                              <span className="opacity-70">({slot.defaultDuration}m)</span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeSequenceState && activeSequenceState.slot.type === 'activity' ? (
+                    <>
+                      <div className="mb-5">
+                        <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
+                          {activeSequenceState.slot.activityName || activeSequenceState.slot.label}
+                        </h2>
+                        <p className="text-white/85 text-xs sm:text-sm font-semibold">
+                          Scheduled Sequence Activity • {activeSequenceState.slot.defaultDuration || 30} mins
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
+                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
+                          <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">Cardio / Mobility</span>
                         </div>
-                      );
-                    })()}
-                  </div>
+                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Clock size={16} /></div>
+                          <span className="text-xs font-bold text-white leading-tight">{activeSequenceState.slot.defaultDuration || 30} Mins Target</span>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
-                    <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                      <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><TrendingUp size={16} /></div>
-                      <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">{currentPlan.focus}</span>
-                    </div>
-                    <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                      <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
-                      <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
-                    </div>
-                  </div>
+                      <button
+                        onClick={() => {
+                          setActivityModalMode(activeSequenceState.slot.activityMode || 'fitness');
+                          setActivityInitialData({
+                            activity: activeSequenceState.slot.activityName || activeSequenceState.slot.label,
+                            duration: activeSequenceState.slot.defaultDuration || 30,
+                            fromSequence: true,
+                          });
+                          setIsActivityModalOpen(true);
+                        }}
+                        style={{ background: themePalette.ctaGradient }}
+                        className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
+                      >
+                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                        <span className="relative z-10 flex items-center tracking-wide">
+                          Log {activeSequenceState.slot.activityName || activeSequenceState.slot.label} <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-5">
+                        <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
+                          {activeCustomPlan
+                            ? activeCustomPlan.title
+                            : activeSequenceState
+                            ? activeSequenceState.slot.label
+                            : `Plan ${selectedWorkoutType}`}
+                        </h2>
+                        <p className="text-white/85 text-xs sm:text-sm font-semibold">
+                          {activeCustomPlan
+                            ? `Sensei Custom Focus • ${activeCustomPlan.focus}`
+                            : activeSequenceState && activeSequenceState.slot.type === 'custom_template'
+                            ? currentPlan.focus
+                            : currentPlan.title}
+                        </p>
+                        {(() => {
+                          const scheduleList = (allUserPlans[currentUser] as any)?.schedule;
+                          if (!Array.isArray(scheduleList)) return null;
+                          const todayIso = new Date().toISOString().split('T')[0];
+                          const todayItem = scheduleList.find((item: any) => item?.date === todayIso);
+                          if (!todayItem) return null;
+                          return (
+                            <div className="mt-2.5 inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md border border-white/15 px-3 py-1 rounded-xl text-[11px] font-bold text-emerald-100">
+                              <span>🐼</span>
+                              <span>Today&apos;s Coach Schedule: <strong className="text-white">{todayItem.activity}</strong></span>
+                              {todayItem.status === 'done' && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded-md bg-emerald-500/30 text-lime-200 text-[9px] font-black uppercase">
+                                  Done ✓
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
 
-                  <button
-                    onClick={() => setView('workout')}
-                    style={{ background: themePalette.ctaGradient }}
-                    className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
-                  >
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                    <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
-                  </button>
+                      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
+                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><TrendingUp size={16} /></div>
+                          <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">{currentPlan.focus}</span>
+                        </div>
+                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
+                          <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setView('workout')}
+                        style={{ background: themePalette.ctaGradient }}
+                        className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
+                      >
+                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                        <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
+                      </button>
+                    </>
+                  )}
 
                   <button
                     onClick={handleCommit}
@@ -2160,10 +2320,15 @@ const App: React.FC = () => {
 
         <ActivityTrackerModal
           isOpen={isActivityModalOpen}
-          onClose={() => setIsActivityModalOpen(false)}
+          onClose={() => {
+            setIsActivityModalOpen(false);
+            setActivityInitialData({});
+          }}
           currentUser={currentUser}
           userProfile={userProfile}
           mode={activityModalMode}
+          initialActivity={activityInitialData.activity}
+          initialDuration={activityInitialData.duration}
           onSave={async (log, photo) => {
             // Save log: Check for existing commitment to replace
             if (!userProfile) return;
@@ -2186,7 +2351,10 @@ const App: React.FC = () => {
             }
 
             // Update Next Workout Type Logic
-            if (log.type === WorkoutType.A) {
+            if (activityInitialData.fromSequence && activeSequenceState) {
+              advanceSequenceSlot();
+              setActivityInitialData({});
+            } else if (log.type === WorkoutType.A) {
               localStorage.setItem('next_workout_type', WorkoutType.B);
               localStorage.setItem('preferred_workout_type', WorkoutType.B);
               setSelectedWorkoutType(WorkoutType.B);
@@ -2244,27 +2412,9 @@ const App: React.FC = () => {
           onClose={() => setIsLibraryOpen(false)}
           userProfile={userProfile}
           onUpdateProfile={setUserProfile}
+          initialTab={libraryInitialTab}
           onStartTemplate={(template) => {
-            const plan: WorkoutPlan = {
-              id: WorkoutType.CUSTOM_TEMPLATE,
-              title: template.name,
-              focus: 'Custom Template',
-              warmup: ['Arm Circles', 'Jumping Jacks', 'Torso Twists'],
-              cooldown: ['Static Stretch', 'Deep Breathing'],
-              exercises: template.exercises.map(ex => ({
-                id: ex.name,
-                name: ex.name,
-                sets: Array.from({ length: ex.sets }, () => ({ reps: 0, weight: 0, completed: false })), // Initial state
-                defaultSets: ex.sets,
-                defaultReps: ex.reps,
-                notes: '',
-                trackingType: ex.trackingType,
-                image: ex.image,
-                visualArchetype: ex.visualArchetype,
-                equipment: ex.equipment,
-                isSuperset: false
-              }))
-            };
+            const plan = templateToWorkoutPlan(template);
             setActiveCustomPlan(plan);
             setIsLibraryOpen(false);
             setView('workout');

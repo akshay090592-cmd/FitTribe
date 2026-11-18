@@ -31,9 +31,17 @@ export const getLastLogForExercise = async (user: User, exerciseName: string): P
  * Eliminates array allocation and garbage collection churn from .filter().
  * Avoids lambda closure overhead from .find() inside loop bodies.
  */
-export const getLastLogForExerciseByType = async (user: User, exerciseName: string, workoutType: string): Promise<ExerciseSet[] | null> => {
+export const getLastLogForExerciseByType = async (
+    user: User,
+    exerciseName: string,
+    workoutType: string,
+    legacyAlias?: string
+): Promise<ExerciseSet[] | null> => {
     const logs = await getUserLogs(user);
     const logsLen = logs.length;
+
+    const matchName = (name: string) =>
+        name === exerciseName || (legacyAlias ? name === legacyAlias : false);
 
     for (let i = 0; i < logsLen; i++) {
         const log = logs[i];
@@ -45,11 +53,29 @@ export const getLastLogForExerciseByType = async (user: User, exerciseName: stri
         const exLen = exercises.length;
         for (let j = 0; j < exLen; j++) {
             const exercise = exercises[j];
-            if (exercise.name === exerciseName && exercise.sets && exercise.sets.length > 0) {
+            if (matchName(exercise.name) && exercise.sets && exercise.sets.length > 0) {
                 return exercise.sets;
             }
         }
     }
+
+    // For custom templates, fall back to the user's most recent log for this exercise (or its legacyAlias) across any plan type
+    if (workoutType === 'Custom_Template') {
+        for (let i = 0; i < logsLen; i++) {
+            const log = logs[i];
+            const exercises = log.exercises;
+            if (!exercises) continue;
+
+            const exLen = exercises.length;
+            for (let j = 0; j < exLen; j++) {
+                const exercise = exercises[j];
+                if (matchName(exercise.name) && exercise.sets && exercise.sets.length > 0) {
+                    return exercise.sets;
+                }
+            }
+        }
+    }
+
     return null;
 };
 

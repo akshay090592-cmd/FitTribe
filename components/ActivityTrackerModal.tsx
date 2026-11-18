@@ -15,6 +15,8 @@ interface Props {
     currentUser: string;
     userProfile: UserProfile | null;
     mode?: 'fitness' | 'wellbeing';
+    initialActivity?: string;
+    initialDuration?: number;
 }
 
 interface SavedActivity {
@@ -25,9 +27,9 @@ interface SavedActivity {
     intensity: number;
 }
 
-export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave, currentUser, userProfile, mode = 'fitness' }) => {
-    const [activity, setActivity] = useState<string>(mode === 'wellbeing' ? WELLBEING_ACTIVITIES[0] : 'Walking');
-    const [duration, setDuration] = useState<number>(30);
+export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave, currentUser, userProfile, mode = 'fitness', initialActivity, initialDuration }) => {
+    const [activity, setActivity] = useState<string>(initialActivity || (mode === 'wellbeing' ? WELLBEING_ACTIVITIES[0] : 'Walking'));
+    const [duration, setDuration] = useState<number>(initialDuration || 30);
     const [intensity, setIntensity] = useState<number>(5);
     const [customOtherActivity, setCustomOtherActivity] = useState<string>('');
     const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
@@ -46,10 +48,16 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
     useEffect(() => {
         if (isOpen) {
             // Reset or pre-fill defaults
-            setActivity(mode === 'wellbeing' ? WELLBEING_ACTIVITIES[0] : 'Walking');
-            setDuration(30);
+            const resolvedList = mode === 'wellbeing' ? WELLBEING_ACTIVITIES : ACTIVITIES_LIST;
+            if (initialActivity && !resolvedList.includes(initialActivity)) {
+                setActivity('Other');
+                setCustomOtherActivity(initialActivity);
+            } else {
+                setActivity(initialActivity || (mode === 'wellbeing' ? WELLBEING_ACTIVITIES[0] : 'Walking'));
+                setCustomOtherActivity('');
+            }
+            setDuration(initialDuration && initialDuration > 0 ? initialDuration : 30);
             setIntensity(5);
-            setCustomOtherActivity('');
             setIsSavingFavorite(false);
             setNewFavoriteName('');
             setPhotoUploaded(false);
@@ -74,7 +82,7 @@ export const ActivityTrackerModal: React.FC<Props> = ({ isOpen, onClose, onSave,
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [isOpen, currentUser]);
+    }, [isOpen, currentUser, mode, initialActivity, initialDuration]);
 
     /**
      * BOLT: Optimized derived state calculation.

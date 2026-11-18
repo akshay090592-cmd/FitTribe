@@ -38,15 +38,37 @@ export interface UserProfile {
 export interface WorkoutTemplate {
   id: string;
   name: string;
+  focus?: string;
+  warmup?: string[];
+  cooldown?: string[];
   exercises: {
     name: string;
     sets: number;
     reps: string;
+    notes?: string;
+    cues?: string[];
+    isSuperset?: boolean;
+    supersetGroup?: number;
+    restSeconds?: number;
     trackingType?: 'reps' | 'duration';
     image?: string;
     visualArchetype?: ExerciseArchetype;
     equipment?: ExerciseEquipment;
+    legacyAlias?: string;
   }[];
+}
+
+export type SequenceSlotType = 'plan_a' | 'plan_b' | 'custom_template' | 'activity';
+
+export interface WorkoutSequenceSlot {
+  id: string;
+  type: SequenceSlotType;
+  label: string;
+  templateId?: string;
+  activityName?: string;
+  activityMode?: 'fitness' | 'wellbeing';
+  defaultDuration?: number;
+  defaultIntensity?: number;
 }
 
 export interface UserGoals {
@@ -55,6 +77,8 @@ export interface UserGoals {
   energy_level?: string;
   restrictions?: string[];
   weekly_frequency?: number;
+  workoutSequence?: WorkoutSequenceSlot[];
+  sequenceIndex?: number;
 }
 
 export interface CustomChallenge {
@@ -150,6 +174,7 @@ export interface WorkoutPlan {
     isSuperset?: boolean;
     supersetGroup?: number;
     restSeconds?: number;
+    legacyAlias?: string;
   }[];
   cooldown: string[];
   changesSummary?: string[];

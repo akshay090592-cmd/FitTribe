@@ -3,6 +3,7 @@ import { getMood, getStreaks, getTeamStats, revertGamificationForLog } from './g
 import { supabase, isSupabaseConfigured, isSessionValid } from './supabaseClient';
 import { compareISODates } from './dateUtils';
 import { googleHealthService } from '../services/googleHealthService';
+import { normalizeWorkoutTemplate } from './templateUtils';
 
 // --- SECURITY & VALIDATION ---
 
@@ -481,7 +482,9 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
       tribeId: data.tribe_id,
       fitnessLevel: data.fitness_level as 'beginner' | 'advanced',
       customPlans: [], // Not stored in DB yet, but part of interface
-      workoutTemplates: data.workout_templates || [],
+      workoutTemplates: Array.isArray(data.workout_templates)
+        ? data.workout_templates.map(normalizeWorkoutTemplate)
+        : [],
       goals: data.goals || {},
       bodyFatPercentage: data.goals?.bodyFatPercentage,
       googleHealthConnected: data.goals?.googleHealthConnected,
@@ -2439,16 +2442,29 @@ export const saveUserDiet = async (userId: string, diet: any) => {
 };
 
 export const saveCustomWorkoutPlan = async (userProfile: UserProfile, plan: WorkoutPlan) => {
-  // Convert WorkoutPlan to WorkoutTemplate format for Library compatibility
-  const template: WorkoutTemplate = {
+  // Convert WorkoutPlan to normalized WorkoutTemplate format for Library compatibility
+  const template = normalizeWorkoutTemplate({
     id: crypto.randomUUID(),
     name: plan.title,
+    focus: plan.focus,
+    warmup: plan.warmup,
+    cooldown: plan.cooldown,
     exercises: plan.exercises.map(ex => ({
       name: ex.name,
       sets: ex.defaultSets,
-      reps: ex.defaultReps
+      reps: ex.defaultReps,
+      notes: ex.notes,
+      cues: ex.cues,
+      isSuperset: ex.isSuperset,
+      supersetGroup: ex.supersetGroup,
+      restSeconds: ex.restSeconds,
+      trackingType: ex.trackingType,
+      image: ex.image,
+      visualArchetype: ex.visualArchetype,
+      equipment: ex.equipment,
+      legacyAlias: ex.legacyAlias,
     }))
-  };
+  });
 
   const updatedTemplates = [...(userProfile.workoutTemplates || []), template];
   const updatedProfile = { ...userProfile, workoutTemplates: updatedTemplates };

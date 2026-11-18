@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { EXERCISE_MUSCLE_MAP } from '../utils/muscleMapping';
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
+import { DEFAULT_CUSTOM_WARMUP, DEFAULT_CUSTOM_COOLDOWN, normalizeWorkoutTemplate } from '../utils/templateUtils';
 import { WorkoutTemplate } from '../types';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X, Flame, Wind } from 'lucide-react';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 
 interface Props {
@@ -23,6 +24,19 @@ export const SORTED_AVAILABLE_EXERCISES = Object.keys(EXERCISE_MUSCLE_MAP).sort(
  */
 export const TemplateEditor: React.FC<Props> = React.memo(({ onSave, onCancel, initialTemplate }) => {
   const [name, setName] = useState(initialTemplate?.name || '');
+  const [focus, setFocus] = useState(initialTemplate?.focus || '');
+  const [warmup, setWarmup] = useState<string[]>(
+    initialTemplate?.warmup && initialTemplate.warmup.length > 0
+      ? initialTemplate.warmup
+      : [...DEFAULT_CUSTOM_WARMUP]
+  );
+  const [cooldown, setCooldown] = useState<string[]>(
+    initialTemplate?.cooldown && initialTemplate.cooldown.length > 0
+      ? initialTemplate.cooldown
+      : [...DEFAULT_CUSTOM_COOLDOWN]
+  );
+  const [newWarmupStep, setNewWarmupStep] = useState('');
+  const [newCooldownStep, setNewCooldownStep] = useState('');
   const [exercises, setExercises] = useState<WorkoutTemplate['exercises']>(
     initialTemplate?.exercises || []
   );
@@ -84,11 +98,14 @@ export const TemplateEditor: React.FC<Props> = React.memo(({ onSave, onCancel, i
       };
     });
 
-    const template: WorkoutTemplate = {
+    const template = normalizeWorkoutTemplate({
       id: initialTemplate?.id || crypto.randomUUID(),
       name: name.trim(),
+      focus: focus.trim() || undefined,
+      warmup: warmup.map(s => s.trim()).filter(Boolean),
+      cooldown: cooldown.map(s => s.trim()).filter(Boolean),
       exercises: normalizedExercises
-    };
+    });
 
     onSave(template);
   };
@@ -114,6 +131,76 @@ export const TemplateEditor: React.FC<Props> = React.memo(({ onSave, onCancel, i
             placeholder="e.g. Leg Day Destroyer"
             className="w-full bg-white border border-emerald-100 rounded-xl p-3 font-bold text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-emerald-200"
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-emerald-700 uppercase mb-2">Theme / Focus (Optional)</label>
+          <input
+            type="text"
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+            placeholder="e.g. Hypertrophy, Spine-Safe Core & Mobility"
+            className="w-full bg-white border border-emerald-100 rounded-xl p-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-slate-300"
+          />
+        </div>
+
+        {/* Workout-Specific Warmup */}
+        <div className="bg-white p-3.5 rounded-2xl border border-orange-100 space-y-2.5">
+          <label className="flex items-center text-xs font-bold text-orange-600 uppercase tracking-wide">
+            <Flame size={14} className="mr-1.5" /> Workout-Specific Warm-Up
+          </label>
+          <div className="space-y-1.5">
+            {warmup.map((step, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={step}
+                  onChange={(e) => {
+                    const updated = [...warmup];
+                    updated[idx] = e.target.value;
+                    setWarmup(updated);
+                  }}
+                  className="flex-1 bg-orange-50/50 border border-orange-100 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setWarmup(warmup.filter((_, i) => i !== idx))}
+                  className="text-slate-400 hover:text-red-500 p-1 shrink-0"
+                  aria-label="Remove warmup step"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newWarmupStep}
+              onChange={(e) => setNewWarmupStep(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newWarmupStep.trim()) {
+                  e.preventDefault();
+                  setWarmup([...warmup, newWarmupStep.trim()]);
+                  setNewWarmupStep('');
+                }
+              }}
+              placeholder="Add warm-up drill..."
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-400"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!newWarmupStep.trim()) return;
+                setWarmup([...warmup, newWarmupStep.trim()]);
+                setNewWarmupStep('');
+              }}
+              disabled={!newWarmupStep.trim()}
+              className="bg-orange-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2.5">
@@ -238,6 +325,65 @@ export const TemplateEditor: React.FC<Props> = React.memo(({ onSave, onCancel, i
               <p className="text-xs">Select from the dropdown or type any custom exercise above.</p>
             </div>
           )}
+        </div>
+
+        {/* Workout-Specific Cooldown */}
+        <div className="bg-white p-3.5 rounded-2xl border border-sky-100 space-y-2.5">
+          <label className="flex items-center text-xs font-bold text-sky-600 uppercase tracking-wide">
+            <Wind size={14} className="mr-1.5" /> Workout-Specific Cool-Down
+          </label>
+          <div className="space-y-1.5">
+            {cooldown.map((step, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={step}
+                  onChange={(e) => {
+                    const updated = [...cooldown];
+                    updated[idx] = e.target.value;
+                    setCooldown(updated);
+                  }}
+                  className="flex-1 bg-sky-50/50 border border-sky-100 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCooldown(cooldown.filter((_, i) => i !== idx))}
+                  className="text-slate-400 hover:text-red-500 p-1 shrink-0"
+                  aria-label="Remove cooldown step"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCooldownStep}
+              onChange={(e) => setNewCooldownStep(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newCooldownStep.trim()) {
+                  e.preventDefault();
+                  setCooldown([...cooldown, newCooldownStep.trim()]);
+                  setNewCooldownStep('');
+                }
+              }}
+              placeholder="Add cool-down stretch..."
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!newCooldownStep.trim()) return;
+                setCooldown([...cooldown, newCooldownStep.trim()]);
+                setNewCooldownStep('');
+              }}
+              disabled={!newCooldownStep.trim()}
+              className="bg-sky-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
         </div>
       </div>
 

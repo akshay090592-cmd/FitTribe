@@ -225,6 +225,62 @@ interface KnownExerciseBlueprint {
 }
 
 export const KNOWN_EXERCISE_BLUEPRINTS: Record<string, KnownExerciseBlueprint> = {
+  'Chest-Supported Dumbbell Row (30-45° Incline)': {
+    archetype: 'horizontal_pull',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/chest_supported_row_composite.webp',
+    primaryMuscle: 'Mid Back',
+    muscleGroup: MUSCLE_GROUPS.BACK,
+    secondaryMuscles: ['Lats', 'Rear Delts', 'Biceps']
+  },
+  'Seated Neutral-Grip Cable Row': {
+    archetype: 'horizontal_pull',
+    equipment: 'cable',
+    image: '/assets/exercises/seated_cable_row_composite.webp',
+    primaryMuscle: 'Mid Back',
+    muscleGroup: MUSCLE_GROUPS.BACK,
+    secondaryMuscles: ['Lats', 'Rhomboids', 'Biceps']
+  },
+  'Dumbbell Bulgarian Split Squat': {
+    archetype: 'lunge_unilateral',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/bulgarian_split_squat_composite.webp',
+    primaryMuscle: 'Quads',
+    muscleGroup: MUSCLE_GROUPS.LEGS,
+    secondaryMuscles: ['Glutes', 'Adductors']
+  },
+  'Elevated Box Goblet Squat (50-60° Knee Angle)': {
+    archetype: 'knee_dominant',
+    equipment: 'dumbbell',
+    image: '/assets/exercises/box_goblet_squat_composite.webp',
+    primaryMuscle: 'Quads',
+    muscleGroup: MUSCLE_GROUPS.LEGS,
+    secondaryMuscles: ['Glutes', 'Core']
+  },
+  'Supine Deadbug': {
+    archetype: 'core_floor',
+    equipment: 'bodyweight',
+    image: '/assets/exercises/supine_deadbug_composite.webp',
+    primaryMuscle: 'Deep Core',
+    muscleGroup: MUSCLE_GROUPS.CORE,
+    secondaryMuscles: ['Pelvic Stabilizers']
+  },
+  'Supine Alternating Deadbug': {
+    archetype: 'core_floor',
+    equipment: 'bodyweight',
+    image: '/assets/exercises/supine_deadbug_composite.webp',
+    primaryMuscle: 'Deep Core',
+    muscleGroup: MUSCLE_GROUPS.CORE,
+    secondaryMuscles: ['Pelvic Stabilizers']
+  },
+  'Supine Heel-Dig Glute-Ham Bridge': {
+    archetype: 'glute_bridge',
+    equipment: 'bodyweight',
+    image: '/assets/exercises/heel_dig_glute_bridge_composite.webp',
+    primaryMuscle: 'Hamstrings',
+    muscleGroup: MUSCLE_GROUPS.LEGS,
+    secondaryMuscles: ['Glutes']
+  },
   'Bench Press (Dumbbell)': {
     archetype: 'horizontal_push',
     equipment: 'dumbbell',
@@ -810,7 +866,25 @@ export const resolveExerciseCompositeImage = (
 
   const n = (exerciseName || '').toLowerCase();
 
-  // Fine-grained sub-archetype matches against our 24 Panda Composite Illustrations
+  // Fine-grained sub-archetype matches against our 30 Panda Composite Illustrations
+  if (n.includes('chest-supported') || n.includes('chest supported') || n.includes('incline row') || n.includes('seal row')) {
+    return '/assets/exercises/chest_supported_row_composite.webp';
+  }
+  if (n.includes('cable row') || n.includes('seated row') || n.includes('neutral-grip row')) {
+    return '/assets/exercises/seated_cable_row_composite.webp';
+  }
+  if (n.includes('bulgarian') || n.includes('rear foot elevated') || n.includes('rear-foot elevated')) {
+    return '/assets/exercises/bulgarian_split_squat_composite.webp';
+  }
+  if (n.includes('box goblet') || n.includes('box squat')) {
+    return '/assets/exercises/box_goblet_squat_composite.webp';
+  }
+  if (n.includes('deadbug') || n.includes('dead bug')) {
+    return '/assets/exercises/supine_deadbug_composite.webp';
+  }
+  if (n.includes('heel-dig') || n.includes('heel dig') || n.includes('glute-ham bridge') || n.includes('glute bridge')) {
+    return '/assets/exercises/heel_dig_glute_bridge_composite.webp';
+  }
   if (n.includes('pistol') || n.includes('single leg squat') || n.includes('single-leg squat')) {
     return '/assets/exercises/bench_pistol_squat_composite.webp';
   }

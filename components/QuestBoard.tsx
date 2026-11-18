@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Quest, UserProfile, UserGamificationState } from '../types';
-import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Sun, Clock, Lock, User as UserIcon, Users, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, Dumbbell, Heart, Gift, GlassWater, Apple, Activity, Footprints, Moon, Sun, Clock, Lock, User as UserIcon, Users, Sparkles, Plus } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { claimDailyQuestChest, getTimeWindowChestStatus, claimTimeWindowChest } from '../utils/gamification';
 import { playChestOpenSound, playBambooClackSound, triggerHaptic } from '../utils/soundEffects';
@@ -17,6 +17,7 @@ interface Props {
   userProfile?: UserProfile | null;
   userState?: UserGamificationState;
   onStateUpdated?: () => void;
+  onNewChallenge?: () => void;
 }
 
 const DailyChestSvg: React.FC<{
@@ -156,7 +157,7 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
  * BOLT: Memoize QuestBoard to prevent redundant re-renders from parent state changes (e.g. App.tsx data fetches).
  * Performance Impact: Avoids re-rendering the entire quest list when unrelated App state changes.
  */
-export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false, userProfile, userState, onStateUpdated }) => {
+export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuests, onManualComplete, loading = false, hasLoggedWorkouts = false, userProfile, userState, onStateUpdated, onNewChallenge }) => {
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
   const [claimingWindowChest, setClaimingWindowChest] = useState(false);
   const [chestToast, setChestToast] = useState<{ text: string; tier: ChestTier } | null>(null);
@@ -280,24 +281,36 @@ export const QuestBoard: React.FC<Props> = React.memo(({ quests, onboardingQuest
               />
             </button>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
-                  Daily Quest
-                </h3>
-                <span className="text-[10px] text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                  {allComplete ? 'All Complete!' : `${completedCount}/${quests.length} Done`}
-                </span>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-emerald-950 text-lg font-['Fredoka'] flex items-center gap-1.5">
+                    Daily Quest
+                  </h3>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full font-black uppercase tracking-wider whitespace-nowrap">
+                    {allComplete ? 'All Complete!' : `${completedCount}/${quests.length} Done`}
+                  </span>
+                </div>
+                {onNewChallenge && (
+                  <button
+                    type="button"
+                    onClick={onNewChallenge}
+                    aria-label="New Challenge"
+                    className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors active:scale-95 shadow-xs flex items-center gap-1 shrink-0"
+                  >
+                    <Plus size={15} /> Challenge
+                  </button>
+                )}
               </div>
-              <div className="mt-1 bg-white/90 border border-emerald-200/80 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-emerald-900 shadow-2xs">
+              {allComplete && (
+                <div className="mt-1.5 inline-flex items-center bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-2xs">
+                  🎉 Bonus Unlocked!
+                </div>
+              )}
+              <div className="mt-1.5 bg-white/90 border border-emerald-200/80 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-emerald-900 shadow-2xs">
                 💬 {allComplete ? 'Sensei says: Flawless victory! Claim all your chests!' : SENSEI_POSES[senseiPoseIdx].tip}
               </div>
             </div>
           </div>
-          {allComplete && (
-            <div className="bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold animate-bounce shadow-2xs shrink-0">
-              🎉 Bonus Unlocked!
-            </div>
-          )}
         </div>
 
         {/* Overall Quest Progress Bar + 3 Tiered SVG Chests */}

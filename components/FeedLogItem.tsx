@@ -123,12 +123,12 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
             {/* Decoration Pin */}
             <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-emerald-300 to-transparent opacity-40"></div>
 
-            <div className="flex justify-between items-start mb-3.5 mt-0.5 relative">
-                <div className="flex items-center">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg mr-3 border-2 border-emerald-100 bg-emerald-50/50 overflow-hidden shadow-sm">
+            <div className="flex justify-between items-start gap-2 mb-3.5 mt-0.5 relative">
+                <div className="flex items-center min-w-0 flex-1">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg mr-3 border-2 border-emerald-100 bg-emerald-50/50 overflow-hidden shadow-sm shrink-0">
                         <img src={avatarImg} alt={log.user} onError={handleImgError} className="w-full h-full object-cover" />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                         <div className="font-bold text-emerald-950 text-base font-['Fredoka'] leading-tight flex items-center flex-wrap gap-1.5">
                             <span>{log.user}</span>
                             {props.authorLevel && props.authorLevel >= 1 && (
@@ -152,7 +152,7 @@ export const FeedLogItem: React.FC<Props> = React.memo((props) => {
                             e.stopPropagation();
                             onDelete(log.id);
                         }}
-                        className="absolute top-0 right-0 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors p-1.5"
+                        className="shrink-0 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors p-1.5"
                         title="Delete Workout"
                     >
                         <Trash2 size={17} />

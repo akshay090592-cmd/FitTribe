@@ -2126,26 +2126,18 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div className="relative md:col-span-2">
-                <button
-                  onClick={() => setIsChallengeModalOpen(true)}
-                  aria-label="New Challenge"
-                  className="absolute top-4 right-4 z-20 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors active:scale-95 shadow-xs flex items-center gap-1 md:hidden"
-                >
-                  <Plus size={15} /> Challenge
-                </button>
-                <div className="md:hidden">
-                  <QuestBoard
-                    quests={quests}
-                    onboardingQuests={onboardingQuests}
-                    loading={loading}
-                    hasLoggedWorkouts={allLogs.length > 0}
-                    onManualComplete={handleManualQuestComplete}
-                    userProfile={userProfile}
-                    userState={currentUser ? allGamificationState?.[currentUser] : undefined}
-                    onStateUpdated={() => loadProfile(true)}
-                  />
-                </div>
+              <div className="md:hidden md:col-span-2">
+                <QuestBoard
+                  quests={quests}
+                  onboardingQuests={onboardingQuests}
+                  loading={loading}
+                  hasLoggedWorkouts={allLogs.length > 0}
+                  onManualComplete={handleManualQuestComplete}
+                  userProfile={userProfile}
+                  userState={currentUser ? allGamificationState?.[currentUser] : undefined}
+                  onStateUpdated={() => loadProfile(true)}
+                  onNewChallenge={() => setIsChallengeModalOpen(true)}
+                />
               </div>
 
               {/* Motivational Quote */}

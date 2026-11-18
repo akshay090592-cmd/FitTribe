@@ -27,7 +27,7 @@ export const StreakFlameSVG: React.FC<StreakFlameSVGProps> = React.memo(({
   const outerStops = isShielded
     ? ['#0369a1', '#0ea5e9', '#bae6fd']
     : isSuper
-    ? ['#6d28d9', '#ec4899', '#fde047']
+    ? ['#ea580c', '#f59e0b', '#fef08a']
     : isAtRisk
     ? ['#b45309', '#f59e0b', '#fef08a']
     : ['#dc2626', '#f97316', '#facc15'];
@@ -35,7 +35,7 @@ export const StreakFlameSVG: React.FC<StreakFlameSVGProps> = React.memo(({
   const innerStops = isShielded
     ? ['#38bdf8', '#e0f2fe', '#ffffff']
     : isSuper
-    ? ['#f43f5e', '#fde047', '#ffffff']
+    ? ['#f59e0b', '#fef08a', '#ffffff']
     : ['#f97316', '#fde047', '#ffffff'];
 
   return (
@@ -595,7 +595,7 @@ export const PowerUpIconSVG: React.FC<PowerUpIconSVGProps> = React.memo(({
  * floating sparkles, and properly centered faceted gem glints.
  */
 export const LeaderboardCrownSVG: React.FC<{ size?: number | string; className?: string }> = React.memo(({
-  size = 28,
+  size = '100%',
   className = '',
 }) => {
   const rawId = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -901,13 +901,14 @@ export const TimeWindowEmblemSVG: React.FC<{ mode: 'early_bird' | 'night_owl'; s
           <circle className={`${uid}_star s1`} cx="28" cy="28" r="2.5" fill="#fef08a" />
           <circle className={`${uid}_star s2`} cx="42" cy="20" r="2" fill="#e0e7ff" />
           <g clipPath={`url(#${uid}_ebClip)`}>
-            <path d="M30 84 C30 56 42 50 50 50 C58 50 70 56 70 84 Z" fill="#4338ca" stroke="#23272e" strokeWidth="3" />
+            <path d="M28 84 C28 54 41 48 50 48 C59 48 72 54 72 84 Z" fill="#6366f1" stroke="#1e293b" strokeWidth="3" />
+            <ellipse cx="50" cy="75" rx="11" ry="9" fill="#c7d2fe" opacity="0.9" />
             {/* Bamboo Perch Branch */}
-            <line x1="16" y1="82" x2="84" y2="78" stroke="#16a34a" strokeWidth="5" strokeLinecap="round" />
-            <line x1="16" y1="82" x2="84" y2="78" stroke="#23272e" strokeWidth="2" strokeLinecap="round" />
+            <line x1="16" y1="82" x2="84" y2="78" stroke="#22c55e" strokeWidth="5.5" strokeLinecap="round" />
+            <line x1="16" y1="82" x2="84" y2="78" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
           </g>
-          <polygon points="34,52 30,42 42,48" fill="#4338ca" stroke="#23272e" strokeWidth="2.5" strokeLinejoin="round" />
-          <polygon points="66,52 70,42 58,48" fill="#4338ca" stroke="#23272e" strokeWidth="2.5" strokeLinejoin="round" />
+          <polygon points="34,50 29,39 42,46" fill="#6366f1" stroke="#1e293b" strokeWidth="2.5" strokeLinejoin="round" />
+          <polygon points="66,50 71,39 58,46" fill="#6366f1" stroke="#1e293b" strokeWidth="2.5" strokeLinejoin="round" />
           <g className={`${uid}_eyes`}>
             <circle cx="42" cy="64" r="6" fill="#fef08a" stroke="#23272e" strokeWidth="2" />
             <circle cx="42" cy="64" r="2.5" fill="#1e1b4b" />
@@ -1488,22 +1489,37 @@ export const TribeCampfireSceneSVG: React.FC<{
       </g>
       <rect x="28" y="86" width="64" height="10" rx="5" transform="rotate(-12 60 91)" fill="#92400e" stroke="#23272e" strokeWidth="2.5" />
       <rect x="28" y="86" width="64" height="10" rx="5" transform="rotate(12 60 91)" fill="#b45309" stroke="#23272e" strokeWidth="2.5" />
-      {/* Dynamic Campfire Flame */}
+      {/* Dynamic Twin-Tongue Tribe Campfire */}
       <g className={`${uid}_flame`}>
+        {/* Side Flame Tongues for wider campfire silhouette */}
         <path
-          d="M60 22 C60 22 92 48 89 74 C87 88 75 94 60 94 C45 94 33 88 31 74 C28 48 60 22 60 22 Z"
-          fill={activeCount === 0 ? '#64748b' : '#ea580c'}
-          stroke="#23272e"
-          strokeWidth="2.5"
+          d="M36 78 C24 64 30 46 42 42 C39 54 44 62 49 68 Z"
+          fill={activeCount === 0 ? '#64748b' : '#f97316'}
+          stroke="#1e293b"
+          strokeWidth="2.4"
+          strokeLinejoin="round"
         />
         <path
-          d="M60 38 C60 38 82 57 79 76 C77 86 70 91 60 91 C50 91 43 86 41 76 C38 57 60 38 60 38 Z"
+          d="M84 78 C96 64 90 46 78 42 C81 54 76 62 71 68 Z"
+          fill={activeCount === 0 ? '#64748b' : '#f97316'}
+          stroke="#1e293b"
+          strokeWidth="2.4"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M60 22 C60 22 90 46 86 74 C84 88 73 94 60 94 C47 94 36 88 34 74 C30 46 60 22 60 22 Z"
+          fill={activeCount === 0 ? '#64748b' : '#ea580c'}
+          stroke="#1e293b"
+          strokeWidth="2.6"
+        />
+        <path
+          d="M60 38 C60 38 80 56 77 76 C75 86 68 91 60 91 C52 91 45 86 43 76 C40 56 60 38 60 38 Z"
           fill={activeCount === 0 ? '#94a3b8' : '#facc15'}
         />
         <path
-          d="M60 56 C60 56 72 68 71 80 C70 86 65 89 60 89 C55 89 50 86 49 80 C48 68 60 56 60 56 Z"
+          d="M60 56 C60 56 71 68 70 80 C69 86 65 89 60 89 C55 89 51 86 50 80 C49 68 60 56 60 56 Z"
           fill="#ffffff"
-          opacity="0.92"
+          opacity="0.94"
         />
       </g>
       {/* Rising Ember Sparks */}
@@ -1523,7 +1539,7 @@ export const TribeCampfireSceneSVG: React.FC<{
  * Features twin Panda Paws with emerald dojo wristbands clashing in a golden starburst.
  */
 export const SocialBoostBurstSVG: React.FC<{ size?: number | string; className?: string }> = React.memo(({
-  size = 76,
+  size = '100%',
   className = '',
 }) => {
   const rawId = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -1557,32 +1573,24 @@ export const SocialBoostBurstSVG: React.FC<{ size?: number | string; className?:
       {/* Starburst Shockwave */}
       <polygon
         className={`${uid}_burst`}
-        points="60,8 73,30 100,20 88,46 112,60 86,74 96,100 70,88 58,112 46,88 20,98 32,72 8,58 34,46 24,20 50,30"
-        fill="#fde047"
-        stroke="#f97316"
-        strokeWidth="3"
+        points="60,12 72,34 96,24 85,48 108,60 85,72 95,96 70,85 59,108 48,85 24,95 35,71 12,60 35,48 25,24 49,34"
+        fill="#fef08a"
+        stroke="#f59e0b"
+        strokeWidth="2.8"
         strokeLinejoin="round"
       />
-      {/* Left & Right Panda Paws Clashing with Emerald Dojo Wristbands */}
-      <g stroke="#23272e" strokeWidth="3" strokeLinejoin="round">
-        {/* Left Arm & Fist */}
-        <rect x="14" y="52" width="14" height="24" rx="5" transform="rotate(-12 21 64)" fill="#10b981" />
-        <circle cx="42" cy="62" r="17" fill="#2b2f36" />
-        <circle cx="49" cy="54" r="4.5" fill="#525866" stroke="none" />
-        <circle cx="51" cy="62" r="4.5" fill="#525866" stroke="none" />
-        <circle cx="49" cy="70" r="4.5" fill="#525866" stroke="none" />
-        <ellipse cx="38" cy="62" rx="6" ry="5" fill="#fda4af" stroke="none" />
+      {/* Left & Right Sleek Panda Fists with Emerald & Amber Wristbands */}
+      <g stroke="#1e293b" strokeWidth="2.8" strokeLinejoin="round">
+        <rect x="13" y="51" width="13" height="22" rx="5" transform="rotate(-10 19 62)" fill="#10b981" />
+        <rect x="24" y="47" width="32" height="30" rx="13" fill="#1e293b" />
+        <ellipse cx="38" cy="62" rx="6.5" ry="5" fill="#fda4af" stroke="none" />
 
-        {/* Right Arm & Fist */}
-        <rect x="92" y="52" width="14" height="24" rx="5" transform="rotate(12 99 64)" fill="#f59e0b" />
-        <circle cx="78" cy="62" r="17" fill="#2b2f36" />
-        <circle cx="71" cy="54" r="4.5" fill="#525866" stroke="none" />
-        <circle cx="69" cy="62" r="4.5" fill="#525866" stroke="none" />
-        <circle cx="71" cy="70" r="4.5" fill="#525866" stroke="none" />
-        <ellipse cx="82" cy="62" rx="6" ry="5" fill="#fda4af" stroke="none" />
+        <rect x="94" y="51" width="13" height="22" rx="5" transform="rotate(10 101 62)" fill="#f59e0b" />
+        <rect x="64" y="47" width="32" height="30" rx="13" fill="#1e293b" />
+        <ellipse cx="82" cy="62" rx="6.5" ry="5" fill="#fda4af" stroke="none" />
       </g>
-      {/* Clash Spark */}
-      <polygon points="60,28 64,42 78,44 67,52 70,66 60,57 50,66 53,52 42,44 56,42" fill="#ffffff" stroke="#23272e" strokeWidth="2.2" />
+      {/* Clean Clash Spark */}
+      <polygon points="60,34 64,47 77,50 66,57 69,70 60,61 51,70 54,57 43,50 56,47" fill="#ffffff" stroke="#1e293b" strokeWidth="2.2" strokeLinejoin="round" />
     </svg>
   );
 });
@@ -1643,10 +1651,10 @@ export const RestTimerZenLotusSVG: React.FC<{ size?: number | string; className?
           .${uid}_lotus, .${uid}_ripple { animation: none !important; }
         }
       `}</style>
-      {/* Box-Breathing Concentric Aura Ring */}
+      {/* Box-Breathing Luminous Mint Aura */}
       <circle className={`${uid}_ripple`} cx="60" cy="60" r="48" fill="none" stroke="#34d399" strokeWidth="3" strokeDasharray="8 6" />
-      <circle cx="60" cy="60" r="42" fill="#064e3b" opacity="0.45" />
-      <g className={`${uid}_lotus`} stroke="#23272e" strokeWidth="2.5" strokeLinejoin="round">
+      <circle cx="60" cy="60" r="42" fill="#ecfdf5" stroke="#a7f3d0" strokeWidth="2.5" />
+      <g className={`${uid}_lotus`} stroke="#1e293b" strokeWidth="2.5" strokeLinejoin="round">
         {/* Notched Emerald Lily Pad */}
         <path d="M60 80 L94 84 A42 14 0 1 1 98 76 Z" fill="#10b981" />
         {/* Back Outer Petals */}

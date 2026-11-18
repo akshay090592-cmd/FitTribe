@@ -119,8 +119,8 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
       </div>
 
       <div className="flex-1 min-w-0 mr-2.5 relative z-10">
-        <div className="flex items-center gap-2">
-          <h4 className={`text-sm font-bold truncate ${quest.completed ? `${colors.textCompleted} line-through` : 'text-emerald-950'}`}>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <h4 className={`text-sm font-bold leading-snug break-words ${quest.completed ? `${colors.textCompleted} line-through` : 'text-emerald-950'}`}>
             {quest.title}
           </h4>
           {isManual && !quest.completed && (
@@ -128,15 +128,13 @@ const QuestItem: React.FC<{ quest: Quest, onManualComplete: (id: string) => void
               Tap
             </span>
           )}
-        </div>
-        <div className="flex justify-between items-center mt-0.5">
-          <p className="text-[11px] text-slate-500 font-medium truncate pr-2">{quest.description}</p>
           {!quest.completed && (
-            <div className={`text-[10px] font-bold ${colors.rewardBg} px-2 py-0.5 rounded-full whitespace-nowrap shadow-2xs`}>
+            <span className={`text-[10px] font-bold ${colors.rewardBg} px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 shadow-2xs`}>
               +{quest.rewardXp} XP
-            </div>
+            </span>
           )}
         </div>
+        <p className="text-[11px] text-slate-500 font-medium leading-snug break-words mt-0.5">{quest.description}</p>
       </div>
 
       <div className="relative z-10 shrink-0">

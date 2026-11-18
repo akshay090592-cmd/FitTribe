@@ -7,6 +7,7 @@ import { ACTIVITIES_LIST } from '../constants';
 import { getActiveSequenceSlot, normalizeWorkoutTemplate } from '../utils/templateUtils';
 import { X, Plus, Play, Edit, Trash2, Library, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Flame, Wind, Activity, CheckCircle2 } from 'lucide-react';
 import { ConfirmPopup } from './ConfirmPopup';
+import { InfoTooltip } from './InfoTooltip';
 import { ExerciseThumbnail, ExerciseBadgeRow } from './ExerciseVisualBadges';
 
 interface Props {
@@ -247,9 +248,9 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                 <div key={template.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-slate-800 text-base sm:text-lg leading-snug">{template.name}</h3>
+                      <h3 className="font-bold text-slate-800 text-base sm:text-lg leading-snug break-words">{template.name}</h3>
                       {template.focus && (
-                        <p className="text-[11px] font-semibold text-indigo-600/80 mt-0.5 line-clamp-1">{template.focus}</p>
+                        <p className="text-[11px] font-semibold text-indigo-600/80 mt-0.5 leading-snug break-words">{template.focus}</p>
                       )}
                     </div>
                     <div className="flex space-x-1 shrink-0">
@@ -292,7 +293,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                             size="xs"
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="font-bold text-slate-800 truncate">{ex.name}</div>
+                            <div className="font-bold text-slate-800 leading-snug break-words">{ex.name}</div>
                             <ExerciseBadgeRow
                               name={ex.name}
                               customImage={ex.image}
@@ -326,8 +327,16 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
           <div className="p-4 space-y-5 overflow-y-auto flex-1 bg-slate-50">
             {/* Current Sequence Queue */}
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Your Rotating Schedule</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Your Rotating Schedule</span>
+                  <InfoTooltip
+                    label="About your rotating schedule"
+                    content="Saved to your profile in the database so it persists across app updates. Automatically advances when you finish a workout or log a scheduled activity."
+                    align="left"
+                    iconClassName="text-slate-400"
+                  />
+                </h3>
                 {sequence.length > 0 && (
                   <button
                     type="button"
@@ -365,7 +374,7 @@ export const WorkoutLibraryModal: React.FC<Props> = ({
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-slate-800 text-sm truncate">{slot.label}</span>
+                              <span className="font-bold text-slate-800 text-sm leading-snug break-words">{slot.label}</span>
                               {isActive && (
                                 <span className="bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0">
                                   Up Next

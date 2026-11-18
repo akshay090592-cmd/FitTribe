@@ -1763,25 +1763,27 @@ const App: React.FC = () => {
 
               {/* Next Workout Hero Card - Theme-Aware & Prioritized on Mobile for Thumb Ergonomics */}
               <div
-                className="rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 text-white shadow-xl shadow-black/20 relative overflow-hidden border-2 group cursor-default md:col-span-2 transition-all duration-500"
+                className="rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 text-white shadow-xl shadow-black/20 relative border-2 group cursor-default md:col-span-2 transition-all duration-500"
                 style={{
                   background: themePalette.heroCardGradient,
                   borderColor: themePalette.heroCardBorder,
                 }}
               >
-                <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/jungle_bg_pattern.webp')] opacity-[0.07] group-hover:opacity-10 transition-opacity pointer-events-none"></div>
+                <div className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none">
+                  <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/jungle_bg_pattern.webp')] opacity-[0.07] group-hover:opacity-10 transition-opacity"></div>
 
-                {/* Decorative circles */}
-                <div className={`absolute -top-10 -right-10 w-36 h-36 ${themePalette.heroOrbPrimary} rounded-full blur-3xl pointer-events-none`}></div>
-                <div className={`absolute -bottom-10 -left-10 w-36 h-36 ${themePalette.heroOrbSecondary} rounded-full blur-3xl pointer-events-none`}></div>
+                  {/* Decorative circles */}
+                  <div className={`absolute -top-10 -right-10 w-36 h-36 ${themePalette.heroOrbPrimary} rounded-full blur-3xl`}></div>
+                  <div className={`absolute -bottom-10 -left-10 w-36 h-36 ${themePalette.heroOrbSecondary} rounded-full blur-3xl`}></div>
+                </div>
 
                 <div className="relative z-10">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md border uppercase tracking-widest flex items-center gap-1.5 ${themePalette.heroBadgeClass}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2.5 sm:mb-3">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md border uppercase tracking-widest flex items-center gap-1.5 ${themePalette.heroBadgeClass}`}>
                       <span className={`w-1.5 h-1.5 rounded-full animate-ping ${themePalette.navActiveDotClass}`} />
                       Next Mission
                     </span>
-                    <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
+                    <div className="flex items-center flex-wrap gap-1.5">
                       <button
                         onClick={() => {
                           setLibraryInitialTab('templates');
@@ -1834,7 +1836,7 @@ const App: React.FC = () => {
 
                   {/* Interactive Sequence Progress Strip */}
                   {activeSequenceState && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-2.5 no-scrollbar">
                       {activeSequenceState.sequence.map((slot, idx) => {
                         const isCurrent = idx === activeSequenceState.index;
                         return (
@@ -1842,42 +1844,44 @@ const App: React.FC = () => {
                             key={slot.id}
                             type="button"
                             onClick={() => advanceSequenceSlot(idx)}
-                            className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all active:scale-95 flex items-center gap-1 ${
+                            title={slot.label}
+                            className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all active:scale-95 flex items-center gap-1 ${
                               isCurrent
                                 ? 'bg-white text-slate-900 border-white shadow-sm'
                                 : 'bg-black/25 text-white/80 border-white/15 hover:bg-black/35'
                             }`}
                           >
                             <span className="opacity-70">{idx + 1}.</span>
-                            <span className="max-w-[130px] truncate">{slot.label}</span>
+                            <span className="max-w-[140px] truncate">{slot.label}</span>
                             {slot.type === 'activity' && slot.defaultDuration ? (
                               <span className="opacity-70">({slot.defaultDuration}m)</span>
                             ) : null}
                           </button>
                         );
                       })}
+                      <InfoTooltip
+                        label="About mission sequence"
+                        content="Your saved repeating workout schedule. Tap any step to jump to it, or use Skip/Switch above."
+                        align="right"
+                        iconClassName="text-white/80"
+                      />
                     </div>
                   )}
 
                   {activeSequenceState && activeSequenceState.slot.type === 'activity' ? (
                     <>
-                      <div className="mb-5">
-                        <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
+                      <div className="mb-3">
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md leading-tight">
                           {activeSequenceState.slot.activityName || activeSequenceState.slot.label}
                         </h2>
-                        <p className="text-white/85 text-xs sm:text-sm font-semibold">
-                          Scheduled Sequence Activity • {activeSequenceState.slot.defaultDuration || 30} mins
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
-                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
-                          <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">Cardio / Mobility</span>
-                        </div>
-                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Clock size={16} /></div>
-                          <span className="text-xs font-bold text-white leading-tight">{activeSequenceState.slot.defaultDuration || 30} Mins Target</span>
+                        <div className="flex flex-wrap items-center gap-2 text-white/85 text-xs font-semibold">
+                          <span>Cardio / Mobility • {activeSequenceState.slot.defaultDuration || 30} mins target</span>
+                          <InfoTooltip
+                            label="About scheduled activity"
+                            content="Non-lifting recovery or Zone 2 cardio day in your sequence. Logging it automatically advances your sequence to the next workout."
+                            align="left"
+                            iconClassName="text-white/80"
+                          />
                         </div>
                       </div>
 
@@ -1892,31 +1896,35 @@ const App: React.FC = () => {
                           setIsActivityModalOpen(true);
                         }}
                         style={{ background: themePalette.ctaGradient }}
-                        className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
+                        className={`w-full ${themePalette.ctaTextClass} py-3 sm:py-3.5 rounded-2xl font-bold text-base sm:text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
                       >
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
                         <span className="relative z-10 flex items-center tracking-wide">
-                          Log {activeSequenceState.slot.activityName || activeSequenceState.slot.label} <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                          Log {activeSequenceState.slot.activityName || activeSequenceState.slot.label} <ArrowRight size={18} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
                         </span>
                       </button>
                     </>
                   ) : (
                     <>
-                      <div className="mb-5">
-                        <h2 className="text-3xl sm:text-4xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md">
+                      <div className="mb-3">
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-1 tracking-tight font-['Fredoka'] text-white drop-shadow-md leading-tight">
                           {activeCustomPlan
                             ? activeCustomPlan.title
                             : activeSequenceState
                             ? activeSequenceState.slot.label
                             : `Plan ${selectedWorkoutType}`}
                         </h2>
-                        <p className="text-white/85 text-xs sm:text-sm font-semibold">
-                          {activeCustomPlan
-                            ? `Sensei Custom Focus • ${activeCustomPlan.focus}`
-                            : activeSequenceState && activeSequenceState.slot.type === 'custom_template'
-                            ? currentPlan.focus
-                            : currentPlan.title}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-white/85 text-xs font-semibold">
+                          <span>{currentPlan.exercises.length} Exercises</span>
+                          <span className="opacity-50">•</span>
+                          <span>{currentPlan.warmup?.length || 0} Warm-Up / {currentPlan.cooldown?.length || 0} Cool-Down</span>
+                          <InfoTooltip
+                            label="Workout focus & details"
+                            content={`Focus: ${currentPlan.focus}. Includes ${currentPlan.warmup?.length || 0} warm-up steps and ${currentPlan.cooldown?.length || 0} cool-down stretches tailored to this session.`}
+                            align="left"
+                            iconClassName="text-white/85"
+                          />
+                        </div>
                         {(() => {
                           const scheduleList = (allUserPlans[currentUser] as any)?.schedule;
                           if (!Array.isArray(scheduleList)) return null;
@@ -1924,7 +1932,7 @@ const App: React.FC = () => {
                           const todayItem = scheduleList.find((item: any) => item?.date === todayIso);
                           if (!todayItem) return null;
                           return (
-                            <div className="mt-2.5 inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md border border-white/15 px-3 py-1 rounded-xl text-[11px] font-bold text-emerald-100">
+                            <div className="mt-2 inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md border border-white/15 px-2.5 py-1 rounded-xl text-[11px] font-bold text-emerald-100">
                               <span>🐼</span>
                               <span>Today&apos;s Coach Schedule: <strong className="text-white">{todayItem.activity}</strong></span>
                               {todayItem.status === 'done' && (
@@ -1937,40 +1945,47 @@ const App: React.FC = () => {
                         })()}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
-                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><TrendingUp size={16} /></div>
-                          <span className="text-xs font-bold text-white flex-1 leading-tight line-clamp-2">{currentPlan.focus}</span>
-                        </div>
-                        <div className="flex items-center bg-black/25 p-2.5 sm:p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                          <div className={`p-2 rounded-xl mr-2.5 shrink-0 border ${themePalette.heroBadgeClass}`}><Activity size={16} /></div>
-                          <span className="text-xs font-bold text-white leading-tight">{currentPlan.exercises.length} Exercises</span>
-                        </div>
-                      </div>
-
                       <button
                         onClick={() => setView('workout')}
                         style={{ background: themePalette.ctaGradient }}
-                        className={`w-full ${themePalette.ctaTextClass} py-4 rounded-2xl font-bold text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
+                        className={`w-full ${themePalette.ctaTextClass} py-3 sm:py-3.5 rounded-2xl font-bold text-base sm:text-lg font-['Fredoka'] shadow-lg shadow-black/25 active:scale-[0.98] transition-all hover:brightness-105 flex items-center justify-center relative overflow-hidden group/btn`}
                       >
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                        <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={20} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
+                        <span className="relative z-10 flex items-center tracking-wide">Start Adventure <ArrowRight size={18} className="ml-2 group-hover/btn:translate-x-1 transition-transform" /></span>
                       </button>
                     </>
                   )}
 
-                  <button
-                    onClick={handleCommit}
-                    disabled={isCommitting || hasTomorrowCommitment}
-                    className="w-full mt-3 bg-black/30 text-white/95 p-3 rounded-2xl font-bold text-xs hover:bg-black/40 transition-all flex items-center justify-between gap-3 backdrop-blur-md border border-white/15 active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed text-left"
+                  <div
+                    role="button"
+                    tabIndex={isCommitting || hasTomorrowCommitment ? -1 : 0}
+                    aria-disabled={isCommitting || hasTomorrowCommitment}
+                    onClick={() => {
+                      if (!isCommitting && !hasTomorrowCommitment) handleCommit();
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && !isCommitting && !hasTomorrowCommitment) {
+                        e.preventDefault();
+                        handleCommit();
+                      }
+                    }}
+                    className={`w-full mt-2.5 bg-black/30 text-white/95 p-2.5 sm:p-3 rounded-2xl font-bold text-xs hover:bg-black/40 transition-all flex items-center justify-between gap-2.5 backdrop-blur-md border border-white/15 active:scale-[0.98] text-left ${
+                      isCommitting || hasTomorrowCommitment ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <HonorPledgeSealSVG stamped={hasTomorrowCommitment || isCommitting} className="w-15 h-15 shrink-0 block drop-shadow-md" />
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-amber-200">
-                          {hasTomorrowCommitment ? 'Pledge Stamped & Sealed' : 'Honor Pledge Contract'}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <HonorPledgeSealSVG stamped={hasTomorrowCommitment || isCommitting} className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 block drop-shadow-md" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-amber-200 flex items-center gap-1">
+                          <span>{hasTomorrowCommitment ? 'Pledge Stamped & Sealed' : 'Honor Pledge Contract'}</span>
+                          <InfoTooltip
+                            label="About Honor Pledge"
+                            content="Commit today to complete your workout tomorrow and earn +40 bonus XP when you check in."
+                            align="left"
+                            iconClassName="text-amber-200"
+                          />
                         </div>
-                        <div className="text-xs sm:text-sm font-black truncate mt-0.5">
+                        <div className="text-xs sm:text-sm font-black leading-snug mt-0.5 break-words">
                           {isCommitting
                             ? 'Committing...'
                             : hasTomorrowCommitment
@@ -1980,11 +1995,11 @@ const App: React.FC = () => {
                       </div>
                     </div>
                     {!isCommitting && !hasTomorrowCommitment && (
-                      <span className="bg-amber-400/25 text-amber-200 border border-amber-300/30 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0">
+                      <span className="bg-amber-400/25 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black shrink-0">
                         +40 XP
                       </span>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -2046,7 +2061,7 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="text-left z-10">
-                    <div className={`font-bold text-xs sm:text-sm leading-tight line-clamp-1 ${!lastWorkout ? 'text-teal-500' : 'text-teal-950'}`}>
+                    <div className={`font-bold text-xs sm:text-sm leading-tight break-words ${!lastWorkout ? 'text-teal-500' : 'text-teal-950'}`}>
                       {!lastWorkout ? 'No Recent Activity' : (lastWorkout.type === WorkoutType.CUSTOM ? lastWorkout.customActivity : `Plan ${lastWorkout.type}`)}
                     </div>
                     {lastWorkout && (

@@ -14,6 +14,7 @@ import { getLastLogForExerciseByType } from '../utils/workoutUtils';
 import { TemplateEditor } from '../components/TemplateEditor';
 import { WorkoutLibraryModal } from '../components/WorkoutLibraryModal';
 import { ActivityTrackerModal } from '../components/ActivityTrackerModal';
+import { InfoTooltip } from '../components/InfoTooltip';
 import { WorkoutType, UserProfile, WorkoutTemplate } from '../types';
 
 vi.mock('../utils/storage', () => ({
@@ -265,5 +266,26 @@ describe('ActivityTrackerModal initialActivity & initialDuration pre-fill', () =
 
     expect(screen.getByDisplayValue('Swimming')).toBeInTheDocument();
     expect(screen.getByDisplayValue('40')).toBeInTheDocument();
+  });
+});
+
+describe('InfoTooltip mobile-friendly explanation popover', () => {
+  it('toggles tooltip on click without triggering parent button click and closes on Escape', () => {
+    const parentClick = vi.fn();
+    render(
+      <div onClick={parentClick}>
+        <InfoTooltip label="About Honor Pledge" content="Commit today for +40 XP tomorrow." />
+      </div>
+    );
+
+    const btn = screen.getByRole('button', { name: 'About Honor Pledge' });
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    fireEvent.click(btn);
+    expect(parentClick).not.toHaveBeenCalled();
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Commit today for +40 XP tomorrow.');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 });

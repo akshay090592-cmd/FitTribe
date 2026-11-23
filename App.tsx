@@ -1090,14 +1090,23 @@ const App: React.FC = () => {
       );
       return tpl ? templateToWorkoutPlan(tpl) : null;
     }
+    const fallbackTier = STARTER_PLANS[userProfile.fitnessLevel as 'beginner' | 'advanced'] || STARTER_PLANS.beginner;
     if (slot.type === 'plan_a') {
-      return allUserPlans[currentUser]?.[WorkoutType.A] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][WorkoutType.A];
+      return allUserPlans[currentUser]?.[WorkoutType.A] || fallbackTier[WorkoutType.A];
     }
     if (slot.type === 'plan_b') {
-      return allUserPlans[currentUser]?.[WorkoutType.B] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][WorkoutType.B];
+      return allUserPlans[currentUser]?.[WorkoutType.B] || fallbackTier[WorkoutType.B];
     }
     return null;
   }, [userProfile, allUserPlans, currentUser]);
+
+  const activeSequencePlan = React.useMemo(
+    () =>
+      activeSequenceState && activeSequenceState.slot.type !== 'activity'
+        ? resolveSequenceSlotPlan(activeSequenceState.slot)
+        : null,
+    [activeSequenceState, resolveSequenceSlotPlan]
+  );
 
   const advanceSequenceSlot = React.useCallback(async (explicitIndex?: number, toastMsg?: string) => {
     if (!userProfile || !activeSequenceState) return;
@@ -1442,15 +1451,8 @@ const App: React.FC = () => {
   }
 
   // 3. Main App
-  const activeSequencePlan = React.useMemo(
-    () =>
-      activeSequenceState && activeSequenceState.slot.type !== 'activity'
-        ? resolveSequenceSlotPlan(activeSequenceState.slot)
-        : null,
-    [activeSequenceState, resolveSequenceSlotPlan]
-  );
-
-  const currentPlan = activeCustomPlan || activeSequencePlan || allUserPlans[currentUser]?.[selectedWorkoutType] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][selectedWorkoutType];
+  const defaultTierPlans = STARTER_PLANS[userProfile.fitnessLevel as 'beginner' | 'advanced'] || STARTER_PLANS.beginner;
+  const currentPlan = activeCustomPlan || activeSequencePlan || allUserPlans[currentUser]?.[selectedWorkoutType] || defaultTierPlans[selectedWorkoutType] || defaultTierPlans[WorkoutType.A];
 
   const themeObj = SHOP_THEMES.find(t => t.id === activeTheme);
   const headerStyle = themeObj

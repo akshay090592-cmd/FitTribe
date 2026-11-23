@@ -11,6 +11,7 @@ import {
 } from '../utils/templateUtils';
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
 import { getLastLogForExerciseByType } from '../utils/workoutUtils';
+import { getProgressionSuggestion } from '../utils/progression';
 import { TemplateEditor } from '../components/TemplateEditor';
 import { WorkoutLibraryModal } from '../components/WorkoutLibraryModal';
 import { ActivityTrackerModal } from '../components/ActivityTrackerModal';
@@ -130,6 +131,41 @@ describe('templateUtils & workout-specific warmup/cooldown normalization', () =>
     expect(resolveExerciseVisualMeta('Elevated Box Goblet Squat (50-60° Knee Angle)').image).toBe('/assets/exercises/box_goblet_squat_composite.webp');
     expect(resolveExerciseVisualMeta('Supine Alternating Deadbug').image).toBe('/assets/exercises/supine_deadbug_composite.webp');
     expect(resolveExerciseVisualMeta('Supine Heel-Dig Glute-Ham Bridge').image).toBe('/assets/exercises/heel_dig_glute_bridge_composite.webp');
+  });
+
+  it('normalizes legacy defaultSets/defaultReps fields on seeded templates so WorkoutSession and getProgressionSuggestion never crash', () => {
+    const dbSeededTemplate = {
+      id: 'opt_plan_a_antagonist_upper_legs',
+      name: 'A - Upper & Quads',
+      exercises: [
+        {
+          name: 'Barbell Bench Press',
+          defaultSets: 3,
+          defaultReps: '6-10',
+          isSuperset: true,
+          supersetGroup: '1',
+        },
+      ],
+    } as unknown as WorkoutTemplate;
+
+    const normalized = normalizeWorkoutTemplate(dbSeededTemplate);
+    expect(normalized.exercises[0].sets).toBe(3);
+    expect(normalized.exercises[0].reps).toBe('6-10');
+
+    const plan = templateToWorkoutPlan(dbSeededTemplate);
+    expect(plan.exercises[0].defaultSets).toBe(3);
+    expect(plan.exercises[0].defaultReps).toBe('6-10');
+
+    const suggestion = getProgressionSuggestion(
+      [{ weight: 75, reps: 10, completed: true }],
+      plan.exercises[0].defaultReps
+    );
+    expect(suggestion?.suggestedWeight).toBeGreaterThan(75);
+
+    // Also ensure undefined defaultRepsStr in getProgressionSuggestion never throws
+    expect(() =>
+      getProgressionSuggestion([{ weight: 75, reps: 10, completed: true }], undefined as unknown as string)
+    ).not.toThrow();
   });
 });
 

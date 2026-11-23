@@ -441,7 +441,12 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
   const cached = getFromCache<UserProfile>(cacheKey, 60 * 60 * 24 * 30); // 30 Day TTL
 
   if (cached) {
-    return cached;
+    return {
+      ...cached,
+      workoutTemplates: Array.isArray(cached.workoutTemplates)
+        ? cached.workoutTemplates.map(normalizeWorkoutTemplate)
+        : [],
+    };
   }
 
   if (isNetworkOffline()) {

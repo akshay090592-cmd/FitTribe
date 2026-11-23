@@ -33,20 +33,23 @@ export const clearRepsRangeCache = (): void => {
 /**
  * Helper to parse target reps range string like "8-10" or "5" with memoization.
  */
-const parseRepsRange = (defaultRepsStr: string): RepsRange => {
-  const cached = repsRangeCache.get(defaultRepsStr);
+const parseRepsRange = (defaultRepsStr: string | undefined | null): RepsRange => {
+  const safeStr = typeof defaultRepsStr === 'string' && defaultRepsStr.trim().length > 0
+    ? defaultRepsStr.trim()
+    : '8-12';
+  const cached = repsRangeCache.get(safeStr);
   if (cached) return cached;
 
   if (repsRangeCache.size >= 1000) {
     repsRangeCache.clear();
   }
 
-  const parts = defaultRepsStr.split('-');
+  const parts = safeStr.split('-');
   const minReps = parseInt(parts[0], 10) || 0;
   const maxReps = parts.length > 1 ? (parseInt(parts[1], 10) || minReps) : minReps;
 
   const result: RepsRange = { minReps, maxReps };
-  repsRangeCache.set(defaultRepsStr, result);
+  repsRangeCache.set(safeStr, result);
   return result;
 };
 

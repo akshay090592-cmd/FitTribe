@@ -196,6 +196,9 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
     : [...DEFAULT_CUSTOM_COOLDOWN];
 
   const exercises = (template.exercises || []).map((ex) => {
+    const rawEx = ex as unknown as Record<string, unknown>;
+    const normalizedSets = Number(ex.sets ?? rawEx.defaultSets) || 3;
+    const normalizedReps = String(ex.reps ?? rawEx.defaultReps ?? '8-12').trim() || '8-12';
     const visual = resolveExerciseVisualMeta(ex.name, {
       customImage: ex.image,
       visualArchetype: ex.visualArchetype,
@@ -203,6 +206,8 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
     });
     return {
       ...ex,
+      sets: normalizedSets,
+      reps: normalizedReps,
       image: visual.image,
       visualArchetype: visual.archetype,
       equipment: visual.equipment,
@@ -365,8 +370,8 @@ export const templateToWorkoutPlan = (template: WorkoutTemplate): WorkoutPlan =>
     cooldown: normalized.cooldown || [...DEFAULT_CUSTOM_COOLDOWN],
     exercises: normalized.exercises.map((ex) => ({
       name: ex.name,
-      defaultSets: ex.sets,
-      defaultReps: ex.reps,
+      defaultSets: Number(ex.sets) || 3,
+      defaultReps: String(ex.reps || '8-12'),
       notes: ex.notes || '',
       cues: ex.cues,
       trackingType: ex.trackingType,

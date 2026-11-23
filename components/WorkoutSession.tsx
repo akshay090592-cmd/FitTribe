@@ -398,66 +398,85 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   }, [loading, step]); // Run once when loading finishes or step changes to workout
 
   useEffect(() => {
+    let cancelled = false;
     const init = async () => {
-      // Check streak risk (always async)
-      const risk = await getStreakRisk(user);
-      setIsStreakAtRisk(risk);
-
-      // If we already loaded from session, we don't need to do the expensive setup
-      if (savedSession) {
-        return;
-      }
-
-      // Initialize from plan (Async)
-      const initializedRecords = await Promise.all(plan.exercises.map(async ex => {
-        const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
-        if (lastSets && lastSets.length > 0) {
-          let maxW = 0;
-          for (let i = 0; i < lastSets.length; i++) {
-            if (lastSets[i].weight > maxW) maxW = lastSets[i].weight;
-          }
-          prevMaxWeightRef.current[ex.name] = maxW;
+      try {
+        // Check streak risk (always async)
+        const risk = await getStreakRisk(user);
+        if (!cancelled) {
+          setIsStreakAtRisk(risk);
         }
-        const visualMeta = resolveExerciseVisualMeta(ex.name, {
-          customImage: ex.image,
-          visualArchetype: ex.visualArchetype,
-          equipment: ex.equipment
-        });
-        const suggestion = getProgressionSuggestion(lastSets, ex.defaultReps, {
-          equipment: ex.equipment || visualMeta.equipment,
-          archetype: ex.visualArchetype || visualMeta.archetype
-        });
-        const targetSetCount = (lastSets && lastSets.length > 0) ? lastSets.length : ex.defaultSets;
 
-        const sets = Array(targetSetCount).fill(null).map((_, idx) => {
-          let prevSet = null;
+        // If we already loaded from session, we don't need to do the expensive setup
+        if (savedSession) {
+          return;
+        }
+
+        // Initialize from plan (Async)
+        const initializedRecords = await Promise.all((plan.exercises || []).map(async ex => {
+          const rawEx = ex as unknown as Record<string, unknown>;
+          const safeDefaultSets = Number(ex.defaultSets ?? rawEx.sets) || 3;
+          const safeDefaultReps = String(ex.defaultReps ?? rawEx.reps ?? '8-12').trim() || '8-12';
+
+          const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
           if (lastSets && lastSets.length > 0) {
-            prevSet = lastSets[idx] || lastSets[lastSets.length - 1];
+            let maxW = 0;
+            for (let i = 0; i < lastSets.length; i++) {
+              if (lastSets[i].weight > maxW) maxW = lastSets[i].weight;
+            }
+            prevMaxWeightRef.current[ex.name] = maxW;
           }
-          return {
-            reps: prevSet ? prevSet.reps : 0,
-            weight: prevSet ? prevSet.weight : 0,
-            time: prevSet ? prevSet.time : (ex.trackingType === 'duration' ? parseDurationToSeconds(ex.defaultReps) : undefined),
-            completed: false
-          };
-        });
+          const visualMeta = resolveExerciseVisualMeta(ex.name, {
+            customImage: ex.image,
+            visualArchetype: ex.visualArchetype,
+            equipment: ex.equipment
+          });
+          const suggestion = getProgressionSuggestion(lastSets, safeDefaultReps, {
+            equipment: ex.equipment || visualMeta.equipment,
+            archetype: ex.visualArchetype || visualMeta.archetype
+          });
+          const targetSetCount = (lastSets && lastSets.length > 0) ? lastSets.length : safeDefaultSets;
 
-        return {
-          id: ex.name,
-          name: ex.name,
-          sets: sets,
-          isSuperset: ex.isSuperset,
-          supersetGroup: ex.supersetGroup,
-          suggestion: suggestion || undefined,
-          trackingType: ex.trackingType,
-          visualArchetype: ex.visualArchetype,
-          equipment: ex.equipment
-        };
-      }));
-      setRecords(initializedRecords);
-      setLoading(false);
+          const sets = Array(targetSetCount).fill(null).map((_, idx) => {
+            let prevSet = null;
+            if (lastSets && lastSets.length > 0) {
+              prevSet = lastSets[idx] || lastSets[lastSets.length - 1];
+            }
+            return {
+              reps: prevSet ? prevSet.reps : 0,
+              weight: prevSet ? prevSet.weight : 0,
+              time: prevSet ? prevSet.time : (ex.trackingType === 'duration' ? parseDurationToSeconds(safeDefaultReps) : undefined),
+              completed: false
+            };
+          });
+
+          return {
+            id: ex.name,
+            name: ex.name,
+            sets: sets,
+            isSuperset: ex.isSuperset,
+            supersetGroup: ex.supersetGroup !== undefined && ex.supersetGroup !== null ? Number(ex.supersetGroup) || undefined : undefined,
+            suggestion: suggestion || undefined,
+            trackingType: ex.trackingType,
+            visualArchetype: ex.visualArchetype,
+            equipment: ex.equipment
+          };
+        }));
+        if (!cancelled) {
+          setRecords(initializedRecords);
+        }
+      } catch (err) {
+        console.error("Failed to initialize workout session:", err);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     };
     init();
+    return () => {
+      cancelled = true;
+    };
   }, [user, plan]); // Removed savedSession from deps to avoid re-running if it changes (though it's constant per render)
 
   // Wake Lock Effect

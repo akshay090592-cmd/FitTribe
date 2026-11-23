@@ -1442,9 +1442,13 @@ const App: React.FC = () => {
   }
 
   // 3. Main App
-  const activeSequencePlan = activeSequenceState && activeSequenceState.slot.type !== 'activity'
-    ? resolveSequenceSlotPlan(activeSequenceState.slot)
-    : null;
+  const activeSequencePlan = React.useMemo(
+    () =>
+      activeSequenceState && activeSequenceState.slot.type !== 'activity'
+        ? resolveSequenceSlotPlan(activeSequenceState.slot)
+        : null,
+    [activeSequenceState, resolveSequenceSlotPlan]
+  );
 
   const currentPlan = activeCustomPlan || activeSequencePlan || allUserPlans[currentUser]?.[selectedWorkoutType] || STARTER_PLANS[userProfile.fitnessLevel || 'beginner'][selectedWorkoutType];
 
@@ -1461,7 +1465,7 @@ const App: React.FC = () => {
     return (
       <React.Suspense fallback={<LoadingSpinner fullScreen />}>
         <WorkoutSession
-          key={`${currentUser}-${currentPlan.id}`}
+          key={`${currentUser}-${currentPlan.id}-${currentPlan.title || ''}`}
           user={currentUser}
           userProfile={userProfile}
           plan={currentPlan}

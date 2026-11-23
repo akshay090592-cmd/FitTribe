@@ -438,7 +438,7 @@ export const getCurrentProfile = async (passedUserId?: string): Promise<UserProf
   // Optimization: For this family app, we trust the cache until logout.
   // This ensures instant load and no "lie-fi" hangs.
   const cacheKey = `profile_${userId}`;
-  const PROFILE_CACHE_SCHEMA_VERSION = '20261123_v2';
+  const PROFILE_CACHE_SCHEMA_VERSION = '20261123_v3';
   const schemaKey = `fittribe_profile_schema_${userId}`;
   const hasLatestSchema = localStorage.getItem(schemaKey) === PROFILE_CACHE_SCHEMA_VERSION;
   const cached = hasLatestSchema ? getFromCache<UserProfile>(cacheKey, 60 * 60 * 24 * 30) : null; // 30 Day TTL

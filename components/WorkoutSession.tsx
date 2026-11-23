@@ -435,7 +435,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
           const recommendedWeight =
             ex.defaultWeight ??
             (typeof rawEx.defaultWeight === 'number' ? rawEx.defaultWeight : undefined) ??
-            parseRecommendedWeight((ex.targetWeight ?? rawEx.targetWeight) as string | undefined, undefined, ex.name);
+            parseRecommendedWeight((ex.targetWeight ?? rawEx.targetWeight) as string | undefined);
 
           const hasExplicitRecommendation = plan.id === WorkoutType.CUSTOM_TEMPLATE && recommendedWeight !== undefined;
           const lastSets = hasExplicitRecommendation

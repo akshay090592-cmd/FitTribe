@@ -182,61 +182,6 @@ export const PERIOD_PHASE_TEMPLATES: WorkoutTemplate[] = [
   },
 ];
 
-const OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES: Record<string, Record<string, number>> = {
-  opt_plan_a_antagonist_upper_legs: {
-    'Barbell Bench Press': 65,
-    'Chest-Supported Dumbbell Row (30-45° Incline)': 60,
-    'Dumbbell Bulgarian Split Squat': 25,
-    'Weighted Triceps Dip': 12.5,
-    'Preacher Curl': 22.5,
-    'Dumbbell Lateral Raise': 17.5,
-    'Supine Deadbug': 0,
-  },
-  opt_plan_b_antagonist_pull_rdl: {
-    'Weighted Pull-Up': 12.5,
-    '30° Incline Dumbbell Press': 60,
-    'Capped Tempo RDL (with Lifting Straps)': 52.5,
-    'Leg Extension': 70,
-    'Hip-Propped Lying Leg Curl': 35,
-    'Overhead Triceps Extension': 35,
-    'Crossbody Hammer Curl': 25,
-  },
-  opt_plan_a_knee_safe_sculpt: {
-    'Bench Press (Dumbbell)': 24,
-    'Seated Neutral-Grip Cable Row': 25,
-    'Elevated Box Goblet Squat (50-60° Knee Angle)': 12.5,
-    'Triceps Pushdown (Cable)': 30,
-    'Preacher Curl': 12.5,
-    'Scapular Lateral Raise (Stop at 80°)': 7.5,
-    'Supine Alternating Deadbug': 0,
-  },
-  opt_plan_b_posture_knee_armor: {
-    'Lat Pulldown': 30,
-    'Back-Supported DB Overhead Press (70° Bench)': 20,
-    'Capped Tempo RDL (DB w/ Lifting Straps)': 20,
-    'Bottom-Half Partial Leg Extension (90°-45° Arc)': 20,
-    'Supine Heel-Dig Glute-Ham Bridge': 0,
-    'Overhead Triceps Extension (Seated Back-Supported)': 7.5,
-    'Crossbody or Incline Dumbbell Bicep Curl': 12.5,
-  },
-  tpl_period_days_1_2_cramp_relief: {
-    'Seated Cable Row (Neutral Grip)': 20,
-    'Incline DB Press (Neutral/45° Grip)': 16,
-    'Leg Extension (90° to 45° Safe Arc)': 15,
-    'Heel-Dig Glute Bridge': 0,
-    'Face Pulls (External Rotation Focus)': 12.5,
-  },
-  tpl_period_days_3_5_low_rpe_sculpt: {
-    'Bench Press (Dumbbell)': 20,
-    'Lat Pulldown (Neutral or Wide Grip)': 25,
-    'Goblet Box Squat (50-60° Depth)': 10,
-    'Heel-Dig Glute Bridge': 0,
-    'Cable or Dumbbell Lateral Raise': 5,
-    'Triceps Pushdown (Cable)': 25,
-    'Incline Dumbbell Curl': 10,
-  },
-};
-
 /**
  * Parses a target rep string (e.g. "6-10", "8-12", "10-12", "12-15", "8-10 / leg")
  * into a clean prefill rep count for WorkoutSession set rows.
@@ -260,17 +205,12 @@ export const parseRecommendedReps = (repsStr?: string): number => {
 };
 
 /**
- * Resolves the recommended starting weight (in kg) for an exercise from our
- * Workout Optimization Plan overrides or a `targetWeight` string (e.g. "70-80 kg", "+12.5 kg", "Bodyweight").
+ * Parses the recommended starting weight (in kg) from an exercise's `defaultWeight`
+ * or `targetWeight` field stored in the database (e.g. "65 kg", "+12.5 kg", "Bodyweight").
  */
 export const parseRecommendedWeight = (
-  targetWeight?: string | number,
-  templateId?: string,
-  exerciseName?: string
+  targetWeight?: string | number
 ): number | undefined => {
-  if (templateId && exerciseName && OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES[templateId]?.[exerciseName] !== undefined) {
-    return OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES[templateId][exerciseName];
-  }
   if (typeof targetWeight === 'number' && !Number.isNaN(targetWeight)) {
     return targetWeight;
   }
@@ -306,7 +246,7 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
     const resolvedWeight =
       ex.defaultWeight ??
       (typeof rawEx.defaultWeight === 'number' ? rawEx.defaultWeight : undefined) ??
-      parseRecommendedWeight(rawTargetWeight, template.id, ex.name);
+      parseRecommendedWeight(rawTargetWeight);
     const visual = resolveExerciseVisualMeta(ex.name, {
       customImage: ex.image,
       visualArchetype: ex.visualArchetype,
@@ -334,18 +274,17 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
 };
 
 /**
- * Ensures Madhulika (or users who already have period-focused templates)
- * automatically have the 2 Period-Phase templates available in their library.
+ * Ensures users who have period-focused templates in their library
+ * automatically have the 2 Period-Phase templates normalized and available.
  */
 export const ensurePeriodSupportTemplates = (
   templates: WorkoutTemplate[] = [],
-  displayName?: string
+  _displayName?: string
 ): WorkoutTemplate[] => {
   const normalized = templates.map(normalizeWorkoutTemplate);
-  const isMadhulika = (displayName || '').trim().toLowerCase() === 'madhulika';
   const hasPeriodFocus = normalized.some((t) => /period/i.test(t.name));
 
-  if (!isMadhulika && !hasPeriodFocus) {
+  if (!hasPeriodFocus) {
     return normalized;
   }
 
@@ -449,11 +388,10 @@ export const getSavedSequences = (
     });
   }
 
-  const isMadhulika = (displayName || '').trim().toLowerCase() === 'madhulika';
   const hasPeriodTemplates = templates.some((t) => /period/i.test(t.name));
   const hasPeriodSeq = list.some((s) => s.id === 'seq_period_week' || /period week/i.test(s.name));
 
-  if ((isMadhulika || hasPeriodTemplates) && !hasPeriodSeq) {
+  if (hasPeriodTemplates && !hasPeriodSeq) {
     list.push({
       id: 'seq_period_week',
       name: 'Period Week (Days 1-5)',

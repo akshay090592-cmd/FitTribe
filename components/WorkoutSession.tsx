@@ -10,6 +10,7 @@ import { AICoachService } from '../services/aiCoach';
 import { FeedbackModal } from './FeedbackModal';
 import { WorkoutFeedback } from '../types';
 import { getLastLogForExercise, getLastLogForExerciseByType, parseDurationToSeconds } from '../utils/workoutUtils';
+import { parseRecommendedReps, parseRecommendedWeight } from '../utils/templateUtils';
 import {
   checkAchievements,
   getStreakRisk,
@@ -213,7 +214,19 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
   const getSavedSession = () => {
     try {
       const saved = localStorage.getItem(`workout_session_${sessionKey}`);
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      const hasAnyCompletedSet =
+        Array.isArray(parsed?.records) &&
+        parsed.records.some((r: any) => Array.isArray(r.sets) && r.sets.some((s: any) => s.completed));
+      const hasZeroUnstartedSet =
+        Array.isArray(parsed?.records) &&
+        parsed.records.some((r: any) => Array.isArray(r.sets) && r.sets.some((s: any) => !s.completed && (!s.reps || s.reps === 0)));
+      if (!hasAnyCompletedSet && hasZeroUnstartedSet) {
+        localStorage.removeItem(`workout_session_${sessionKey}`);
+        return null;
+      }
+      return parsed;
     } catch (e) {
       console.error("Failed to parse saved session", e);
       return null;
@@ -413,16 +426,27 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
         }
 
         // Initialize from plan (Async)
+        const isPeriodDeloadPlan = /period days/i.test(plan.title || '');
         const initializedRecords = await Promise.all((plan.exercises || []).map(async ex => {
           const rawEx = ex as unknown as Record<string, unknown>;
           const safeDefaultSets = Number(ex.defaultSets ?? rawEx.sets) || 3;
           const safeDefaultReps = String(ex.defaultReps ?? rawEx.reps ?? '8-12').trim() || '8-12';
+          const recommendedReps = parseRecommendedReps(safeDefaultReps);
+          const recommendedWeight =
+            ex.defaultWeight ??
+            (typeof rawEx.defaultWeight === 'number' ? rawEx.defaultWeight : undefined) ??
+            parseRecommendedWeight((ex.targetWeight ?? rawEx.targetWeight) as string | undefined, undefined, ex.name);
 
-          const lastSets = await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
-          if (lastSets && lastSets.length > 0) {
+          const hasExplicitRecommendation = plan.id === WorkoutType.CUSTOM_TEMPLATE && recommendedWeight !== undefined;
+          const lastSets = hasExplicitRecommendation
+            ? (isPeriodDeloadPlan ? null : await getLastLogForExerciseByType(user, ex.name, WorkoutType.CUSTOM_TEMPLATE, undefined, true))
+            : await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
+
+          const historicalRefSets = lastSets || await getLastLogForExerciseByType(user, ex.name, plan.id, ex.legacyAlias);
+          if (historicalRefSets && historicalRefSets.length > 0) {
             let maxW = 0;
-            for (let i = 0; i < lastSets.length; i++) {
-              if (lastSets[i].weight > maxW) maxW = lastSets[i].weight;
+            for (let i = 0; i < historicalRefSets.length; i++) {
+              if (historicalRefSets[i].weight > maxW) maxW = historicalRefSets[i].weight;
             }
             prevMaxWeightRef.current[ex.name] = maxW;
           }
@@ -443,8 +467,8 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               prevSet = lastSets[idx] || lastSets[lastSets.length - 1];
             }
             return {
-              reps: prevSet ? prevSet.reps : 0,
-              weight: prevSet ? prevSet.weight : 0,
+              reps: prevSet && prevSet.reps > 0 ? prevSet.reps : recommendedReps,
+              weight: prevSet ? prevSet.weight : (recommendedWeight ?? 0),
               time: prevSet ? prevSet.time : (ex.trackingType === 'duration' ? parseDurationToSeconds(safeDefaultReps) : undefined),
               completed: false
             };

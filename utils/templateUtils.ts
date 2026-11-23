@@ -182,6 +182,109 @@ export const PERIOD_PHASE_TEMPLATES: WorkoutTemplate[] = [
   },
 ];
 
+const OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES: Record<string, Record<string, number>> = {
+  opt_plan_a_antagonist_upper_legs: {
+    'Barbell Bench Press': 75,
+    'Chest-Supported Dumbbell Row (30-45° Incline)': 60,
+    'Dumbbell Bulgarian Split Squat': 25,
+    'Weighted Triceps Dip': 12.5,
+    'Preacher Curl': 22.5,
+    'Dumbbell Lateral Raise': 17.5,
+    'Supine Deadbug': 0,
+  },
+  opt_plan_b_antagonist_pull_rdl: {
+    'Weighted Pull-Up': 12.5,
+    '30° Incline Dumbbell Press': 60,
+    'Capped Tempo RDL (with Lifting Straps)': 52.5,
+    'Leg Extension': 70,
+    'Hip-Propped Lying Leg Curl': 35,
+    'Overhead Triceps Extension': 35,
+    'Crossbody Hammer Curl': 25,
+  },
+  opt_plan_a_knee_safe_sculpt: {
+    'Bench Press (Dumbbell)': 24,
+    'Seated Neutral-Grip Cable Row': 25,
+    'Elevated Box Goblet Squat (50-60° Knee Angle)': 12.5,
+    'Triceps Pushdown (Cable)': 30,
+    'Preacher Curl': 12.5,
+    'Scapular Lateral Raise (Stop at 80°)': 7.5,
+    'Supine Alternating Deadbug': 0,
+  },
+  opt_plan_b_posture_knee_armor: {
+    'Lat Pulldown': 30,
+    'Back-Supported DB Overhead Press (70° Bench)': 20,
+    'Capped Tempo RDL (DB w/ Lifting Straps)': 20,
+    'Bottom-Half Partial Leg Extension (90°-45° Arc)': 20,
+    'Supine Heel-Dig Glute-Ham Bridge': 0,
+    'Overhead Triceps Extension (Seated Back-Supported)': 7.5,
+    'Crossbody or Incline Dumbbell Bicep Curl': 12.5,
+  },
+  tpl_period_days_1_2_cramp_relief: {
+    'Seated Cable Row (Neutral Grip)': 20,
+    'Incline DB Press (Neutral/45° Grip)': 16,
+    'Leg Extension (90° to 45° Safe Arc)': 15,
+    'Heel-Dig Glute Bridge': 0,
+    'Face Pulls (External Rotation Focus)': 12.5,
+  },
+  tpl_period_days_3_5_low_rpe_sculpt: {
+    'Bench Press (Dumbbell)': 20,
+    'Lat Pulldown (Neutral or Wide Grip)': 25,
+    'Goblet Box Squat (50-60° Depth)': 10,
+    'Heel-Dig Glute Bridge': 0,
+    'Cable or Dumbbell Lateral Raise': 5,
+    'Triceps Pushdown (Cable)': 25,
+    'Incline Dumbbell Curl': 10,
+  },
+};
+
+/**
+ * Parses a target rep string (e.g. "6-10", "8-12", "10-12", "12-15", "8-10 / leg")
+ * into a clean prefill rep count for WorkoutSession set rows.
+ */
+export const parseRecommendedReps = (repsStr?: string): number => {
+  if (!repsStr || typeof repsStr !== 'string') return 10;
+  const cleaned = repsStr.trim();
+  const rangeMatch = cleaned.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (rangeMatch) {
+    const low = parseInt(rangeMatch[1], 10);
+    const high = parseInt(rangeMatch[2], 10);
+    if (low === 6 && high === 10) return 8;
+    if (low === 8 && high === 12) return 10;
+    if (low === 10 && high === 12) return 10;
+    if (low === 12 && high === 15) return 12;
+    if (low === 8 && high === 10) return 8;
+    return low || 10;
+  }
+  const singleMatch = cleaned.match(/(\d+)/);
+  return singleMatch ? parseInt(singleMatch[1], 10) || 10 : 10;
+};
+
+/**
+ * Resolves the recommended starting weight (in kg) for an exercise from our
+ * Workout Optimization Plan overrides or a `targetWeight` string (e.g. "70-80 kg", "+12.5 kg", "Bodyweight").
+ */
+export const parseRecommendedWeight = (
+  targetWeight?: string | number,
+  templateId?: string,
+  exerciseName?: string
+): number | undefined => {
+  if (templateId && exerciseName && OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES[templateId]?.[exerciseName] !== undefined) {
+    return OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES[templateId][exerciseName];
+  }
+  if (typeof targetWeight === 'number' && !Number.isNaN(targetWeight)) {
+    return targetWeight;
+  }
+  if (typeof targetWeight === 'string' && targetWeight.trim().length > 0) {
+    const str = targetWeight.trim();
+    if (/bodyweight/i.test(str)) return 0;
+    const numMatch = str.match(/(\d+(?:\.\d+)?)/);
+    if (numMatch) {
+      return parseFloat(numMatch[1]);
+    }
+  }
+  return undefined;
+};
+
 /**
  * Ensures any WorkoutTemplate has non-empty workout-specific warmup/cooldown
  * arrays (falling back to defaults) and resolved visual metadata per exercise.
@@ -199,6 +302,11 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
     const rawEx = ex as unknown as Record<string, unknown>;
     const normalizedSets = Number(ex.sets ?? rawEx.defaultSets) || 3;
     const normalizedReps = String(ex.reps ?? rawEx.defaultReps ?? '8-12').trim() || '8-12';
+    const rawTargetWeight = (ex.targetWeight ?? rawEx.targetWeight) as string | undefined;
+    const resolvedWeight =
+      ex.defaultWeight ??
+      (typeof rawEx.defaultWeight === 'number' ? rawEx.defaultWeight : undefined) ??
+      parseRecommendedWeight(rawTargetWeight, template.id, ex.name);
     const visual = resolveExerciseVisualMeta(ex.name, {
       customImage: ex.image,
       visualArchetype: ex.visualArchetype,
@@ -208,6 +316,8 @@ export const normalizeWorkoutTemplate = (template: WorkoutTemplate): WorkoutTemp
       ...ex,
       sets: normalizedSets,
       reps: normalizedReps,
+      ...(rawTargetWeight ? { targetWeight: rawTargetWeight } : {}),
+      ...(resolvedWeight !== undefined ? { defaultWeight: resolvedWeight } : {}),
       image: visual.image,
       visualArchetype: visual.archetype,
       equipment: visual.equipment,
@@ -372,6 +482,8 @@ export const templateToWorkoutPlan = (template: WorkoutTemplate): WorkoutPlan =>
       name: ex.name,
       defaultSets: Number(ex.sets) || 3,
       defaultReps: String(ex.reps || '8-12'),
+      targetWeight: ex.targetWeight,
+      defaultWeight: ex.defaultWeight,
       notes: ex.notes || '',
       cues: ex.cues,
       trackingType: ex.trackingType,

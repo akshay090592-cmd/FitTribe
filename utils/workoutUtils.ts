@@ -35,7 +35,8 @@ export const getLastLogForExerciseByType = async (
     user: User,
     exerciseName: string,
     workoutType: string,
-    legacyAlias?: string
+    legacyAlias?: string,
+    skipCrossTypeFallback: boolean = false
 ): Promise<ExerciseSet[] | null> => {
     const logs = await getUserLogs(user);
     const logsLen = logs.length;
@@ -60,7 +61,7 @@ export const getLastLogForExerciseByType = async (
     }
 
     // For custom templates, fall back to the user's most recent log for this exercise (or its legacyAlias) across any plan type
-    if (workoutType === 'Custom_Template') {
+    if (workoutType === 'Custom_Template' && !skipCrossTypeFallback) {
         for (let i = 0; i < logsLen; i++) {
             const log = logs[i];
             const exercises = log.exercises;

@@ -45,6 +45,8 @@ export interface WorkoutTemplate {
     name: string;
     sets: number;
     reps: string;
+    targetWeight?: string;
+    defaultWeight?: number;
     notes?: string;
     cues?: string[];
     isSuperset?: boolean;
@@ -174,6 +176,8 @@ export interface WorkoutPlan {
     name: string;
     defaultSets: number;
     defaultReps: string;
+    targetWeight?: string;
+    defaultWeight?: number;
     trackingType?: 'reps' | 'duration';
     notes: string;
     cues?: string[];

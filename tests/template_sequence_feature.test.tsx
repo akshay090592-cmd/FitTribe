@@ -8,6 +8,8 @@ import {
   templateToWorkoutPlan,
   getNextSequenceIndex,
   getActiveSequenceSlot,
+  parseRecommendedReps,
+  parseRecommendedWeight,
 } from '../utils/templateUtils';
 import { resolveExerciseVisualMeta } from '../utils/exerciseVisuals';
 import { getLastLogForExerciseByType } from '../utils/workoutUtils';
@@ -155,6 +157,11 @@ describe('templateUtils & workout-specific warmup/cooldown normalization', () =>
     const plan = templateToWorkoutPlan(dbSeededTemplate);
     expect(plan.exercises[0].defaultSets).toBe(3);
     expect(plan.exercises[0].defaultReps).toBe('6-10');
+    expect(plan.exercises[0].defaultWeight).toBe(75);
+    expect(parseRecommendedReps(plan.exercises[0].defaultReps)).toBe(8);
+    expect(parseRecommendedWeight('+12.5 kg', 'opt_plan_b_antagonist_pull_rdl', 'Weighted Pull-Up')).toBe(12.5);
+    expect(parseRecommendedWeight('12-14 kg', 'opt_plan_a_knee_safe_sculpt', 'Elevated Box Goblet Squat (50-60° Knee Angle)')).toBe(12.5);
+    expect(parseRecommendedWeight('Bodyweight', 'opt_plan_b_posture_knee_armor', 'Supine Heel-Dig Glute-Ham Bridge')).toBe(0);
 
     const suggestion = getProgressionSuggestion(
       [{ weight: 75, reps: 10, completed: true }],

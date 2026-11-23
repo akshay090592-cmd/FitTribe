@@ -184,7 +184,7 @@ export const PERIOD_PHASE_TEMPLATES: WorkoutTemplate[] = [
 
 const OPTIMIZED_TEMPLATE_WEIGHT_OVERRIDES: Record<string, Record<string, number>> = {
   opt_plan_a_antagonist_upper_legs: {
-    'Barbell Bench Press': 75,
+    'Barbell Bench Press': 65,
     'Chest-Supported Dumbbell Row (30-45° Incline)': 60,
     'Dumbbell Bulgarian Split Squat': 25,
     'Weighted Triceps Dip': 12.5,

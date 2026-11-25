@@ -107,7 +107,9 @@ export const StreakModal: React.FC<StreakModalProps> = ({
     }
   };
 
-  const isShielded = freezesEquipped > 0;
+  const hasRecentWorkout = days14.slice(-2).some(d => d.status === 'done');
+  const isTodayFrozen = days14[days14.length - 1]?.status === 'frozen';
+  const isShielded = isTodayFrozen || (freezesEquipped > 0 && (streakRisk || !hasRecentWorkout));
 
   return (
     <div

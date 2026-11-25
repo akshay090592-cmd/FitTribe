@@ -163,7 +163,7 @@ export const UserProfilePopup = React.memo<Props>(({ isOpen, onClose, user, gami
                     }`}
                   >
                     <div className="w-7 h-7 rounded-lg bg-white/90 shadow-2xs flex items-center justify-center">
-                      <BadgeIcon iconName={badgeDef?.icon || 'Award'} size={15} />
+                      <BadgeIcon name={badgeDef?.icon || 'Award'} size={15} />
                     </div>
                     <span className="text-[10px] font-black leading-tight line-clamp-1">
                       {badgeDef?.title || badgeId}

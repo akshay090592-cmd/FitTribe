@@ -8,7 +8,7 @@ import { convertToCSV, downloadCSV } from '../utils/exportUtils';
 import { HistoryModal } from './HistoryModal';
 import { BadgeModal } from './BadgeModal';
 import { StatsDetailPopup } from './StatsDetailPopup';
-import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank, getRankDetails } from '../utils/gamification';
+import { BADGES_DB, SHOP_THEMES, calculateLevel, getLevelProgress, getStreaks, getRank, getRankDetails, reconcileUserGamificationState } from '../utils/gamification';
 import { getAvatarPath } from '../utils/avatar';
 import { shortDateFormatter } from '../utils/dateUtils';
 import { SEO } from './SEO';
@@ -131,14 +131,23 @@ export const ProfilePage: React.FC<Props> = React.memo(({ userProfile, onSave, o
     useEffect(() => {
         const loadData = async () => {
             if (userProfile?.displayName) {
-                const state = await getGamificationState();
+                const state = await getGamificationState(userProfile.tribeId);
+                let s = await getStreaks(userProfile.displayName, userProfile.tribeId);
+                if (state && typeof reconcileUserGamificationState === 'function') {
+                    try {
+                        const recRes = await reconcileUserGamificationState(userProfile, undefined, state);
+                        state[userProfile.displayName] = recRes.userState;
+                        s = recRes.streak;
+                    } catch {
+                        // ignore reconciliation error in mock/test
+                    }
+                }
                 if (state && state[userProfile.displayName]) {
                     const myState = state[userProfile.displayName];
                     setGamificationState(myState);
                     const xpToUse = myState.lifetimeXp !== undefined ? myState.lifetimeXp : myState.points;
                     setXpData(getLevelProgress(xpToUse));
                 }
-                const s = await getStreaks(userProfile.displayName);
                 setStreaks(s);
             }
         };

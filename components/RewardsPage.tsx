@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { User, UserGamificationState, GiftItem, UserProfile, Badge, Theme } from '../types';
 import { getGamificationState, saveGamificationState, sendGift, getTribeMembers, addPointLog, getPointLogs, getGiftTransactions } from '../utils/storage';
 import { notifyOnGiftReceived } from '../services/notificationService';
-import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES, SHOP_POWERUPS, calculateMasteryProgress, purchasePowerUp, MasteryCategoryProgress } from '../utils/gamification';
+import { BADGES_DB, getTeamStats, getStreaks, GIFT_ITEMS, SHOP_THEMES, SHOP_POWERUPS, calculateMasteryProgress, purchasePowerUp, MasteryCategoryProgress, reconcileUserGamificationState } from '../utils/gamification';
 import { Trophy, Lock, Gift, Zap, Crown, Star, Send, Target, MessageCircle, Store, Palette, CheckCircle, LogOut, X, Sparkles } from 'lucide-react';
 import { playChestOpenSound, playRoyalCrownFanfare, triggerHaptic } from '../utils/soundEffects';
 
@@ -79,16 +79,30 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
       setTribeMembers(members || []);
 
+      let resolvedStreak = str;
+      if (state && typeof reconcileUserGamificationState === 'function') {
+        try {
+          const recRes = await reconcileUserGamificationState(profile, userLogs, state);
+          state[currentUser] = recRes.userState;
+          resolvedStreak = recRes.streak;
+          if (recRes.unlockedBadges.length > 0) {
+            showToast(`🏆 Unlocked: ${recRes.unlockedBadges.map(b => b.title).join(', ')}`, 'success');
+          }
+        } catch (recErr) {
+          console.warn("Could not reconcile rewards state:", recErr);
+        }
+      }
+
       const sentGiftsCount = Array.isArray(gifts) ? gifts.filter(g => g.from === currentUser).length : 0;
       if (typeof calculateMasteryProgress === 'function') {
-        setMasteryItems(calculateMasteryProgress(userLogs, str, sentGiftsCount));
+        setMasteryItems(calculateMasteryProgress(userLogs, resolvedStreak, sentGiftsCount));
       }
 
       setGameState(state);
       localStorage.setItem('cache_gamification_state', JSON.stringify(state));
       setTeamStats(stats);
       localStorage.setItem('cache_team_stats', JSON.stringify(stats));
-      setStreaks(str);
+      setStreaks(resolvedStreak);
       if (!silent) setLoading(false);
       setHasLoaded(true);
     } finally {
@@ -149,6 +163,7 @@ export const RewardsPage: React.FC<Props> = memo(({ currentUser, profile, isVisi
 
       setGiftModalItem(null);
       showToast(`Sent ${giftModalItem.name} to ${toUser}!`, 'success');
+      await loadData(true);
     }
   };
 

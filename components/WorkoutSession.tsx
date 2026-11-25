@@ -1027,11 +1027,12 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
       setUnlockedWindowChest(windowRes.unlockedType);
       setWeeklyMasterySummary({ mastery: masteryProgress, bonusAwarded: masteryRes.awarded });
 
-      const totalEarnedXp =
+      const computedEarnedXp =
         (currentLog.type === 'B' ? XP_PER_HARD_WORKOUT : XP_PER_WORKOUT) +
         questRes.earnedXp +
         pledgeRes.xpAwarded +
         masteryRes.xpAwarded;
+      const totalEarnedXp = Math.max(computedEarnedXp, newXp - oldXp);
       setEarnedXp(totalEarnedXp);
       setShowCelebration(true);
       playLevelUpSound();
@@ -1890,138 +1891,7 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
               )}
             </div>
 
-            {levelUpInfo && (
-              <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/90 rounded-[28px] border-2 border-amber-300 p-4 shadow-md relative overflow-hidden animate-squash-bounce">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-14 h-14 shrink-0">
-                      <RankCrestSVG tierIndex={levelUpInfo.rank.tierIndex} icon={levelUpInfo.rank.icon} className="w-full h-full block" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1">
-                        <Sparkles size={10} /> Level Up!
-                      </div>
-                      <h3 className="text-lg font-bold text-amber-950 font-['Fredoka'] leading-tight">
-                        Lv.{levelUpInfo.oldLevel} → Lv.{levelUpInfo.newLevel} • {levelUpInfo.rank.title}
-                      </h3>
-                      <p className="text-xs font-bold text-amber-800/90">
-                        +{levelUpInfo.pointsAwarded} Bonus Tribe Points awarded!
-                      </p>
-                    </div>
-                  </div>
-                  <div className="w-14 h-14 shrink-0 pointer-events-none hidden sm:block">
-                    <PandaSenseiSVG compact framing="bust" context="coach" mode="victory" className="w-full h-full block" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. Unified Sensei Panda's Report Card (Matches Home & Loot white card aesthetic) */}
-            <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs space-y-3.5">
-              <div className="flex items-end justify-between border-b border-emerald-100/90 pb-0">
-                <h3 className="font-bold text-emerald-950 font-['Fredoka'] text-base flex items-end gap-2.5">
-                  <span className="w-20 h-20 sm:w-22 sm:h-22 shrink-0 -mb-[1px] pointer-events-none block">
-                    <PandaSenseiSVG compact framing="bust" context="coach" mode="victory" className="w-full h-full block" />
-                  </span>
-                  <span className="pb-3">Sensei Panda&apos;s Report</span>
-                </h3>
-                <span className="mb-3 text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  Coach Insights
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {/* Celebration */}
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Trophy size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-amber-800 mb-0.5">Celebration</div>
-                    <p className="text-slate-900 font-bold text-sm leading-snug font-['Fredoka']">{analysis.celebration}</p>
-                  </div>
-                </div>
-
-                {/* Coach's Note */}
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100/80">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <TrendingUp size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-0.5">Coach&apos;s Note</div>
-                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.insight}</p>
-                  </div>
-                </div>
-
-                {/* Next Mission */}
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-teal-50/60 border border-teal-100/80">
-                  <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Lightbulb size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-teal-800 mb-0.5">Next Mission</div>
-                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.nudge}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2b. Sensei's Next-Plan Adjustments Card (Adaptive Loop Diff + 1-Tap Undo) */}
-              {modifiedNextPlan && modifiedNextPlan.changesSummary && modifiedNextPlan.changesSummary.length > 0 && (
-                <div className="mt-3 pt-3.5 border-t border-emerald-100/90">
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-50/80 border border-emerald-200/80 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-7 h-7 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-sm shadow-2xs shrink-0">
-                          🐼
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800">
-                            Sensei&apos;s Next-Plan Adjustments
-                          </div>
-                          <div className="text-xs font-bold text-emerald-950 truncate font-['Fredoka']">
-                            {revertedPlan ? `Kept Original ${plan.title}` : `Updated ${modifiedNextPlan.title} for Next Session`}
-                          </div>
-                        </div>
-                      </div>
-                      {!revertedPlan ? (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const currentPlans = await getUserPlans(userProfile.id) || {};
-                              await saveUserPlan(userProfile.id, { ...(currentPlans as any), [plan.id]: plan });
-                              setRevertedPlan(true);
-                            } catch (e) {
-                              console.error("Failed to revert modified plan", e);
-                            }
-                          }}
-                          className="text-[11px] font-extrabold text-emerald-800 bg-white hover:bg-emerald-100/70 px-2.5 py-1.5 rounded-xl border border-emerald-200/90 shadow-2xs active:scale-95 transition-all shrink-0 cursor-pointer"
-                        >
-                          Keep Original Plan
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2.5 py-1 rounded-full shrink-0">
-                          Original Kept ✓
-                        </span>
-                      )}
-                    </div>
-
-                    {!revertedPlan && (
-                      <ul className="space-y-1 pl-1">
-                        {modifiedNextPlan.changesSummary.map((change, idx) => (
-                          <li key={idx} className="text-xs font-semibold text-emerald-900 flex items-start gap-1.5 leading-snug">
-                            <span className="text-emerald-600 font-black mt-0.5">•</span>
-                            <span>{change}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Tribe Victory Spotlight Card */}
+            {/* 2. Tribe Victory Spotlight Card (First Fold) */}
             <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
@@ -2127,6 +1997,137 @@ export const WorkoutSession: React.FC<Props> = ({ user, userProfile, plan, onFin
                   )}
                   <div className="bg-emerald-50 text-emerald-800 py-2 px-4 rounded-xl font-bold text-xs flex items-center justify-center border border-emerald-200">
                     <CheckCircle size={15} className="mr-1.5 text-emerald-600" /> Photo Shared with Tribe!
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {levelUpInfo && (
+              <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/90 rounded-[28px] border-2 border-amber-300 p-4 shadow-md relative overflow-hidden animate-squash-bounce">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-14 h-14 shrink-0">
+                      <RankCrestSVG tierIndex={levelUpInfo.rank.tierIndex} icon={levelUpInfo.rank.icon} className="w-full h-full block" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1">
+                        <Sparkles size={10} /> Level Up!
+                      </div>
+                      <h3 className="text-lg font-bold text-amber-950 font-['Fredoka'] leading-tight">
+                        Lv.{levelUpInfo.oldLevel} → Lv.{levelUpInfo.newLevel} • {levelUpInfo.rank.title}
+                      </h3>
+                      <p className="text-xs font-bold text-amber-800/90">
+                        +{levelUpInfo.pointsAwarded} Bonus Tribe Points awarded!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-14 h-14 shrink-0 pointer-events-none hidden sm:block">
+                    <PandaSenseiSVG compact framing="bust" context="coach" mode="victory" className="w-full h-full block" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Unified Sensei Panda's Report Card (Matches Home & Loot white card aesthetic) */}
+            <div className="bg-white rounded-[28px] border border-emerald-100/90 p-4 sm:p-5 shadow-xs space-y-3.5">
+              <div className="flex items-end justify-between border-b border-emerald-100/90 pb-0">
+                <h3 className="font-bold text-emerald-950 font-['Fredoka'] text-base flex items-end gap-2.5">
+                  <span className="w-20 h-20 sm:w-22 sm:h-22 shrink-0 -mb-[1px] pointer-events-none block">
+                    <PandaSenseiSVG compact framing="bust" context="coach" mode="victory" className="w-full h-full block" />
+                  </span>
+                  <span className="pb-3">Sensei Panda&apos;s Report</span>
+                </h3>
+                <span className="mb-3 text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  Coach Insights
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {/* Celebration */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Trophy size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-amber-800 mb-0.5">Celebration</div>
+                    <p className="text-slate-900 font-bold text-sm leading-snug font-['Fredoka']">{analysis.celebration}</p>
+                  </div>
+                </div>
+
+                {/* Coach's Note */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100/80">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <TrendingUp size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-0.5">Coach&apos;s Note</div>
+                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.insight}</p>
+                  </div>
+                </div>
+
+                {/* Next Mission */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-teal-50/60 border border-teal-100/80">
+                  <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Lightbulb size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-teal-800 mb-0.5">Next Mission</div>
+                    <p className="text-slate-700 font-semibold text-xs leading-relaxed">{analysis.nudge}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3b. Sensei's Next-Plan Adjustments Card (Adaptive Loop Diff + 1-Tap Undo) */}
+              {modifiedNextPlan && modifiedNextPlan.changesSummary && modifiedNextPlan.changesSummary.length > 0 && (
+                <div className="mt-3 pt-3.5 border-t border-emerald-100/90">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-50/80 border border-emerald-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-sm shadow-2xs shrink-0">
+                          🐼
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-800">
+                            Sensei&apos;s Next-Plan Adjustments
+                          </div>
+                          <div className="text-xs font-bold text-emerald-950 truncate font-['Fredoka']">
+                            {revertedPlan ? `Kept Original ${plan.title}` : `Updated ${modifiedNextPlan.title} for Next Session`}
+                          </div>
+                        </div>
+                      </div>
+                      {!revertedPlan ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const currentPlans = await getUserPlans(userProfile.id) || {};
+                              await saveUserPlan(userProfile.id, { ...(currentPlans as any), [plan.id]: plan });
+                              setRevertedPlan(true);
+                            } catch (e) {
+                              console.error("Failed to revert modified plan", e);
+                            }
+                          }}
+                          className="text-[11px] font-extrabold text-emerald-800 bg-white hover:bg-emerald-100/70 px-2.5 py-1.5 rounded-xl border border-emerald-200/90 shadow-2xs active:scale-95 transition-all shrink-0 cursor-pointer"
+                        >
+                          Keep Original Plan
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2.5 py-1 rounded-full shrink-0">
+                          Original Kept ✓
+                        </span>
+                      )}
+                    </div>
+
+                    {!revertedPlan && (
+                      <ul className="space-y-1 pl-1">
+                        {modifiedNextPlan.changesSummary.map((change, idx) => (
+                          <li key={idx} className="text-xs font-semibold text-emerald-900 flex items-start gap-1.5 leading-snug">
+                            <span className="text-emerald-600 font-black mt-0.5">•</span>
+                            <span>{change}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )}

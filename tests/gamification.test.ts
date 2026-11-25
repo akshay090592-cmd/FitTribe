@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, getRankDetails, RANK_TIERS, SHOP_POWERUPS, MASTERY_BADGES, calculateMasteryProgress, calculateWorkoutVolume } from '../utils/gamification';
+import { getStreaks, getTeamStats, checkAchievements, getMood, calculateXP, calculateLevel, getLevelProgress, XP_PER_WORKOUT, XP_PER_HARD_WORKOUT, calculateLogXPBreakdown, getRank, getRankDetails, RANK_TIERS, SHOP_POWERUPS, MASTERY_BADGES, calculateMasteryProgress, calculateWorkoutVolume, reconcileStreakShields, reconcileUserGamificationState, revertGamificationForLog, calculateStreaks } from '../utils/gamification';
 import { User, WorkoutLog, UserProfile, UserGamificationState, WorkoutType } from '../types';
 
 // Mock supabaseClient first to override isSupabaseConfigured
@@ -19,6 +19,7 @@ vi.mock('../utils/storage', () => ({
     getGamificationState: vi.fn(),
     saveGamificationState: vi.fn(),
     getGiftTransactions: vi.fn().mockResolvedValue([]),
+    getTribeMembers: vi.fn().mockResolvedValue([]),
     getFromCache: vi.fn(),
     setInCache: vi.fn(),
 }));
@@ -519,6 +520,94 @@ describe('gamification', () => {
             expect(volumeCat?.currentValue).toBe(800);
             const giftsCat = progress.find(c => c.id === 'tribe_spirit');
             expect(giftsCat?.currentValue).toBe(3);
+        });
+
+        it('should consume an equipped Bamboo Ice Shield to bridge a 5-day gap and preserve streak', () => {
+            const logs: WorkoutLog[] = [
+                { id: 'n4', user: 'Akshay', date: d(0), type: WorkoutType.CUSTOM, durationMinutes: 30, exercises: [] },
+                { id: 'n3', user: 'Akshay', date: d(1), type: WorkoutType.CUSTOM_TEMPLATE, durationMinutes: 60, exercises: [] },
+                { id: 'n2', user: 'Akshay', date: d(3), type: WorkoutType.CUSTOM, durationMinutes: 40, exercises: [] },
+                { id: 'n1', user: 'Akshay', date: d(8), type: WorkoutType.A, durationMinutes: 65, exercises: [] }, // 5-day gap from d(8) to d(3)
+            ];
+            const state: UserGamificationState = {
+                badges: ['first_step'],
+                inventory: [],
+                points: 500,
+                streak: 3,
+                lifetimeXp: 2000,
+                unlockedThemes: ['default'],
+                activeTheme: 'default',
+                streakFreezes: 1,
+                frozenDates: [],
+            };
+
+            const mutated = reconcileStreakShields(logs, state);
+            expect(mutated).toBe(true);
+            expect(state.streakFreezes).toBe(0);
+            expect(state.frozenDates?.length).toBe(1);
+
+            const newStreak = calculateStreaks(logs, { isSorted: true, frozenDates: state.frozenDates });
+            expect(newStreak).toBe(4);
+        });
+
+        it('should non-destructively award missing historical badges and settle 7-day wager without reducing XP or badges', async () => {
+            const profile: UserProfile = {
+                id: 'akshay-id',
+                email: 'akshay@test.com',
+                displayName: 'Akshay',
+                tribeId: 'tribe-1',
+            };
+            const logs: WorkoutLog[] = [
+                // Today's workout
+                { id: 'w1', user: 'Akshay', date: d(0), type: WorkoutType.A, durationMinutes: 60, calories: 400, exercises: [] },
+                { id: 'w2', user: 'Akshay', date: d(1), type: WorkoutType.B, durationMinutes: 89, calories: 520, exercises: [] },
+                { id: 'w3', user: 'Akshay', date: d(2), type: WorkoutType.A, durationMinutes: 60, calories: 400, exercises: [] },
+                // Historical 5-day streak
+                { id: 'h1', user: 'Akshay', date: '2026-04-20T05:10:00.000Z', type: WorkoutType.A, durationMinutes: 65, calories: 400, exercises: [] },
+                { id: 'h2', user: 'Akshay', date: '2026-04-21T05:10:00.000Z', type: WorkoutType.B, durationMinutes: 65, calories: 400, exercises: [] },
+                { id: 'h3', user: 'Akshay', date: '2026-04-22T05:10:00.000Z', type: WorkoutType.A, durationMinutes: 65, calories: 400, exercises: [] },
+                { id: 'h4', user: 'Akshay', date: '2026-04-24T05:10:00.000Z', type: WorkoutType.B, durationMinutes: 65, calories: 400, exercises: [] },
+                { id: 'h5', user: 'Akshay', date: '2026-04-25T05:10:00.000Z', type: WorkoutType.A, durationMinutes: 65, calories: 400, exercises: [] },
+            ];
+            const initialState: UserGamificationState = {
+                badges: ['first_step'],
+                inventory: [],
+                points: 755,
+                streak: 3,
+                lifetimeXp: 10422,
+                unlockedThemes: ['default'],
+                activeTheme: 'default',
+                streakWager: {
+                    startDate: d(6),
+                    targetDays: 7,
+                    stakePoints: 20,
+                    status: 'active',
+                },
+            };
+
+            (getUserLogs as Mock).mockResolvedValue(logs);
+            (getLogs as Mock).mockResolvedValue(logs);
+            (getGamificationState as Mock).mockResolvedValue({ Akshay: initialState });
+            (getGiftTransactions as Mock).mockResolvedValue([]);
+
+            const res = await reconcileUserGamificationState(profile, logs, { Akshay: initialState });
+            expect(res.stateUpdated).toBe(true);
+            expect(res.userState.badges).toContain('first_step');
+            expect(res.userState.badges).toContain('streak_5');
+            expect(res.userState.badges).toContain('long_haul');
+            expect(res.userState.badges).toContain('calorie_crusher');
+            expect(res.userState.streakWager?.status).toBe('won');
+            expect(res.userState.lifetimeXp).toBeGreaterThan(10422);
+            expect(res.userState.points).toBeGreaterThan(755);
+
+            // Deleting a log must never strip earned badges or reduce XP/points
+            const xpBeforeDelete = res.userState.lifetimeXp!;
+            const ptsBeforeDelete = res.userState.points;
+            const badgesBeforeDelete = [...res.userState.badges];
+            await revertGamificationForLog(logs[0], profile);
+            expect(res.userState.lifetimeXp).toBe(xpBeforeDelete);
+            expect(res.userState.points).toBe(ptsBeforeDelete);
+            expect(res.userState.badges).toEqual(expect.arrayContaining(badgesBeforeDelete));
         });
     });
 });

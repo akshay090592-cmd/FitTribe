@@ -317,7 +317,7 @@ export const updateOnboardingQuestProgress = async (
     localStorage.setItem(key, JSON.stringify(newQuests));
 
     if (earnedPoints > 0 || earnedXp > 0) {
-      const allState = await getGamificationState();
+      const allState = await getGamificationState(profile.tribeId);
       const userState: UserGamificationState = allState[user] || {
         badges: [],
         inventory: [],
@@ -471,7 +471,7 @@ export const updateQuestProgress = async (
 
     if (earnedPoints > 0 || earnedXp > 0) {
       // Award Rewards
-      const allState = await getGamificationState();
+      const allState = await getGamificationState(updatedProfile.tribeId);
       const userState = allState[user];
 
       if (userState) {

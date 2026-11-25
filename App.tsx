@@ -11,7 +11,7 @@ import { useNotifications } from './hooks/useNotifications';
 import { useToast } from './components/Toast';
 import { NotificationCenter } from './components/NotificationCenter';
 import { ReloadPrompt } from './components/ReloadPrompt';
-import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks, getRankDetails } from './utils/gamification';
+import { getMood, calculateMood, getTeamStats, SHOP_THEMES, getLevelProgress, getStreaks, checkAchievements, getStreakRisk, calculateStreaks, getRankDetails, reconcileUserGamificationState } from './utils/gamification';
 import { RankBadge } from './components/RankBadge';
 import { getGamificationState, updateUserCommitment, updateProfile, getLogs, getAllReactions, getGiftTransactions, processOfflineQueue, getOfflineQueue, deleteLog, getUserPlans, saveUserPlan, getTribeMembers } from './utils/storage';
 import { requestNotificationPermission, onMessageListener } from './services/firebase';
@@ -538,10 +538,29 @@ const App: React.FC = () => {
         setLogsCount(logs.filter(l => l.type !== WorkoutType.COMMITMENT).length);
         setAllLogs(logs);
 
-        // 2. Process Streaks & Risk (Reusing logs)
-        // BOLT: Calculate streak once and reuse it for mood and risk to avoid redundant O(N) passes.
-        // Always calculate the streak dynamically from the complete logs to avoid stale values from gameState.
-        const calculatedStreak = calculateStreaks(logs, { isSorted: true }) as number;
+        // 2. Reconcile Shields, Wagers, and Historical Badges (non-destructive)
+        let reconciledStreak: number | null = null;
+        if (typeof reconcileUserGamificationState === 'function') {
+          try {
+            const recRes = await reconcileUserGamificationState(profile, logs, gameState);
+            reconciledStreak = recRes.streak;
+            if (gameState) {
+              gameState[profile.displayName] = recRes.userState;
+            }
+            if (recRes.unlockedBadges.length > 0) {
+              showToast(`🏆 Unlocked: ${recRes.unlockedBadges.map(b => b.title).join(', ')}`, 'success');
+            }
+          } catch (recErr) {
+            console.warn("Could not reconcile gamification state on load:", recErr);
+          }
+        }
+
+        // 2b. Process Streaks & Risk (Reusing logs + frozenDates)
+        const userFrozenDates = gameState?.[profile.displayName]?.frozenDates;
+        const calculatedStreak =
+          reconciledStreak !== null
+            ? reconciledStreak
+            : (calculateStreaks(logs, { isSorted: true, frozenDates: userFrozenDates }) as number);
         setStreak(calculatedStreak);
         setStreakRisk(await getStreakRisk(profile.displayName, logs));
 

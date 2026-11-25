@@ -1629,7 +1629,7 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
           }
 
           state[row.display_name] = {
-            badges: allBadges.filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:')),
+            badges: Array.from(new Set(allBadges.filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:')))),
             inventory: row.inventory || [],
             points: row.points || 0,
             streak: row.streak || 0,
@@ -1642,6 +1642,11 @@ export const getGamificationState = async (tribeId?: string): Promise<Record<Use
             ...(parsedMeta.activeXpBoost ? { activeXpBoost: parsedMeta.activeXpBoost } : {}),
             ...(parsedMeta.streakWager ? { streakWager: parsedMeta.streakWager } : {}),
             ...(parsedMeta.claimedDailyChests ? { claimedDailyChests: parsedMeta.claimedDailyChests } : {}),
+            ...(parsedMeta.claimedWeeklyTribeChestWeekKey ? { claimedWeeklyTribeChestWeekKey: parsedMeta.claimedWeeklyTribeChestWeekKey } : {}),
+            ...(parsedMeta.timeWindowChest ? { timeWindowChest: parsedMeta.timeWindowChest } : {}),
+            ...(parsedMeta.claimedMuscleMasteryWeekKey ? { claimedMuscleMasteryWeekKey: parsedMeta.claimedMuscleMasteryWeekKey } : {}),
+            ...(parsedMeta.dailySupportXp ? { dailySupportXp: parsedMeta.dailySupportXp } : {}),
+            ...(parsedMeta.honorPledgesFulfilled !== undefined ? { honorPledgesFulfilled: parsedMeta.honorPledgesFulfilled } : {}),
           };
 
           // MIGRATION: If lifetimeXp is missing, default to points.
@@ -1666,6 +1671,31 @@ const createDefaultGamificationState = (): Record<User, UserGamificationState> =
   return state;
 };
 
+const serializeBadgesAndMeta = (state: UserGamificationState): string[] => {
+  const badgesToSave = Array.from(
+    new Set((state.badges || []).filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:')))
+  );
+  if (state.commitment) {
+    const ts = new Date(state.commitment).getTime();
+    if (!isNaN(ts)) badgesToSave.push(`committed_${ts}`);
+  }
+  const metaPayload: Record<string, any> = {};
+  if (state.streakFreezes !== undefined) metaPayload.streakFreezes = state.streakFreezes;
+  if (state.frozenDates && state.frozenDates.length > 0) metaPayload.frozenDates = state.frozenDates;
+  if (state.activeXpBoost) metaPayload.activeXpBoost = state.activeXpBoost;
+  if (state.streakWager) metaPayload.streakWager = state.streakWager;
+  if (state.claimedDailyChests) metaPayload.claimedDailyChests = state.claimedDailyChests;
+  if (state.claimedWeeklyTribeChestWeekKey) metaPayload.claimedWeeklyTribeChestWeekKey = state.claimedWeeklyTribeChestWeekKey;
+  if (state.timeWindowChest) metaPayload.timeWindowChest = state.timeWindowChest;
+  if (state.claimedMuscleMasteryWeekKey) metaPayload.claimedMuscleMasteryWeekKey = state.claimedMuscleMasteryWeekKey;
+  if (state.dailySupportXp) metaPayload.dailySupportXp = state.dailySupportXp;
+  if (state.honorPledgesFulfilled !== undefined) metaPayload.honorPledgesFulfilled = state.honorPledgesFulfilled;
+  if (Object.keys(metaPayload).length > 0) {
+    badgesToSave.push(`__meta__:${JSON.stringify(metaPayload)}`);
+  }
+  return badgesToSave;
+};
+
 const updateCachedGamificationForUser = (profile: UserProfile, state: UserGamificationState) => {
   const keys = ['gamification_all', profile.tribeId ? `gamification_tribe_${profile.tribeId}` : ''].filter(Boolean);
   for (const key of keys) {
@@ -1674,6 +1704,19 @@ const updateCachedGamificationForUser = (profile: UserProfile, state: UserGamifi
       ...existing,
       [profile.displayName]: state
     });
+  }
+  try {
+    const rawSaved = localStorage.getItem('cache_gamification_state');
+    const parsedSaved = rawSaved ? JSON.parse(rawSaved) : {};
+    localStorage.setItem(
+      'cache_gamification_state',
+      JSON.stringify({
+        ...parsedSaved,
+        [profile.displayName]: state
+      })
+    );
+  } catch {
+    // ignore localStorage errors
   }
 };
 
@@ -1694,20 +1737,7 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
   }
 
   // Re-inject commitment and extended gamification metadata into badges
-  const badgesToSave = state.badges.filter(b => !b.startsWith('committed_') && !b.startsWith('__meta__:'));
-  if (state.commitment) {
-    const ts = new Date(state.commitment).getTime();
-    badgesToSave.push(`committed_${ts}`);
-  }
-  const metaPayload: Record<string, any> = {};
-  if (state.streakFreezes !== undefined) metaPayload.streakFreezes = state.streakFreezes;
-  if (state.frozenDates && state.frozenDates.length > 0) metaPayload.frozenDates = state.frozenDates;
-  if (state.activeXpBoost) metaPayload.activeXpBoost = state.activeXpBoost;
-  if (state.streakWager) metaPayload.streakWager = state.streakWager;
-  if (state.claimedDailyChests) metaPayload.claimedDailyChests = state.claimedDailyChests;
-  if (Object.keys(metaPayload).length > 0) {
-    badgesToSave.push(`__meta__:${JSON.stringify(metaPayload)}`);
-  }
+  const badgesToSave = serializeBadgesAndMeta(state);
 
   try {
     const response = await withTimeout(
@@ -1733,6 +1763,7 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
     }
 
     invalidateCache('gamification');
+    updateCachedGamificationForUser(profile, state);
   } catch (err) {
     console.error("Network error saving gamification state, queuing for offline sync", err);
     addToOfflineQueue({
@@ -1743,7 +1774,7 @@ export const saveGamificationState = async (profile: UserProfile, state: UserGam
 };
 
 export const updateUserCommitment = async (profile: UserProfile, date: Date | null) => {
-  const allState = await getGamificationState();
+  const allState = await getGamificationState(profile.tribeId);
   const userState = allState[profile.displayName];
   if (!userState) return;
 
@@ -2103,11 +2134,7 @@ export const processOfflineQueue = async (): Promise<void> => {
 
           case 'UPDATE_GAMIFICATION': {
             const { profile, state } = action.payload;
-            const badgesToSave = [...(state.badges || [])];
-            if (state.commitment) {
-              const ts = new Date(state.commitment).getTime();
-              badgesToSave.push(`committed_${ts}`);
-            }
+            const badgesToSave = serializeBadgesAndMeta(state);
             const response = await withTimeout(
               supabase.from('gamification_state').update({
                 badges: badgesToSave,
